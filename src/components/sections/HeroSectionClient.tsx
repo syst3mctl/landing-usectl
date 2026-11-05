@@ -1419,6 +1419,22 @@ export function HeroSectionClient({
         { y: 0, autoAlpha: 1, ease: "power2.out", duration: 0.45 },
         9.45,
       );
+      // The whole state-7 connector LAYER now belongs to state 7, not to the page.
+      //
+      // It used to be visible at every state below 8 (only the 7→8 exit at 11.45 ever hid it);
+      // the individual lines were "invisible" purely because of their stroke-dashoffset. That
+      // works while the main timeline owns them — but the green charge and its power-down are
+      // driven by `seq7` / `unwindPower7`, which run in REAL SECONDS, independent of the scroll.
+      // So leaving state 7 upwards started a 0.9s retract that carried on playing wherever the
+      // scroll had got to, in full view (measured: after a reload at state 8, where the lines are
+      // restored fully green, the retract stayed on screen for 650ms while the page travelled
+      // from y 9497 down past state 6 to 6985 — the user's "ზემოთ scroll-ზე მოყვება ანიმაცია").
+      // Pass 62 fixed the same leak for `jumpToState`; this is the scroll path.
+      //
+      // Fading the layer with state 7's own entrance fixes it at the source: the power-down still
+      // animates gracefully while the boards are on screen (pass 53's request — no one-frame
+      // snap), and it is simply not on screen any more by the time another state is.
+      tl.fromTo(connectors7, { autoAlpha: 0 }, { autoAlpha: 1, ease: "none", duration: 0.2 }, 9.55);
       connectorLines.forEach((line, i) => {
         tl.to(line, { strokeDashoffset: 0, ease: "none", duration: 0.2 }, 9.75 + i * 0.15);
       });
@@ -1629,6 +1645,7 @@ export function HeroSectionClient({
         [...connectorGreens, ...connectorGlows].forEach((el) => {
           el.style.strokeDasharray = `${lineLen7(el)} ${lineLen7(el)}`;
           el.style.strokeDashoffset = `${lineHide7(el)}`;
+          el.style.opacity = ""; // the power-down fades these out — put them back for next time
         });
         connectorArrows.forEach((a) => a.setAttribute("fill", "rgba(255,255,255,0.3)"));
         boards7.flat().forEach((c) => {
@@ -1706,6 +1723,7 @@ export function HeroSectionClient({
       // to white, the leftover glow on the processor dies — then the silent reset. Whatever
       // state the sequence was in (even mid-charge) is taken as the starting point.
       const POWER7_UNWIND = 0.9; // real seconds — the 7→6 crossing is ~2.7s, boards fade ~60% in
+      const POWER7_LINE_FADE = 0.22; // how fast the green charge goes out (see the note below)
       let unwind7: gsap.core.Timeline | null = null;
       const unwindPower7 = () => {
         seq7.pause();
@@ -1740,18 +1758,22 @@ export function HeroSectionClient({
           // resetPower7 clears the style again)
           if (c.top) u.to(c.T, { fill: c.top, duration: D * 0.55 }, i * 0.012);
         });
-        // lines: the squiggle first, then both charges retract toward the main board
-        const retract = (el: SVGPathElement | undefined, at: number, dur: number) => {
-          if (!el) return;
-          u.to(el, { strokeDashoffset: lineHide7(el), ease: "power2.in", duration: dur }, at);
-        };
-        retract(connectorGreens[2], 0, D * 0.4);
-        retract(connectorGlows[2], 0, D * 0.4);
-        [0, 1].forEach((k) => {
-          retract(connectorGreens[k], D * 0.15, D * 0.75);
-          retract(connectorGlows[k], D * 0.15, D * 0.75);
-          const arrow = connectorArrows[k];
-          if (arrow) u.to(arrow, { attr: { fill: "rgba(255,255,255,0.3)" }, duration: D * 0.3 }, D * 0.3);
+        // Lines: the green charge FADES OUT instead of retracting along the path.
+        //
+        // The retract (dash-offset back toward the main board) read well when you lingered, but
+        // it is a ~0.7s real-time animation and the scroll does not wait for it: pushing up
+        // through the crossing left a half-retracted green stub hanging between the boards,
+        // travelling with the page (user: "ზემოთ scroll-ზე მოყვება ანიმაცია … ეგ ანიმაცია უნდა
+        // გაქრეს"). It was at its most obvious right after a reload, where the restore leaves the
+        // charge at 100% so the stub was full length.
+        // A short fade cannot leave a partial shape behind: by POWER7_LINE_FADE it is simply not
+        // there, however fast the scroll is going. The dash offsets are still reset afterwards by
+        // resetPower7, so the next arrival charges from empty exactly as before.
+        [...connectorGreens, ...connectorGlows].forEach((el) => {
+          u.to(el, { opacity: 0, ease: "power2.in", duration: POWER7_LINE_FADE }, 0);
+        });
+        connectorArrows.forEach((arrow) => {
+          if (arrow) u.to(arrow, { attr: { fill: "rgba(255,255,255,0.3)" }, duration: POWER7_LINE_FADE }, 0);
         });
         const g = { v: 0.4 };
         u.to(g, { v: 0, duration: D * 0.5, onUpdate: () => glow7(g.v) }, 0);
