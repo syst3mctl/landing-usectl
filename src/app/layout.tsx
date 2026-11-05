@@ -4,7 +4,7 @@ import { GoogleAnalytics } from "@next/third-parties/google";
 import { Header } from "@/components/layout/Header";
 import { BackgroundLines } from "@/components/layout/BackgroundLines";
 import { SessionReplay } from "@/components/SessionReplay";
-import { SIGNUP_URL, X_URL } from "@/lib/nav";
+import { FACEBOOK_URL, INSTAGRAM_URL, SIGNUP_URL, X_URL } from "@/lib/nav";
 import {
   SHARE_DESCRIPTION,
   SITE_DESCRIPTION,
@@ -99,7 +99,7 @@ const jsonLd = {
       url: SITE_URL,
       logo: `${SITE_URL}/logo/logo.svg`,
       email: "hello@usectl.com",
-      sameAs: [X_URL],
+      sameAs: [X_URL, INSTAGRAM_URL, FACEBOOK_URL],
     },
     {
       "@type": "WebSite",

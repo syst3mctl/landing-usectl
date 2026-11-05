@@ -1,7 +1,16 @@
 import Image from "next/image";
 import Link from "next/link";
 import { s } from "@/lib/grid";
-import { DOCS_URL, SHOW_STORE_BADGES, SYSTEMCTL_URL, X_URL, type NavLink } from "@/lib/nav";
+import {
+  DOCS_URL,
+  PHONE_HREF,
+  PHONE_NUMBER,
+  SHOW_PHONE,
+  SHOW_STORE_BADGES,
+  SOCIAL_LINKS,
+  SYSTEMCTL_URL,
+  type NavLink,
+} from "@/lib/nav";
 import { SceneLight } from "./SceneLight";
 import { SubscribeForm } from "./SubscribeForm";
 
@@ -153,25 +162,38 @@ export function Footer() {
             hello@usectl.com
           </a>
         </p>
-        <p style={{ marginTop: s(14) }}>
-          <a
-            href="tel:+995511111111"
-            className="font-light text-white/55 transition-colors hover:text-white"
-            style={{ fontSize: s(15.5) }}
-          >
-            +995 511 11 11 11
-          </a>
-        </p>
-        <a
-          href={X_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="usectl on X"
-          className="inline-block opacity-60 transition-opacity hover:opacity-100"
-          style={{ marginTop: s(16) }}
-        >
-          <Image src="/footer/x-twitter.svg" alt="" width={24} height={24} style={{ width: s(18), height: s(18) }} />
-        </a>
+        {/* the phone line is behind SHOW_PHONE — hidden while the number is a placeholder */}
+        {SHOW_PHONE && (
+          <p style={{ marginTop: s(14) }}>
+            <a
+              href={PHONE_HREF}
+              className="font-light text-white/55 transition-colors hover:text-white"
+              style={{ fontSize: s(15.5) }}
+            >
+              {PHONE_NUMBER}
+            </a>
+          </p>
+        )}
+        <div className="flex items-center" style={{ marginTop: s(16), gap: s(14) }}>
+          {SOCIAL_LINKS.map((social) => (
+            <a
+              key={social.href}
+              href={social.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={social.label}
+              className="inline-flex opacity-60 transition-opacity hover:opacity-100"
+            >
+              <Image
+                src={social.icon}
+                alt=""
+                width={24}
+                height={24}
+                style={{ width: s(social.size), height: s(social.size) }}
+              />
+            </a>
+          ))}
+        </div>
       </div>
 
       {/* subscribe column */}

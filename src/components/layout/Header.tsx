@@ -2,8 +2,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { ColumnLines } from "@/components/layout/BackgroundLines";
 import { MobileMenu } from "@/components/layout/MobileMenu";
+import { ButtonArrow } from "@/components/ui/icons";
 import { INSET_VW, HEADER_HIDE_WIDE, HEADER_HIDE_NARROW, LINE_COLOR, LINE_THICKNESS_PX } from "@/lib/grid";
-import { NAV_LINKS } from "@/lib/nav";
+import { NAV_LINKS, SIGNUP_URL } from "@/lib/nav";
 
 export function Header() {
   return (
@@ -59,6 +60,19 @@ export function Header() {
             ))}
           </ul>
         </nav>
+        {/* "Start Now" — the header's own CTA, opposite the logo (Figma: left 1606 / top 27 on the
+            1920 frame, 132×44, r40, Space Grotesk Medium 14). Its right edge lands on grid column
+            21 (1739 = 1920 − 99 − 82), which is why the offset is one column inside the content
+            inset; the geometry lives in globals.css's `.header-cta` because it is written in --sh,
+            the scale the scene is really drawn at, exactly like the logo and the nav.
+            Phones don't get it here — the phone header is logo + burger, and Start Now lives in
+            the burger menu instead. */}
+        <Link
+          href={SIGNUP_URL}
+          className="header-cta ml-auto hidden shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded-full border border-white/25 font-heading font-medium text-foreground transition-colors duration-300 ease-out hover:border-brand hover:text-brand lg:flex"
+        >
+          Start Now <ButtonArrow size="1.15em" />
+        </Link>
         <MobileMenu links={NAV_LINKS} />
       </div>
     </header>

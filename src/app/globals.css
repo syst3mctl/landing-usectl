@@ -90,12 +90,38 @@
   .header-logo {
     width: max(150px, calc(var(--sh) * 150));
   }
+  /* "Start Now" (Header.tsx): the Figma box — 132×44, r40, 14px/100% — on the same --sh canvas as
+     the logo and the nav, with the design values as a FLOOR so it never shrinks below them. The
+     right margin is one grid column (82), which puts the pill's right edge on column 21 (1739),
+     where the design has it; the row's own padding-right supplies the remaining 99. */
+  .header-cta {
+    width: max(132px, calc(var(--sh) * 132));
+    height: max(44px, calc(var(--sh) * 44));
+    font-size: max(14px, calc(var(--sh) * 14));
+    line-height: 1;
+    margin-right: calc(var(--sh) * 82);
+  }
 }
 @media (min-width: 1280px) {
   /* below 1280 the nav keeps its own tuned 15px / 1.5rem pair (see Header.tsx) */
   .header-nav {
     font-size: max(16px, calc(var(--sh) * 16));
     gap: max(2rem, calc(var(--sh) * 32));
+  }
+  /* The header band's grid is cleared behind "Start Now" the same way it is behind the logo and
+     the nav — geometrically rather than through grid.ts's hide-lists, because the pill's box has
+     px FLOORS, so WHICH columns it covers changes with the viewport (20-21 at 1920, 19-21 at
+     1280). The window is the pill's own box, found from the right edge: the row's padding (99)
+     plus one column (82) of margin, then its width. */
+  .header-cols {
+    mask-image: linear-gradient(
+      to right,
+      #000 0,
+      #000 calc(100% - var(--sh) * 82 - max(132px, var(--sh) * 132) - 10px),
+      transparent calc(100% - var(--sh) * 82 - max(132px, var(--sh) * 132) - 10px),
+      transparent calc(100% - var(--sh) * 82 + 8px),
+      #000 calc(100% - var(--sh) * 82 + 8px)
+    );
   }
 }
 
@@ -113,7 +139,12 @@
       #000 calc(50% - 247px),
       transparent calc(50% - 247px),
       transparent calc(50% + 247px),
-      #000 calc(50% + 247px)
+      #000 calc(50% + 247px),
+      /* and clear of the "Start Now" pill at the right edge (see the ≥1280 rule) */
+      #000 calc(100% - var(--sh) * 82 - 142px),
+      transparent calc(100% - var(--sh) * 82 - 142px),
+      transparent calc(100% - var(--sh) * 82 + 8px),
+      #000 calc(100% - var(--sh) * 82 + 8px)
     );
   }
 }
@@ -161,10 +192,13 @@ body {
   }
 }
 .press-ripple {
+  /* --ripple lets a quiet button (the hero's Scroll Down pill) tune the colour down — see
+     RIPPLE_SOFT in src/lib/pressRipple.ts; unset, it is the pricing steppers' bright green */
+  --ripple: radial-gradient(circle, rgba(124, 240, 154, 0.55) 0%, rgba(53, 201, 87, 0.4) 55%, rgba(17, 163, 42, 0.12) 100%);
   position: absolute;
   border-radius: 9999px;
   pointer-events: none;
-  background: radial-gradient(circle, rgba(124, 240, 154, 0.55) 0%, rgba(53, 201, 87, 0.4) 55%, rgba(17, 163, 42, 0.12) 100%);
+  background: var(--ripple);
   animation: press-ripple 650ms cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
 }
 

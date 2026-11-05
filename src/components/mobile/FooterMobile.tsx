@@ -7,7 +7,16 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import { m } from "./HeroMobile";
-import { DOCS_URL, SHOW_STORE_BADGES, SYSTEMCTL_URL, X_URL, type NavLink } from "@/lib/nav";
+import {
+  DOCS_URL,
+  PHONE_HREF,
+  PHONE_NUMBER,
+  SHOW_PHONE,
+  SHOW_STORE_BADGES,
+  SOCIAL_LINKS,
+  SYSTEMCTL_URL,
+  type NavLink,
+} from "@/lib/nav";
 import { SubscribeForm } from "@/components/layout/SubscribeForm";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
@@ -43,8 +52,9 @@ export function FooterMobile() {
     { scope: ref },
   );
 
-  const h3 = "font-heading font-medium text-white/85";
-  const link = "font-heading font-light text-white/55";
+  // the design board's (S10-Footer) type: 16/500 white headings, 14/300 white-60 links
+  const h3 = "font-heading font-medium text-white";
+  const link = "font-heading font-light text-white/60";
 
   return (
     <footer
@@ -75,7 +85,7 @@ export function FooterMobile() {
         <Link href="/" aria-label="usectl home" className="inline-block">
           <Image src="/logo/logo.svg" alt="usectl" width={151} height={25} style={{ width: m(130), height: "auto" }} />
         </Link>
-        <p className="font-heading font-light text-white/60" style={{ marginTop: m(18), fontSize: m(14) }}>
+        <p className="font-heading font-light text-white/50" style={{ marginTop: m(14), fontSize: m(13), lineHeight: 1.5 }}>
           37 Zhiuli Shartava st., Tbilisi 2209 Georgia
         </p>
         {/* store badges — hidden until the apps ship (see SHOW_STORE_BADGES) */}
@@ -131,17 +141,17 @@ export function FooterMobile() {
 
       <div className="relative grid grid-cols-2" style={{ marginTop: m(40), columnGap: m(20), rowGap: m(36) }}>
         <div data-mf-reveal>
-          <h3 className={h3} style={{ fontSize: m(15) }}>
+          <h3 className={h3} style={{ fontSize: m(16) }}>
             Navigation
           </h3>
           <ul style={{ marginTop: m(16) }}>
             {NAV_LINKS.map((l) => (
-              <li key={l.href} style={{ marginBottom: m(10) }}>
+              <li key={l.href} style={{ marginBottom: m(12) }}>
                 <Link
                   href={l.href}
                   {...(l.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                   className={link}
-                  style={{ fontSize: m(14.5) }}
+                  style={{ fontSize: m(14) }}
                 >
                   {l.label}
                 </Link>
@@ -150,34 +160,46 @@ export function FooterMobile() {
           </ul>
         </div>
         <div data-mf-reveal>
-          <h3 className={h3} style={{ fontSize: m(15) }}>
+          <h3 className={h3} style={{ fontSize: m(16) }}>
             Contact
           </h3>
           <p style={{ marginTop: m(16) }}>
-            <a href="mailto:hello@usectl.com" className={link} style={{ fontSize: m(14.5) }}>
+            <a href="mailto:hello@usectl.com" className={link} style={{ fontSize: m(14) }}>
               hello@usectl.com
             </a>
           </p>
-          <p style={{ marginTop: m(10) }}>
-            <a href="tel:+995511111111" className={link} style={{ fontSize: m(14.5) }}>
-              +995 511 11 11 11
-            </a>
-          </p>
-          <a
-            href={X_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="usectl on X"
-            className="inline-block opacity-60"
-            style={{ marginTop: m(12) }}
-          >
-            <Image src="/footer/x-twitter.svg" alt="" width={24} height={24} style={{ width: m(17), height: m(17) }} />
-          </a>
+          {SHOW_PHONE && (
+            <p style={{ marginTop: m(10) }}>
+              <a href={PHONE_HREF} className={link} style={{ fontSize: m(14) }}>
+                {PHONE_NUMBER}
+              </a>
+            </p>
+          )}
+          <div className="flex items-center" style={{ marginTop: m(14), gap: m(14) }}>
+            {SOCIAL_LINKS.map((social) => (
+              <a
+                key={social.href}
+                href={social.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={social.label}
+                className="inline-flex opacity-60 active:opacity-100"
+              >
+                <Image
+                  src={social.icon}
+                  alt=""
+                  width={24}
+                  height={24}
+                  style={{ width: m(social.size), height: m(social.size) }}
+                />
+              </a>
+            ))}
+          </div>
         </div>
       </div>
 
       <div data-mf-reveal className="relative" style={{ marginTop: m(36) }}>
-        <h3 className={h3} style={{ fontSize: m(15) }}>
+        <h3 className={h3} style={{ fontSize: m(16) }}>
           Subscribe
         </h3>
         {/* same component the desktop footer uses, on the phone's --m scale */}
@@ -194,17 +216,24 @@ export function FooterMobile() {
         style={{ marginTop: m(40), width: "100%", height: "auto", opacity: 0.05, filter: "grayscale(1) brightness(2.5)" }}
       />
 
-      <p data-mf-reveal className="relative text-center font-heading text-white/45" style={{ marginTop: m(24), fontSize: m(12.5), letterSpacing: "0.05em" }}>
-        &copy; 2026{" "}
-        <a
-          href={SYSTEMCTL_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-brand transition-opacity hover:opacity-70"
-        >
-          SYSTEMCTL
-        </a>
-      </p>
+      <div
+        data-mf-reveal
+        className="relative flex items-center justify-between font-heading text-white/40"
+        style={{ marginTop: m(24), fontSize: m(12) }}
+      >
+        <span>
+          &copy; 2026{" "}
+          <a
+            href={SYSTEMCTL_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-brand transition-opacity hover:opacity-70"
+          >
+            SYSTEMCTL
+          </a>
+        </span>
+        <span>usectl.com</span>
+      </div>
     </footer>
   );
 }

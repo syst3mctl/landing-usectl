@@ -1055,11 +1055,154 @@ from y 9497 past state 6 down to 6985**. Two independent causes, both fixed:
 
 Full suite re-run on the production build — all green. `tsc` / `eslint` / `next build` clean.
 
+## Start Now, Scroll Down, the footer's socials, and the phone rebuilt to its boards (2026-11-05)
+
+Six asks in one round, written up by the user in `TASKS-start-now.md` (read it for the original
+wording and the Figma numbers). Done in four steps, each verified in a real Chromium against the
+PRODUCTION build before moving on.
+
+**New shared file `src/components/ui/icons.tsx`** — `ButtonArrow` (the team's button-arrow.svg)
+and `ScrollDownArrow` (the boards' 14×14 down arrow), both taking their size from the caller
+because every surface writes lengths in its own unit (`s()`, `m()`, plain px in the header). The
+three hand-copied arrows (HeroSectionClient ×2, HeroMobile, MobileMenu's `MenuArrow`) are gone.
+
+**1. "Start Now" in the header** (`Header.tsx` + `.header-cta` in globals.css). Measured at 1920:
+x 1607 / y 26 / 132×44, 14px Medium, radius 40, → `SIGNUP_URL` in the SAME tab, hover → brand.
+Geometry is in **--sh**, not `--s` — the same canvas the logo and nav were moved onto (2026-10-21),
+with the design values as a FLOOR, so it grows with a big display and never shrinks below 132×44.
+Its right margin is exactly one grid column (82), which lands the pill's right edge on column 21
+(1739) where Figma has it; the row's own 99 padding supplies the rest.
+- The header band's grid lines are cleared behind it the way they are behind the logo and the nav,
+  but **geometrically rather than through grid.ts's hide-lists** — the pill's box has px floors, so
+  which columns it covers changes with the width (20-21 at 1920, 19-21 at 1280). A new ≥1280
+  `.header-cols` mask does it, and the 1024-1279 mask gained the same window.
+- Verified at 3440 / 2560 / 1920×800 / 1600 / 1440 / 1280 / 1024: never overlaps the nav, no
+  horizontal overflow, font 19.2px at 3440 and a flat 14px below 1920.
+- Phones don't get it in the bar (the phone header is logo + burger); it lives in the menu.
+
+**2. "Scroll Down" — DESKTOP ONLY.** One **persistent pill**, not one per state: the nine states
+are layers on the SAME canvas, so nine copies would fade into each other in the same spot. It is
+**centred** (`left: 50%` + `-translate-x-1/2`) — the user's call after seeing it at left 187 — and
+a `syncScrollDown()` hides it (opacity + visibility + `tabIndex -1`) whenever `stateIndex >= LAST`,
+called from every place `stateIndex` moves: `goToState`, `jumpToState`, the pin's quantiser and
+the reload-restore. Measured: 1000 → 2089 → 3859 … → 12801, then hidden; screenshots of all nine
+states show it clear of every state's artwork (closest: state 7's bottom-left board at x 1056).
+- The PHONE got the same pill at first and the user removed it ("mobile ვერსიაზე scroll down
+  წაშალე") — the stacked build scrolls natively, so it was redundant there. Nothing of it is left
+  in `HeroMobile`; `ScrollDownArrow` now has one caller.
+- **Two follow-ups the same day (TASKS item 12), both from "the pill blinks when I click it":**
+  1. **It is no longer inside `stageRef`.** `jumpToState` fades the WHOLE stage from opacity 0 to
+     hide its seek — and the pill was part of the stage, so it vanished and faded back in on every
+     click, reading as "a new Scroll Down arrives". It is now a sibling of the stage inside the
+     pinned `<section>`, anchored to the SECTION's bottom (`bottom: s(38)`, which reproduces its
+     old place at 1920×1080) rather than to the design canvas — so a short window, where
+     `fitStage()` shrinks the stage, still shows it in the same spot. Verified in viewport at
+     2560×1440, 1280×620 and 1024×768.
+  2. **The click runs `goToState`, not `jumpToState`.** One state down is exactly what a wheel
+     flick or ArrowDown does, so it gets the real animated crossing with the tuned
+     `CROSSING_SECONDS` — no seek, no stage fade. (Nav items keep `jumpToState`: they skip several
+     states and the fade is right for that.) A second click mid-flight behaves like a second
+     flick — `goToState` retargets from the live playhead and `stateIndex` is already the
+     destination, so it steps one further. Measured through a whole crossing at 60ms intervals:
+     the pill's computed opacity is **1.00 in every sample**, the stage's too, and the scroll
+     ramps 0 → 1000 smoothly instead of jumping.
+  3. **Press ripple.** `pressRipple()` was duplicated in `HeroSectionClient` and `HeroMobile`; it
+     now lives in **`src/lib/pressRipple.ts`** and all three callers use it (both pricing steppers
+     and the pill). `.press-ripple` gained a `--ripple` custom property so a quiet button can tune
+     the colour down — the pill passes `RIPPLE_SOFT` (rgba(17,163,42,0.25) → transparent) while the
+     steppers keep the bright default. The pill is `relative overflow-hidden isolate` so the circle
+     is clipped to its rounded shape, and the helper returns early under `prefers-reduced-motion`.
+
+**3. Footer.** `SHOW_PHONE = false` + `PHONE_NUMBER` / `PHONE_HREF` in `src/lib/nav.ts` hide the
+placeholder number in BOTH footers the way `SHOW_STORE_BADGES` hides the badges. The social row is
+now one `SOCIAL_LINKS` array (X → Instagram → Facebook, with per-icon sizes 20/18/20 — the three
+files frame their glyph differently, so equal boxes read as three different sizes), rendered by
+both footers, all `target="_blank" rel="noopener noreferrer"` with an `aria-label`. `INSTAGRAM_URL`
+/ `FACEBOOK_URL` also went into the JSON-LD `sameAs`.
+
+**4. The subscribe send icon** is `public/footer/arrow-input.svg` (already brand green), and the
+ONLY thing that changes is its opacity: **0 empty → 0.4 while typing → 1 on a complete address**,
+180ms. No box, no border any more. The consent gate is unchanged and deliberately separate from
+the icon: an unticked box still takes the click and answers with "Please accept the terms and
+conditions first." Verified end to end on both footers, including a real POST.
+
+**5. Phone: the logo goes back to the top** (reported from an iPhone: tap the logo on Pricing,
+nothing happens). The `href="/"` interception lived only in `HeroSectionClient`'s `onNavClick`, and
+that scene is never built below 1024 / under reduce-motion — so the click was a same-route Next
+`<Link>` with nothing to navigate to. `HeroMobile` now installs its own capture-phase handler for
+any same-page "/" link: it fires `CLOSE_MENU_EVENT` (exported by `MobileMenu`, which listens — the
+open menu locks page scroll, so it has to close first), drops the hash, and scrolls to the top on
+the NEXT frame. Verified from the header, the footer and from inside the open menu.
+
+**6. The burger and the menu are Vercel's layout** (design boards `design/mobile/M1`, `M2`). The
+icon is `public/mobile/burger.svg` drawn inline — no bordered box, no tinted background, no glow —
+cross-fading to a plain ✕ in the same stroke, inside a 44px tap target whose -10px margin puts the
+ICON's right edge on the 20px grid inset. The panel lost its `NAVIGATION` eyebrow, the `0N/`
+numbers, the per-row ↗ arrows and the gradient divider lines (`data-menu-line` and its animation
+are gone); the five links are plain left-aligned 24px rows at white 72%, and the only button is
+**Start Now**, full width in our pill style. Kept: the glass panel, the green glow low right, the
+footer row, the rows' blur-rise stagger and the scroll lock.
+
+**7. The nine phone sections rebuilt to `design/mobile/S01…S10`** — a visual pass only, every GSAP
+entrance kept. Type is now the boards': headings **34 / 500 / -0.02em / 1.1**, body **15 / 300 /
+white 65%**, eyebrow 12 with hatch.svg, sections padded 48 (hero 44). What changed structurally:
+- **S02** is the approved original: two figures ("0 h", "100%") between hairlines, then three mono
+  bullets with brand dots — the desktop gradient-bordered stat card doesn't survive the narrow
+  column. The old dash-drawn connector line per bullet is gone (the animation guards on it).
+- **S03 / S04** replace the numbered `Panel` (accent rule + `01/ 02/ 03/`) with `Rows`: title +
+  description between full-width hairlines, 16px padding, no card, no numbers. S04 keeps the mono
+  face and gains the radial glow behind the machine. `panelIn` → `rowsIn`.
+- **S05** the deploying pod gets the accent border; art 180 wide.
+- **S06** the two deploy cards are SIDE BY SIDE (a 2-col grid) instead of stacked with a connector
+  between them — stacked, that section ran past two screens. `counter()` now accepts a null number
+  element, since the board shows a bar only.
+- **S07** badge → drop line → board, the desktop composition's reading order (it used to be board
+  → badge).
+- **S08** gains the "Pricing" eyebrow the board draws; **S09** is 22 / 30px with the bigger glow.
+- **S10 (FooterMobile)**: 16/500 headings, 14/300 links, 13px address, and the bottom row is now
+  "© 2026 SYSTEMCTL" left / "usectl.com" right.
+
+**8. The hero server was sliced off at the bottom while it loaded in** (TASKS item 11; the user's
+screenshot was taken mid-intro). **An inline `<svg>` defaults to `overflow: hidden`, and its
+viewBox IS the artwork** (`0 0 421 687`) — so `playServerIntro()`'s starting pose, which pushes the
+base to `translate(0, 46px)` and the cap/slabs to −70…−120px, had those layers cut at the svg's
+edge until they animated back inside. One class fixes it: `[&>svg]:overflow-visible` on the host
+div. Proven by an A/B at the same frame (the base's start pose applied by hand, then the svg's
+overflow toggled): `hidden` renders the base chopped flat exactly as reported, `visible` renders it
+whole.
+- The same rule went on **every** inline svg here whose CHILDREN get translated — the pods stack
+  (desktop float AND the phone's rise-in), the machine, the state-7 agent board and the two small
+  boards, plus the phone's `data-m-pods` / `data-m-machine` / `data-m-agent` hosts. The machine's
+  own leg clip-paths are INNER groups and keep clipping normally (they are what makes the legs
+  slide out of the platform underside).
+- Verified frame by frame through the first 1.2s at 1920×1080 and at 1280×620 (where `fitStage`
+  scales the stage): the base is whole in every frame. States 2-8 re-screenshotted afterwards —
+  identical to before, nothing that used to be clipped now leaks.
+
+**Verified** (production build, real Chromium): nav all four targets (11439 / 3859 / 10168 / 2089)
+with the right hash, the logo, the `/#pricing` deep link (11439), the calculator inside the pin,
+End / Home / PageUp / PageDown, reduce-motion at 1920 (pinned hidden, stacked shown, 9 headings,
+`#pricing` lands 112px under the header) and at 390, the nine-section phone sweep (every entrance
+completes, no element left faded), the burger menu at 390 and 820, the subscribe flow on both
+footers, and no horizontal overflow at 3440 / 2560 / 1920 / 1600 / 1440 / 1280 / 1024 / 820 / 430 /
+390 / 360. **Zero console errors and zero CSP violations anywhere.** `tsc` / `eslint` /
+`next build` clean.
+- Harness note, re-confirmed: the synthetic wheel "flick" skips a state every few runs. It does the
+  same on an UNMODIFIED HEAD build (checked by temporarily restoring `HeroSectionClient.tsx` from
+  git and re-running the identical script: HEAD skipped state 9 in 2 of 3 runs, 5 in one of them) —
+  so a gesture "failure" from that script is the harness, not the page. The deterministic checks
+  (the Scroll Down pill, nav clicks, the keyboard) hit every snap exactly.
+
 ## Open items / TODO
 
 - New design build-out from scratch (user is supplying new references: `public/navigation-bar/navigation-bar.png`, `Group 1574.png`).
-- Header nav anchors (`#the-machine` etc.) point at sections that no longer exist.
-- **The GA4 + Search Console work is still UNCOMMITTED** (`layout.tsx`, `package.json`,
-  `.env.example`), so it is not on the live site — a `curl` of usectl.com finds neither
-  `googletagmanager` nor a verification meta. It needs committing + deploying, and then
-  `NEXT_PUBLIC_GA_ID` set in the host's env (production AND preview).
+- `design/mobile/*.html` are the phone layout's source of truth (390-wide boards, inline styles).
+  Reference material the build never imports, and **gitignored on the user's call** (2026-11-05) —
+  so they live only on their machine. Ask for them again if a fresh clone needs the layout.
+- **GA4 is in the repo and committed** (`layout.tsx` + `@next/third-parties`), but it only emits
+  anything when **`NEXT_PUBLIC_GA_ID`** is set in the host's environment (production AND preview) —
+  until then the live site carries no analytics. Same for `GOOGLE_SITE_VERIFICATION`, and the
+  sitemap (`https://usectl.com/sitemap.xml`) still has to be submitted in Search Console.
+- Content still unanswered by the team: the footer credit really says **SYSTEMCTL** (verbatim from
+  the design), and `+995 511 11 11 11` is a placeholder — now hidden behind `SHOW_PHONE`, flip it
+  back to `true` once there is a real line.

@@ -43,3 +43,7 @@ next-env.d.ts
 
 # local scratch (backups, tarballs — never part of the build)
 /Claude outputs/
+
+# design boards (design/mobile/*.html — the 390-wide reference layouts). Reference material the
+# build never imports; kept out of git on the user's call (2026-11-05).
+/design/

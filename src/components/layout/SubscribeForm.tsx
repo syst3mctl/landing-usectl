@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useMemo, useRef, useState } from "react";
 import { s } from "@/lib/grid";
 
@@ -65,13 +66,18 @@ export function SubscribeForm({ variant }: { variant: "desktop" | "mobile" }) {
   const [message, setMessage] = useState("");
   const company = useRef<HTMLInputElement>(null); // honeypot
 
-  // `ready` = the icon is shown (the address looks complete); CONSENT is required on top of that
-  // before anything leaves the browser — an unticked box dims the icon and only explains itself
-  // when the visitor tries to send (clicking a disabled button fires no event at all, so the
-  // button stays enabled and submit() does the refusing).
+  // The send icon reports how far along the address is (2026-11-05): nothing while the field is
+  // empty, the brand arrow at 40% as soon as the visitor starts typing, full strength once the
+  // value is a complete address — the same `ready` test submit() uses, so the icon can't promise
+  // something the form then refuses.
+  // CONSENT is a separate gate: it never changes the icon, it only decides whether a click sends
+  // or explains itself (clicking a disabled button fires no event at all, so the button stays
+  // enabled and submit() does the refusing).
+  const typed = email.trim().length > 0;
   const ready = EMAIL_RE.test(email.trim());
-  const live = ready && status !== "sending" && status !== "done";
-  const canSend = live && consent;
+  const live = typed && status !== "done";
+  const canSend = ready && consent && status !== "sending" && status !== "done";
+  const iconOpacity = !live ? 0 : ready ? 1 : 0.4;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault(); // Enter must not reload the page
@@ -156,33 +162,31 @@ export function SubscribeForm({ variant }: { variant: "desktop" | "mobile" }) {
             height: u(inputH),
             paddingLeft: u(14),
             // room for the icon once it's there, so the text never slides under it
-            paddingRight: ready && status !== "done" ? u(iconBox + 16) : u(14),
+            paddingRight: live ? u(iconBox + 12) : u(14),
             fontSize: desktop ? u(14) : 16, // 16px on phones: anything smaller zooms iOS Safari in
           }}
         />
 
-        {/* the send icon: fades/slides in once the address looks complete, and stays DIMMED until
-            the terms box is ticked (it still takes the click — see submit()) */}
+        {/* The send icon — the team's public/footer/arrow-input.svg, already brand green, so the
+            only thing that changes is its OPACITY: 0 → 0.4 while typing → 1 on a complete
+            address. No box, no border (design board S10-Footer). */}
         <button
           type="submit"
-          aria-label="Send"
+          aria-label="Subscribe"
           // deliberately NOT disabled / aria-disabled when the box is unticked: the click is what
           // produces the "accept the terms first" hint, and a disabled control fires no events
           // (and would read as dead to a screen reader with nothing to explain why)
           tabIndex={live ? 0 : -1}
-          className={`absolute flex items-center justify-center rounded-md border transition-all duration-200 ${
-            live ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
-          } ${
-            canSend || status === "sending"
-              ? "border-white/20 text-white/70 hover:border-brand hover:text-brand"
-              : "cursor-not-allowed border-white/10 text-white/25"
-          }`}
+          className={`absolute flex items-center justify-center transition-opacity duration-200 ${
+            live ? "pointer-events-auto" : "pointer-events-none"
+          } ${canSend || status === "sending" ? "" : "cursor-not-allowed"}`}
           style={{
             top: "50%",
-            right: u(6),
+            right: u(4),
             width: u(iconBox),
             height: u(iconBox),
-            transform: `translateY(-50%) translateX(${live ? "0px" : u(6)})`,
+            transform: "translateY(-50%)",
+            opacity: iconOpacity,
           }}
         >
           {status === "sending" ? (
@@ -191,15 +195,14 @@ export function SubscribeForm({ variant }: { variant: "desktop" | "mobile" }) {
               style={{ width: u(14), height: u(14) }}
             />
           ) : (
-            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" style={{ width: u(16), height: u(16) }}>
-              <path
-                d="M3.5 10h11M10 5l5 5-5 5"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            <Image
+              src="/footer/arrow-input.svg"
+              alt=""
+              width={20}
+              height={20}
+              unoptimized
+              style={{ width: u(desktop ? 18 : 20), height: u(desktop ? 18 : 20) }}
+            />
           )}
         </button>
 

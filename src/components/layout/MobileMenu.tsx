@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { SIGNUP_URL, SYSTEMCTL_URL } from "@/lib/nav";
+import { ButtonArrow } from "@/components/ui/icons";
 import { createPortal } from "react-dom";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
@@ -12,20 +13,17 @@ gsap.registerPlugin(useGSAP);
 // Burger menu for < 1024px (the desktop nav doesn't fit there). The button lives in the header;
 // the panel is PORTALED to <body> because the header's backdrop-filter makes it the containing
 // block for fixed children (and its overflow clip would cut the panel off). The panel slides in
-// under the 64px header, so the header — and the X — stay on top of it.
-// Look: same vocabulary as the page — dark glass over the grid, mono "0N/" numbering in brand
-// green (the state-3/4 panels), Space Grotesk links, the mint scene light low right, and the
-// two pill buttons. Links blur-rise in with a stagger, like every text column on the page.
+// under the 64px header, so the header — and the close button — stay on top of it.
+//
+// Rebuilt 2026-11-05 to the design the user approved (design/mobile/M2-Menu-open.html, Vercel's
+// menu with our colours): no "NAVIGATION" eyebrow, no 0N/ numbering, no per-row arrows, no
+// gradient divider lines — just a left-aligned 24px list and ONE button, Start Now. What stays:
+// the dark glass panel, the green glow low right ("ლამაზია"), the small footer row, the links'
+// blur-rise stagger and the body-scroll lock.
 
-// the hero "See how it works" arrow — the team's public/button/button-arrow/button-arrow.svg path,
-// inlined with currentColor (same as ButtonArrow in HeroSectionClient / HeroMobile)
-function MenuArrow({ size }: { size: number }) {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" style={{ width: size, height: size, flexShrink: 0 }}>
-      <path d="M8 16L16 8M16 14L16 8L10 8" stroke="currentColor" strokeOpacity={0.7} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
+// Anything can ask the menu to close — the stacked build's "logo goes back to the top" handler
+// fires this before scrolling, so tapping the logo with the menu open does both.
+export const CLOSE_MENU_EVENT = "usectl:close-menu";
 
 type NavLink = { label: string; href: string; external?: boolean };
 
@@ -55,7 +53,6 @@ export function MobileMenu({ links }: { links: readonly NavLink[] }) {
           { autoAlpha: 1, y: 0, filter: "blur(0px)", duration: 0.55, stagger: 0.06 },
           0.08,
         );
-        tl.fromTo(panel.querySelectorAll("[data-menu-line]"), { scaleX: 0 }, { scaleX: 1, duration: 0.6, stagger: 0.06 }, 0.12);
         tl.fromTo(panel.querySelectorAll("[data-menu-foot]"), { autoAlpha: 0, y: 12 }, { autoAlpha: 1, y: 0, duration: 0.45, stagger: 0.08 }, 0.35);
         tl.fromTo(panel.querySelector("[data-menu-light]"), { autoAlpha: 0, scale: 0.85 }, { autoAlpha: 1, scale: 1, duration: 1 }, 0);
       }
@@ -77,6 +74,12 @@ export function MobileMenu({ links }: { links: readonly NavLink[] }) {
   }, [open]);
 
   useEffect(() => {
+    const close = () => setOpen(false);
+    window.addEventListener(CLOSE_MENU_EVENT, close);
+    return () => window.removeEventListener(CLOSE_MENU_EVENT, close);
+  }, []);
+
+  useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
     const mq = window.matchMedia("(min-width: 1024px)");
@@ -89,46 +92,45 @@ export function MobileMenu({ links }: { links: readonly NavLink[] }) {
     };
   }, [open]);
 
-  // three green bars in the page's own greens (brand #11a32a → the lighter #35c957 / #1ed148 the
-  // hover states and the ruler fill use); middle one shorter. Open: outer two cross into an X,
-  // the middle one shrinks away.
-  const bar = "absolute left-1/2 top-1/2 block h-[2px] rounded-full transition-all duration-300 ease-out";
-
   return (
     <>
+      {/* public/mobile/burger.svg (brand green at 80%), drawn inline so the open state can be the
+          same stroke as a plain ✕ — no bordered box, no tinted background, no glow (the user's
+          reference is Vercel's bare icon). The 44px box keeps the tap target; -10px of margin
+          puts the ICON's right edge on the 20px grid inset. */}
       <button
         type="button"
         aria-label={open ? "Close menu" : "Open menu"}
         aria-expanded={open}
         aria-controls="mobile-menu"
         onClick={() => setOpen((o) => !o)}
-        className="relative ml-auto h-10 w-10 shrink-0 rounded-md border border-[rgba(17,163,42,0.45)] bg-[rgba(17,163,42,0.06)] transition-[border-color,background-color,box-shadow] hover:border-[#35c957] hover:shadow-[0_0_12px_rgba(53,201,87,0.25)] active:bg-[rgba(17,163,42,0.14)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/60 lg:hidden"
+        className="-mr-2.5 ml-auto flex h-11 w-11 shrink-0 items-center justify-center rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/60 lg:hidden"
       >
-        <span
-          className={bar}
-          style={{
-            width: 20,
-            background: "linear-gradient(90deg, #11a32a, #35c957)",
-            transform: open ? "translate(-50%, -50%) rotate(45deg)" : "translate(-50%, calc(-50% - 6px))",
-          }}
-        />
-        <span
-          className={bar}
-          style={{
-            width: open ? 0 : 14,
-            opacity: open ? 0 : 1,
-            background: "#1ed148",
-            transform: "translate(calc(-50% + 3px), -50%)",
-          }}
-        />
-        <span
-          className={bar}
-          style={{
-            width: 20,
-            background: "linear-gradient(90deg, #11a32a, #35c957)",
-            transform: open ? "translate(-50%, -50%) rotate(-45deg)" : "translate(-50%, calc(-50% + 6px))",
-          }}
-        />
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+          stroke="#11A32A"
+          strokeOpacity={0.8}
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="transition-transform duration-300 ease-out"
+          style={{ transform: open ? "rotate(90deg)" : "none" }}
+        >
+          <path
+            d="M11 7H19M5 12H19M11 17H19"
+            className="transition-opacity duration-200"
+            style={{ opacity: open ? 0 : 1 }}
+          />
+          <path
+            d="M6 6L18 18M18 6L6 18"
+            className="transition-opacity duration-200"
+            style={{ opacity: open ? 1 : 0 }}
+          />
+        </svg>
       </button>
 
       {mounted &&
@@ -145,70 +147,48 @@ export function MobileMenu({ links }: { links: readonly NavLink[] }) {
             {/* the light hangs off the right edge on purpose — clipped by its own layer so it
                 can never widen the panel (it did: a sideways-scrollable menu on phones/iPads) */}
             <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-            <div
-              data-menu-light
-              aria-hidden="true"
-              className="pointer-events-none absolute"
-              style={{
-                right: "-30%",
-                bottom: "-10%",
-                width: "90%",
-                height: "55%",
-                background: "radial-gradient(ellipse at center, rgba(90,255,200,0.13) 0%, rgba(17,163,42,0.06) 45%, rgba(17,163,42,0) 72%)",
-                filter: "blur(30px)",
-              }}
-            />
+              <div
+                data-menu-light
+                aria-hidden="true"
+                className="pointer-events-none absolute"
+                style={{
+                  right: "-30%",
+                  bottom: "-10%",
+                  width: "90%",
+                  height: "55%",
+                  background: "radial-gradient(ellipse at center, rgba(90,255,200,0.13) 0%, rgba(17,163,42,0.06) 45%, rgba(17,163,42,0) 72%)",
+                  filter: "blur(30px)",
+                }}
+              />
             </div>
 
-            <nav aria-label="Mobile" className="relative mx-auto w-full max-w-[640px] px-5 pt-8 sm:px-8">
-              <p data-menu-row className="font-mono text-[11px] tracking-[0.12em] text-white/40">
-                NAVIGATION
-              </p>
-              <ul className="mt-4">
-                {links.map((l, i) => (
-                  <li key={l.href} className="relative">
-                    <Link
-                      data-menu-row
-                      href={l.href}
-                      {...(l.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                      onClick={() => setOpen(false)}
-                      className="group flex items-baseline gap-4 py-4 font-heading text-[30px] leading-none text-white/85 transition-colors hover:text-white sm:text-[38px]"
-                    >
-                      <span className="w-8 font-mono text-[12px] text-brand sm:text-[13px]">0{i + 1}/</span>
-                      <span className="flex-1">{l.label}</span>
-                      <span className="self-center text-white/50 transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-brand group-active:text-brand">
-                        <MenuArrow size={26} />
-                      </span>
-                    </Link>
-                    <span
-                      data-menu-line
-                      aria-hidden="true"
-                      className="absolute inset-x-0 bottom-0 block h-px origin-left"
-                      style={{ background: "linear-gradient(90deg, rgba(17,163,42,0.55), rgba(59,130,246,0.25) 45%, rgba(255,255,255,0.06) 100%)" }}
-                    />
-                  </li>
-                ))}
-              </ul>
+            <nav aria-label="Mobile" className="relative mx-auto flex w-full max-w-[640px] flex-col px-5 pt-7 sm:px-8">
+              {links.map((l) => (
+                <Link
+                  key={l.href}
+                  data-menu-row
+                  href={l.href}
+                  {...(l.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                  onClick={() => setOpen(false)}
+                  className="py-3 font-heading text-[24px] leading-none text-white/[0.72] transition-colors hover:text-white active:text-white sm:text-[28px]"
+                >
+                  {l.label}
+                </Link>
+              ))}
+
+              {/* the only button in the menu: our pill, not Vercel's white fill (the user's call) */}
+              <Link
+                data-menu-row
+                href={SIGNUP_URL}
+                onClick={() => setOpen(false)}
+                className="mt-8 flex h-11 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-white/40 font-heading text-[14px] font-medium text-[#e6e6e6] transition-colors hover:border-brand hover:text-brand active:border-brand active:text-brand"
+              >
+                Start Now <ButtonArrow size={16} opacity={0.8} />
+              </Link>
             </nav>
 
-            <div className="relative mx-auto mt-auto w-full max-w-[640px] px-5 pb-10 pt-10 sm:px-8">
-              <div data-menu-foot className="flex flex-nowrap gap-2.5">
-                <Link
-                  href={SIGNUP_URL}
-                  onClick={() => setOpen(false)}
-                  className="flex h-11 shrink-0 items-center justify-center whitespace-nowrap rounded-full border border-white/25 px-5 font-heading text-[14px] font-semibold text-foreground transition-colors hover:border-brand hover:text-brand active:border-brand active:text-brand"
-                >
-                  Start Building
-                </Link>
-                <Link
-                  href={SIGNUP_URL}
-                  onClick={() => setOpen(false)}
-                  className="flex h-11 shrink-0 items-center justify-center gap-0.5 whitespace-nowrap rounded-full border border-white/25 pl-5 pr-4 font-heading text-[14px] text-white/90 transition-colors hover:border-brand hover:text-brand active:border-brand active:text-brand"
-                >
-                  See how it works <MenuArrow size={22} />
-                </Link>
-              </div>
-              <div data-menu-foot className="mt-8 flex items-center justify-between font-heading text-[13px] text-white/45">
+            <div className="relative mx-auto mt-auto w-full max-w-[640px] px-5 pb-8 pt-10 sm:px-8">
+              <div data-menu-foot className="flex items-center justify-between font-heading text-[13px] text-white/45">
                 <a href="mailto:hello@usectl.com" className="transition-colors hover:text-white">
                   hello@usectl.com
                 </a>

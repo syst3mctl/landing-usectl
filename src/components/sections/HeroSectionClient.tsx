@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ScrollToPlugin } from "gsap/ScrollToPlugin";
@@ -10,6 +10,8 @@ import { useGSAP } from "@gsap/react";
 import { s, readScale, HEADER_HEIGHT_PX } from "@/lib/grid";
 import { NAV_STATE_BY_HASH, SIGNUP_URL } from "@/lib/nav";
 import { SceneLight } from "@/components/layout/SceneLight";
+import { ButtonArrow, ScrollDownArrow } from "@/components/ui/icons";
+import { pressRipple, RIPPLE_SOFT } from "@/lib/pressRipple";
 
 gsap.registerPlugin(ScrollTrigger, ScrollToPlugin, useGSAP);
 
@@ -339,49 +341,22 @@ function DeployFrame6() {
   );
 }
 
-// The "See how it works" arrow: the team's public/button/button-arrow/button-arrow.svg (24×24,
-// stroke white @0.7), inlined with currentColor so it turns green with the label on hover. The
-// file's 4px inner padding is why the button's gap/right padding are 4/26 instead of 8/32.
-function ButtonArrow() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" style={{ width: s(24), height: s(24), flexShrink: 0 }}>
-      <path
-        d="M8 16L16 8M16 14L16 8L10 8"
-        stroke="currentColor"
-        strokeOpacity={0.7}
-        strokeWidth={1.5}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
+// The "See how it works" arrow is components/ui/icons.tsx's ButtonArrow (the team's
+// public/button/button-arrow/button-arrow.svg, 24×24, stroke white @0.7, drawn with currentColor
+// so it turns green with the label on hover). The file's 4px inner padding is why the button's
+// gap/right padding are 4/26 instead of 8/32.
 
 // Pricing +/− buttons (team, 2026-09-29: a nice hover colour, and a visible trace when pressed).
 // Hover: the border and glyph go brand green with a faint green wash and a soft outer glow, the
 // same green family as the scene light behind the panel. Press: an MUI-style ripple — a circle
-// spawned under the pointer that grows past the button's edge and fades (.press-ripple in
-// globals.css), plus a tiny press-in scale. Disabled buttons keep their dimmed look.
+// spawned under the pointer that grows past the button's edge and fades — shared now, see
+// src/lib/pressRipple.ts and `.press-ripple` in globals.css — plus a tiny press-in scale.
+// Disabled buttons keep their dimmed look.
 const STEP_BTN_CLASS =
   "relative flex items-center justify-center overflow-hidden rounded-md border border-white/20 text-white/70 " +
   "transition-[color,border-color,background-color,box-shadow,transform] duration-200 " +
   "enabled:hover:border-[#35c957] enabled:hover:bg-[rgba(17,163,42,0.1)] enabled:hover:text-[#7cf09a] " +
   "enabled:hover:shadow-[0_0_12px_rgba(53,201,87,0.25)] enabled:active:scale-[0.92] disabled:opacity-40";
-function pressRipple(e: ReactPointerEvent<HTMLButtonElement>) {
-  const btn = e.currentTarget;
-  if (btn.disabled) return;
-  const r = btn.getBoundingClientRect();
-  // big enough to cover the button from wherever it was pressed
-  const size = 2 * Math.hypot(Math.max(e.clientX - r.left, r.right - e.clientX), Math.max(e.clientY - r.top, r.bottom - e.clientY));
-  const dot = document.createElement("span");
-  dot.className = "press-ripple";
-  dot.style.left = `${e.clientX - r.left}px`;
-  dot.style.top = `${e.clientY - r.top}px`;
-  dot.style.width = dot.style.height = `${size}px`;
-  dot.addEventListener("animationend", () => dot.remove(), { once: true });
-  btn.appendChild(dot);
-}
-
 // State 9's scene light scale (see the SceneLight in the closing-CTA block)
 const LIGHT9_K = 0.6;
 
@@ -548,6 +523,7 @@ export function HeroSectionClient({
   const pricing8Ref = useRef<HTMLDivElement>(null);
   const final9Ref = useRef<HTMLDivElement>(null);
   const rulerFillRef = useRef<HTMLDivElement>(null);
+  const scrollDownRef = useRef<HTMLButtonElement>(null);
   const ssrReserveRef = useRef<HTMLDivElement>(null);
 
   // state 8's live calculator (React state co-existing with the scrubbed GSAP scene: GSAP only
@@ -1900,6 +1876,17 @@ export function HeroSectionClient({
       let flightId = 0;
       let pinST: ScrollTrigger | null = null;
 
+      // The "Scroll Down" pill is hidden on the last state and on the footer page — there is
+      // nothing below either of them to go to. Called from everywhere `stateIndex` changes.
+      const scrollDown = scrollDownRef.current;
+      const syncScrollDown = () => {
+        if (!scrollDown) return;
+        const show = stateIndex < LAST;
+        scrollDown.style.opacity = show ? "1" : "0";
+        scrollDown.style.visibility = show ? "visible" : "hidden";
+        scrollDown.tabIndex = show ? 0 : -1;
+      };
+
       // --- dead-zone index -----------------------------------------------------------------
       // Every state parks in a HOLD: its content ends before the snap time, and the next
       // segment's tweens start after it (measured gaps, in timeline units: 0.05 / 0.10 / 0.04 /
@@ -2000,6 +1987,7 @@ export function HeroSectionClient({
         const myFlight = ++flightId;
         transitionFrom = stateIndex;
         stateIndex = i;
+        syncScrollDown();
         // power2.out, NOT inOut: inOut's gentle first ~300ms read as "the animation hasn't
         // started yet" (user feedback) — out shows motion on the very first frame and still
         // lands softly over the full duration
@@ -2054,6 +2042,7 @@ export function HeroSectionClient({
         // the footer went straight back down to it).
         transitionFrom = target;
         stateIndex = target;
+        syncScrollDown();
         rememberState(target);
         // land on the page first (scroll + the start of its entrance), then play it in.
         // The seek SUPPRESSES events: crossing a gate backwards would otherwise fire its
@@ -2101,6 +2090,17 @@ export function HeroSectionClient({
         }, 350);
       };
 
+      // One state down is exactly what a wheel flick or ArrowDown does, so the pill takes the
+      // same path: the real animated crossing (goToState, tuned CROSSING_SECONDS), no seek and no
+      // stage fade. A second click mid-flight behaves like a second flick — goToState retargets
+      // from the live playhead, and `stateIndex` is already the destination, so it steps one
+      // further instead of restarting.
+      const onScrollDownClick = () => {
+        if (stateIndex >= LAST) return;
+        goToState(stateIndex + 1);
+      };
+      scrollDown?.addEventListener("click", onScrollDownClick);
+
       pinST = ScrollTrigger.create({
         trigger: section,
         // The section's top always sits exactly HEADER_HEIGHT_PX below the viewport top, so the
@@ -2123,11 +2123,13 @@ export function HeroSectionClient({
           if (stateIndex > LAST) {
             if (self.progress > 0.999) return;
             stateIndex = LAST;
+            syncScrollDown();
           }
           // scrollbar drag / keyboard that lands PAST the pin is a move to the footer page, not
           // something to quantise back to state 9
           if (self.progress > 0.999 && pinST && window.scrollY > pinST.end + 5) {
             stateIndex = FOOTER_INDEX;
+            syncScrollDown();
             return;
           }
           const t = self.progress * total;
@@ -2178,6 +2180,7 @@ export function HeroSectionClient({
             return;
           }
           stateIndex = i;
+          syncScrollDown();
           restoring7 = true;
           tl.time(SNAP_TIMES[Math.min(i, LAST)]);
           restoring7 = false;
@@ -2697,6 +2700,7 @@ export function HeroSectionClient({
         seq6.kill();
         window.removeEventListener("wheel", onWheel);
         window.removeEventListener("keydown", onKeyDown);
+        scrollDown?.removeEventListener("click", onScrollDownClick);
         document.removeEventListener("click", onNavClick, true);
         window.removeEventListener("hashchange", onHashChange);
         ScrollTrigger.removeEventListener("refresh", onRefresh);
@@ -2819,7 +2823,7 @@ export function HeroSectionClient({
             className="flex items-center justify-center rounded-full border border-white/25 font-heading font-normal text-white/90 transition-colors hover:border-brand hover:text-brand"
             style={{ height: s(48), paddingLeft: s(32), paddingRight: s(26), fontSize: s(16), gap: s(4) }}
           >
-            See how it works <ButtonArrow />
+            See how it works <ButtonArrow size={s(24)} />
           </Link>
         </div>
       </div>
@@ -2918,10 +2922,16 @@ export function HeroSectionClient({
           }}
         />
         {/* the exploded server INLINE (string prop from the server component) so state 2→3 can
-            fade its middle-layer elements individually — see the classification in the effect */}
+            fade its middle-layer elements individually — see the classification in the effect.
+            `[&>svg]:overflow-visible` fixes the load-in's sliced base (2026-11-05): an inline
+            <svg> defaults to overflow:hidden and its viewBox IS the artwork (0 0 421 687), so
+            playServerIntro's starting offsets — base at translate(0,46), cap/slabs at -70…-120 —
+            were cut off at the svg's edge until they rose into place. Every inline svg here whose
+            CHILDREN get translated carries the same rule; the machine's own leg clip-paths are
+            inner groups and keep clipping normally. */}
         <div
           ref={serverSvgRef}
-          className="relative [&>svg]:block [&>svg]:h-auto [&>svg]:w-full"
+          className="relative [&>svg]:block [&>svg]:h-auto [&>svg]:w-full [&>svg]:overflow-visible"
           // markup-hidden until the effect plays the server's load-in (or reveals it) — see there
           style={{ opacity: 0 }}
           dangerouslySetInnerHTML={{ __html: serverSvg }}
@@ -3131,7 +3141,7 @@ export function HeroSectionClient({
       >
         {/* the Machine is injected here as ONE inline svg (see the unfold block in the effect):
             it mounts pre-collapsed (≡ closed.svg) and its assemblies rise to the open pose */}
-        <div ref={machineOpenRef} className="w-full" />
+        <div ref={machineOpenRef} className="w-full [&>svg]:overflow-visible" />
       </div>
 
       {/* state 4 — right-side numbered panel */}
@@ -3226,7 +3236,7 @@ export function HeroSectionClient({
       >
         {/* inline (see HeroSection.tsx) so the three slabs can float independently */}
         <div
-          className="absolute left-0 w-full [&>svg]:block [&>svg]:h-auto [&>svg]:w-full"
+          className="absolute left-0 w-full [&>svg]:block [&>svg]:h-auto [&>svg]:w-full [&>svg]:overflow-visible"
           style={{ top: s(SERVER5.imgDy) }}
           dangerouslySetInnerHTML={{ __html: podsSvg }}
         />
@@ -3378,7 +3388,7 @@ export function HeroSectionClient({
         {/* inline (see HeroSection.tsx) so its chips can grow in state 7's power-up */}
         <div
           data-board7="right"
-          className="relative [&>svg]:block [&>svg]:h-auto [&>svg]:w-full"
+          className="relative [&>svg]:block [&>svg]:h-auto [&>svg]:w-full [&>svg]:overflow-visible"
           dangerouslySetInnerHTML={{ __html: rightBoardSvg }}
         />
       </div>
@@ -3701,7 +3711,7 @@ export function HeroSectionClient({
         />
         {/* inline (see HeroSection.tsx): the ring around the processor spins in place */}
         <div
-          className="relative [&>svg]:block [&>svg]:h-auto [&>svg]:w-full"
+          className="relative [&>svg]:block [&>svg]:h-auto [&>svg]:w-full [&>svg]:overflow-visible"
           dangerouslySetInnerHTML={{ __html: agentSvg }}
         />
       </div>
@@ -3721,7 +3731,7 @@ export function HeroSectionClient({
       >
         <div
           data-board7="bottom"
-          className="[&>svg]:block [&>svg]:h-auto [&>svg]:w-full"
+          className="[&>svg]:block [&>svg]:h-auto [&>svg]:w-full [&>svg]:overflow-visible"
           dangerouslySetInnerHTML={{ __html: bottomBoardSvg }}
         />
       </div>
@@ -4182,12 +4192,43 @@ export function HeroSectionClient({
             className="flex items-center justify-center rounded-full border border-white/25 font-heading font-normal text-white/90 transition-colors hover:border-brand hover:text-brand"
             style={{ height: s(48), paddingLeft: s(32), paddingRight: s(26), fontSize: s(16), gap: s(4) }}
           >
-            See how it works <ButtonArrow />
+            See how it works <ButtonArrow size={s(24)} />
           </Link>
         </div>
       </div>
 
+
     </div>
+    {/* "Scroll Down" — one persistent control rather than a copy per state: the states are nine
+        layers on the SAME canvas, and a pill per layer would mean nine elements fading in and out
+        of each other in the same spot.
+        It is a sibling of the STAGE, not a child of it: jumpToState fades the whole stage from 0
+        to hide its cut, which made the pill blink on every click (user, 2026-11-05 — "it looks
+        like a new Scroll Down fades in"). Out here nothing ever fades it; the only thing that
+        touches its visibility is syncScrollDown(). It is anchored to the section's bottom instead
+        of the design canvas, so a short window (where fitStage shrinks the stage) still shows it
+        in the same place.
+        The click runs goToState — the real animated crossing a wheel flick gives, with the tuned
+        CROSSING_SECONDS — NOT the nav's jumpToState, which seeks and is right only for skipping
+        several states at once. */}
+    <button
+      ref={scrollDownRef}
+      type="button"
+      aria-label="Scroll to next section"
+      onPointerDown={(e) => pressRipple(e, RIPPLE_SOFT)}
+      className="absolute left-1/2 isolate flex -translate-x-1/2 items-center justify-center overflow-hidden rounded-full border font-heading font-medium text-white/60 transition-[color,border-color,opacity] duration-300 ease-out hover:border-brand hover:text-brand"
+      style={{
+        bottom: s(38),
+        height: s(44),
+        paddingLeft: s(22),
+        paddingRight: s(22),
+        gap: s(8),
+        fontSize: s(14),
+        borderColor: "rgba(255,255,255,0.18)",
+      }}
+    >
+      Scroll Down <ScrollDownArrow size={s(12)} />
+    </button>
     </section>
     {/* SSR scroll reserve for the pin — a SIBLING of the section (the section's height is now a
         fixed viewport calc, so an inner spacer could no longer expand the document). Collapsed
