@@ -29,9 +29,12 @@ const bottomBoardSvg = readPublic("section-7/bottom-left-server.svg").replace(/w
 export function HeroSection() {
   // < 1024px (phones + portrait tablets) get the stacked, native-scroll version (RESPONSIVE-PLAN.md, model B); the
   // pinned desktop scene is display:none there and its effect bails out before building anything.
+  // The same swap happens at ANY width under prefers-reduced-motion — see the rule in globals.css:
+  // without the timeline the pinned scene shows nothing but the hero, so a reduce-motion visitor
+  // gets the stacked build, which needs no animation to be readable.
   return (
     <>
-      <div className="max-lg:hidden">
+      <div data-hero-pinned className="max-lg:hidden">
         <HeroSectionClient
           serverSvg={serverSvg}
           agentSvg={agentSvg}
@@ -40,7 +43,7 @@ export function HeroSection() {
           bottomBoardSvg={bottomBoardSvg}
         />
       </div>
-      <div className="lg:hidden">
+      <div data-hero-stacked className="lg:hidden">
         <HeroMobile />
       </div>
     </>

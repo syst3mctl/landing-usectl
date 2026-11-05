@@ -49,6 +49,7 @@ export function FooterMobile() {
   return (
     <footer
       ref={ref}
+      data-footer-stacked
       className="relative overflow-hidden lg:hidden"
       style={{
         ["--m" as string]: "min(calc(100vw / 390), 1.3px)",

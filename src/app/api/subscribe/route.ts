@@ -19,23 +19,32 @@ const TO = process.env.SUBSCRIBE_TO ?? "hello@usectl.com";
 const FROM = process.env.SUBSCRIBE_FROM ?? "onboarding@resend.dev";
 
 // --- the "don't send it 100 times" plan -------------------------------------------------------
-// Three independent layers; the client has two more (a disabled button while in flight and a
+// Four independent layers; the client has two more (a disabled button while in flight and a
 // localStorage guard), but those protect an honest visitor, not an attacker, so the real limits
 // live here:
 //   1. per-IP burst limit  — at most MAX_PER_IP accepted submissions per hour from one address;
-//   2. per-email dedupe    — the same address is forwarded once per DEDUPE_MS, further tries get
+//   2. a GLOBAL ceiling    — at most MAX_GLOBAL accepted submissions per hour in total, whoever
+//                            they claim to be. Layer 1 can only ever be as good as our idea of
+//                            who the caller is (see clientIp below), and a caller who can invent
+//                            addresses gets a fresh per-IP allowance every time; this layer does
+//                            not depend on identity at all, so it is the one that actually caps
+//                            the mail volume. It is set well above any plausible real demand for
+//                            a landing-page form, so honest visitors never meet it.
+//   3. per-email dedupe    — the same address is forwarded once per DEDUPE_MS, further tries get
 //                            a friendly 200 WITHOUT a second email;
-//   3. a honeypot field    — bots fill every input they see; a filled "company" field is answered
+//   4. a honeypot field    — bots fill every input they see; a filled "company" field is answered
 //                            like a success and dropped silently.
 // The maps are per server instance and reset on redeploy (and are per-lambda on serverless) —
 // fine for a landing-page form; move to a shared store (KV/Redis) if this ever needs to be exact.
 const WINDOW_MS = 60 * 60 * 1000; // 1 hour
 const MAX_PER_IP = 3;
+const MAX_GLOBAL = 60;
 const DEDUPE_MS = 24 * 60 * 60 * 1000; // 1 day
 const MAX_ENTRIES = 5000; // hard ceiling so the maps can't grow without bound
 
 const ipHits = new Map<string, number[]>();
 const emailSeen = new Map<string, number>();
+let globalHits: number[] = [];
 
 function prune(now: number) {
   for (const [ip, hits] of ipHits) {
@@ -46,15 +55,46 @@ function prune(now: number) {
   for (const [email, t] of emailSeen) {
     if (now - t > DEDUPE_MS) emailSeen.delete(email);
   }
-  // paranoia: if something still blew the maps up, drop the oldest half
-  if (ipHits.size > MAX_ENTRIES) ipHits.clear();
-  if (emailSeen.size > MAX_ENTRIES) emailSeen.clear();
+  globalHits = globalHits.filter((t) => now - t < WINDOW_MS);
+  // Paranoia: if something still blew the maps up, drop the OLDEST entries down to the ceiling.
+  // This used to be a .clear() — which handed everyone a fresh allowance at once, so filling the
+  // map was itself a way to reset a limit. Evicting by age keeps the recent (i.e. the only
+  // interesting) entries, and the worst an attacker gets is the eviction of stale rows.
+  trim(ipHits, (hits) => Math.max(...hits));
+  trim(emailSeen, (t) => t);
 }
 
+function trim<V>(map: Map<string, V>, lastSeen: (v: V) => number) {
+  if (map.size <= MAX_ENTRIES) return;
+  const byAge = [...map.entries()].sort((a, b) => lastSeen(a[1]) - lastSeen(b[1]));
+  for (let i = 0; i < byAge.length - MAX_ENTRIES; i++) map.delete(byAge[i]![0]);
+}
+
+// The visitor's address, as trustworthily as this can be known.
+//
+// The first entry of X-Forwarded-For is NOT trustworthy: a proxy APPENDS to that header, so
+// anything the client sent arrives in front of the real address. Reading [0] meant a caller who
+// had just been 429'd could add `X-Forwarded-For: 9.9.9.9` and be a brand-new visitor — which is
+// exactly what happened when this was tested (429, then 200 with the header set).
+//
+// Order below, most trustworthy first:
+//   1. cf-connecting-ip — Cloudflare fronts usectl.com and OVERWRITES this on every request, so a
+//      client-sent value cannot survive. (x-vercel-forwarded-for behaves the same on Vercel.)
+//   2. x-real-ip — set by the proxy itself, single value, no list to pick from.
+//   3. X-Forwarded-For — last resort, and read from the RIGHT: the final entry is the one appended
+//      by the hop closest to us, i.e. the only one the client could not have written.
+// With no proxy at all (local `next start`) every header is absent and everyone shares "unknown",
+// which is the safe direction to fail: the limit becomes global instead of disappearing.
 function clientIp(req: Request) {
+  const trusted = req.headers.get("cf-connecting-ip") ?? req.headers.get("x-real-ip");
+  if (trusted?.trim()) return trusted.trim();
+
   const fwd = req.headers.get("x-forwarded-for");
-  if (fwd) return fwd.split(",")[0]!.trim();
-  return req.headers.get("x-real-ip") ?? "unknown";
+  if (fwd) {
+    const parts = fwd.split(",").map((p) => p.trim()).filter(Boolean);
+    if (parts.length) return parts[parts.length - 1]!;
+  }
+  return "unknown";
 }
 
 // Deliberately loose — the point is to catch typos, not to re-implement RFC 5322.
@@ -141,6 +181,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "rate-limited" }, { status: 429 });
   }
 
+  // identity-independent backstop — see layer 2 at the top of this file
+  if (globalHits.length >= MAX_GLOBAL) {
+    return NextResponse.json({ ok: false, error: "rate-limited" }, { status: 429 });
+  }
+
   // already forwarded recently → answer like a success, send nothing
   const last = emailSeen.get(email);
   if (last !== undefined && now - last < DEDUPE_MS) {
@@ -151,6 +196,7 @@ export async function POST(req: Request) {
     const via = await deliver(email, body.consent === true);
     emailSeen.set(email, now);
     ipHits.set(ip, [...hits, now]);
+    globalHits.push(now);
     return NextResponse.json({ ok: true, via });
   } catch (err) {
     console.error("[subscribe] delivery failed", err);

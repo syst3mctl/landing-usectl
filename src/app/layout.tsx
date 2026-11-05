@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist_Mono, Space_Grotesk } from "next/font/google";
+import { GoogleAnalytics } from "@next/third-parties/google";
 import { Header } from "@/components/layout/Header";
 import { BackgroundLines } from "@/components/layout/BackgroundLines";
 import { SessionReplay } from "@/components/SessionReplay";
@@ -27,6 +28,13 @@ const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
   subsets: ["latin"],
 });
+
+// Analytics and search-ownership live in the ENVIRONMENT, never in the repo — the IDs are set in
+// the host's env panel (and .env.local for a local check), so a redeploy can't wipe them the way a
+// tag pasted into the built HTML or a hosting dashboard would. Unset ⇒ nothing is rendered at all,
+// so a dev machine without the vars behaves exactly like today.
+const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
+const GOOGLE_SITE_VERIFICATION = process.env.GOOGLE_SITE_VERIFICATION;
 
 // All copy comes from src/lib/seo.ts. The share image is NOT listed here: the
 // opengraph-image.tsx / twitter-image.tsx files next to this layout add og:image and
@@ -60,6 +68,11 @@ export const metadata: Metadata = {
     title: SITE_TITLE,
     description: SHARE_DESCRIPTION,
   },
+  // Search Console ownership. The DNS-TXT method survives a redeploy on its own; this meta tag is
+  // here so the HTML-tag method can't be lost again (it only renders when the env var is set).
+  ...(GOOGLE_SITE_VERIFICATION
+    ? { verification: { google: GOOGLE_SITE_VERIFICATION } }
+    : {}),
   twitter: {
     card: "summary_large_image",
     site: "@usectlcloud",
@@ -131,6 +144,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         {children}
         <SessionReplay />
       </body>
+      {/* gtag.js, loaded after hydration by @next/third-parties (Next 16's own integration), so it
+          can't delay the hero's LCP. GA4's Enhanced Measurement handles pageviews by itself. */}
+      {GA_ID ? <GoogleAnalytics gaId={GA_ID} /> : null}
     </html>
   );
 }

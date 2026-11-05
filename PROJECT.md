@@ -2,7 +2,10 @@
 
 Living project context. Read this first after `/clear` or in a new session — it has what `documentation.md` (the spec) doesn't: decisions already made, what's built, what's still open, and where the Figma data lives.
 
-Repo: https://github.com/benqsj/usectl (branch `new-version`; `main` holds the old full build).
+Repo: https://github.com/usectl/usectl — transferred to the `usectl` organisation on 2026-10-26
+(the old `benqsj/usectl` URL still 301-redirects, but don't rely on it: the redirect dies the moment
+anything re-creates that name). Active branch `master` (what the live site serves); `main` holds the
+old full build.
 
 ## FULL RESET (2026-09-25)
 
@@ -63,6 +66,44 @@ User supplied `public/section-hero/server.zip` (65 SVGs, extracted in place) and
 - **Comparison technique that worked** (for future pixel-matching): render our page at 1920, screenshot; scale the reference so cap widths match; place both in an HTML with offsets that align the cap vertex; then (a) scan both panels' stack-center column for bright-line runs with the SAME detector and diff the run positions, and (b) overlay mine inverted at 55% opacity over the reference (`filter: invert(1)` + contrast boost) — misplacements show as doubled ghosts instantly. Naked-eye side-by-side comparison of the two panels is UNRELIABLE here (the Figma-exported reference renders the same SVGs with visibly brighter outlines than a real browser on the page's own bg, which reads as position differences that don't exist).
 - Verified: text rows/extents pixel-matched to the reference at the same 1600 render width (eyebrow/H1 line 1+2/paragraph both lines/button text all within 2px), server stack bounds matched (capTop 128=128, right edge 1441=1441, bottom 614 vs 620), final side-by-side eyeball check. `tsc`/`eslint`/`next build` clean.
 - Still eyeballed, not measured: exact chip/cube/plate micro-positions on each layer's face (close but not pixel-derived), the L2↔L3 intermediate gap split. The reference's own background grid pitch differs slightly from ours — ours kept as-is deliberately.
+
+## Google Analytics now lives in the repo, so a deploy can't lose it (2026-10-21)
+
+User report: "google ანალიტიკა და მეტა მონაცემები დაიკარგა". Investigated before touching anything:
+
+- **The metadata was never lost.** `curl https://usectl.com/` returns the full set — title, description,
+  keywords, canonical, robots/googlebot, the whole OG + Twitter block, both 1200×630 images and the
+  JSON-LD `@graph`. It all comes from `src/lib/seo.ts` + `layout.tsx` (commit `820bb98`), i.e. from
+  the repo, which is exactly why it survives every deploy.
+- **GA had never existed in the codebase.** `git grep` for `gtag|googletagmanager|@next/third-parties|
+  GTM-|plausible|umami` across ALL six branches (`master`, `main`, `new-version`, `last-version`,
+  `v1-version`, `responsive`) → nothing, and the live HTML carried no analytics beacon of any kind
+  (no Cloudflare/Zaraz either; the site is served through Cloudflare, `x-powered-by: Next.js`).
+  So nothing "stored" it: a tag pasted into a built page or a host dashboard is wiped by the next
+  deploy. That was the answer to the user's actual question.
+- **Fix** — GA4 through Next 16's own integration (`@next/third-parties@^16`, installed; read
+  `node_modules/next/dist/docs/01-app/02-guides/third-party-libraries.md` first): `layout.tsx`
+  renders `{GA_ID ? <GoogleAnalytics gaId={GA_ID} /> : null}` as the last child of `<html>` (after
+  `<body>`, per the guide — `next/script` afterInteractive, so gtag can't delay the hero's LCP).
+  The ID comes from **`NEXT_PUBLIC_GA_ID`**, never from a literal, and must be set in the host's env
+  for production AND preview. Pageviews need no code: GA4 Enhanced Measurement → "Page changes based
+  on browser history events" covers client-side navigation.
+- **Search Console**: `metadata.verification.google` is wired to `GOOGLE_SITE_VERIFICATION` (spread
+  in only when set), so the HTML-tag verification can't be lost either. The live site had no
+  verification meta at all — if ownership was ever proven that way, it needs re-adding (DNS-TXT
+  verification would be unaffected). Both vars documented at the top of `.env.example`.
+- Unset ⇒ **zero** output: a build with no vars emits 0 `googletagmanager` references and no
+  verification meta, so dev machines and the current deploy behave exactly as before.
+- Verified on `next start` + real Chromium (Playwright, installed into the scratchpad — the repo has
+  no playwright dep): with `NEXT_PUBLIC_GA_ID=G-TEST123456` the page requests
+  `googletagmanager.com/gtag/js?id=G-TEST123456` AND fires a real `page_view` to
+  `google-analytics.com/g/collect` (`en=page_view`, correct `dt` title), `window.gtag` is a function,
+  `dataLayer` has 4 entries, zero page errors; the `google-site-verification` meta renders. Rebuilt
+  without the vars afterwards and re-checked the clean case. `tsc`/`eslint`/`next build` clean.
+- **Still to do by hand (not code)**: create/locate the GA4 property → Data streams → copy
+  `G-XXXXXXXXXX` into the host env and redeploy; then Search Console → add property → submit
+  `https://usectl.com/sitemap.xml`. If GA is ever moved behind a cookie banner, the component is the
+  single place to gate.
 
 ## SEO copy + link-preview card (2026-10-21)
 
@@ -790,7 +831,158 @@ Built against a second user screenshot (`Desktop/new-version/second-section.png`
 - Reduced motion: no ScrollTrigger/pin at all, spacer collapsed, hero (state 1) shown statically — state 2 is unreachable there for now, flagged as acceptable until a real second section exists.
 - Verified via a scripted scroll sweep (forward to release, screenshot at the settled state-2, reverse to 0, screenshot state-1 restored), zero console/page errors, reduced-motion run (`position: relative`, scrollH shrunk by the collapsed spacer). `tsc`/`eslint`/`next build` clean.
 
+## Audit pass: security + accessibility (2026-11-05)
+
+A review of the whole project ("გადახედე პროექტს თუ აქვს პრობლემები და ბაგები?") rather than a
+feature round. Baseline before touching anything: `tsc` / `eslint` / `next build` clean, and a
+Playwright sweep (1920 / 2560 / 1440 / 1280×620 / 1024 / 390) found **zero** console errors, exact
+gesture stepping both ways, working nav / deep link / calculator / subscribe flow and no horizontal
+overflow anywhere. What follows is what the sweep did NOT cover, and the five fixes it produced.
+
+**1. `next` 16.3.5 → 16.4.5 — a CRITICAL advisory in the part of Next this page actually uses.**
+`npm audit` reported RCE in **`next/og`'s ImageResponse** — i.e. `src/app/opengraph-image.tsx` and
+`twitter-image.tsx`, which render the link-preview card at build time. Fixed in 16.4.5 (not a major
+bump). `npm audit fix` cleared the remaining HIGHs (`sharp`/librsvg, `zod`, `source-map-js`).
+`eslint-config-next` and `@next/third-parties` moved to 16.4.5 with it; the exact-pin convention
+(`next`, `react`, `react-dom`, `eslint-config-next` without `^`) was restored after npm rewrote it.
+8 MODERATE advisories remain, all inside the `@typescript-eslint` / `minimatch` chain that
+`eslint-config-next` pulls in — dev-only, and npm's only "fix" is a DOWNGRADE to
+`eslint-config-next@15`, so they stay. The OG card was re-rendered and eyeballed afterwards (200,
+`image/png`, 1200×630, correct artwork) — that is the regression check that matters for this CVE.
+
+**2. `prefers-reduced-motion` left the desktop page empty.** The ≥1024 build is one pinned scene
+whose nine states only exist while the timeline plays, so `HeroSectionClient` honouring the
+preference by building nothing meant the visitor got the hero, the footer, and **1881px of nothing
+in between** — 4 of 24 headings visible, no features / machine / pods / deployment / agents /
+pricing / CTA at all. macOS and Windows both expose that setting prominently, so this was a real
+audience, not a theoretical one.
+- The fix reuses the build that is already correct for this: the **stacked < 1024 version**, which
+  is normal flow, native scroll and (under the same media query) animation-free. `globals.css` has
+  a `@media (prefers-reduced-motion: reduce) and (min-width: 1024px)` block that hides
+  `[data-hero-pinned]` / `[data-footer-pinned]` and shows `[data-hero-stacked]` /
+  `[data-footer-stacked]` — four new data attributes on wrappers that already existed. The rules
+  are **unlayered on purpose**: Tailwind's `max-lg:hidden` / `lg:hidden` sit in `@layer utilities`,
+  which plain CSS outranks (same reason the header row's rules are unlayered — pass of 2026-10-21).
+- `HeroSectionClient` now returns at the top for reduce-motion exactly as it does for < 1024 (the
+  old "static state 1" branch is gone — there is nothing left to keep in sync), and `HeroMobile`
+  builds its timelines whenever EITHER condition holds. Its reload-on-breakpoint-crossing listener
+  watches `prefers-reduced-motion` too, so toggling the OS setting mid-session can't leave a page
+  whose markup says one build and whose JS built the other.
+- Measured after: desktop reduce-motion is **9340px with all 9 state headings + the footer's 3**,
+  nav still jumps correctly (`#pricing` lands 112px under the 96px header), 0 errors. The normal
+  desktop build is byte-for-byte the same journey as before (14681px, snaps unchanged).
+
+**3. The subscribe rate limit could be stepped over with one header.** `clientIp()` read
+`x-forwarded-for[0]`, which is the part of that header the CLIENT writes — a proxy APPENDS. Proven
+before the fix: 429, then the same request with `X-Forwarded-For: 9.9.9.9` → 200.
+- `clientIp()` now prefers **`cf-connecting-ip`** (Cloudflare fronts the site and overwrites it on
+  every request), then `x-real-ip`, and only then XFF read from the RIGHT (the last entry is the
+  one the nearest hop appended). Verified: a forged XFF can no longer override a real CF header.
+- That alone is not enough, because behind a proxy that sets nothing the last XFF entry is still
+  whatever the caller wrote. So the limit no longer rests on identity at all: a **global ceiling**
+  (`MAX_GLOBAL` 60 accepted submissions/hour) sits beside the per-IP one. Measured: 70 posts from
+  70 invented IPs now yield **60 accepted / 10 blocked** instead of 70 accepted. The trade-off is
+  deliberate — during a flood an honest visitor is turned away too, which for a subscribe box is
+  the right direction to fail. Raise `MAX_GLOBAL`, or move the counters to a shared store (KV /
+  Redis), if real demand ever approaches it.
+- `prune()`'s overflow guard was a `.clear()`, which handed every visitor a fresh allowance at once
+  — filling the map was itself a way to reset a limit. It now evicts the OLDEST entries down to
+  `MAX_ENTRIES` (`trim()`).
+
+**4. No security headers existed at all.** `next.config.ts` was the empty scaffold and the live
+site answered with nothing but `x-powered-by: Next.js`. It now sets `poweredByHeader: false` and a
+`headers()` block: CSP, `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy`, `Permissions-Policy`
+and HSTS.
+- **CSP is the no-nonce variant** from Next's own guide (`node_modules/next/dist/docs/01-app/
+  02-guides/content-security-policy.md`). Nonces would force dynamic rendering — no static
+  generation, no CDN caching — and this page is prerendered and served by Cloudflare with
+  `s-maxage=31536000`. `'unsafe-inline'` is therefore unavoidable (Next's bootstrap, the JSON-LD
+  block, and every inline transform GSAP writes); what the policy still enforces is where scripts
+  may be LOADED from, no framing, no form hijacking, no `<base>` rewrite, no plugins.
+- Allow-list: `googletagmanager` for gtag.js, `google-analytics` + `*.analytics.google.com` for the
+  beacons, `blob:`/`data:` images, self-hosted fonts, `'unsafe-eval'` in dev only.
+- **HSTS is deliberately without `includeSubDomains`/`preload`** — both are effectively one-way and
+  would bind docs. and manager.usectl.com too. Both serve HTTPS today, so widening it later is
+  safe, but it should be a decision rather than a side effect.
+- Verified in a real browser with `NEXT_PUBLIC_GA_ID` set: **0 `securitypolicyviolation` events**,
+  gtag.js loaded, a real `page_view` sent to `/g/collect`, the subscribe POST accepted, four states
+  driven by wheel, 0 errors.
+
+**5. `End` and `Home` could not reach the footer or the hero.** Scroll the wheel handler can't see
+is quantised by the pin's `onUpdate`, which only ever moves ONE state — so `End` went
+0 → 1000 → 2089 → 3885 and `Home` crawled back a state at a time. A keyboard-only visitor could
+never reach the footer. A `keydown` handler now drives `End` → `FOOTER_INDEX`, `Home` → state 1,
+and `PageDown`/`PageUp`/`ArrowDown`/`ArrowUp` → one page, all through the same `goToState` the
+wheel uses, so a key press animates like a flick. It ignores events while a transition is running
+(key auto-repeat would otherwise queue a storm) and whenever focus is in an input / textarea /
+contenteditable. `Space` is left alone — it belongs to whatever is focused.
+  - Known, unchanged, and not ours: pressing `Home` while focus is in an EMPTY text input scrolls
+    the document (Chrome's own behaviour — the key isn't consumed by the caret), and the quantiser
+    then lands on the nearest state. With text in the field the caret takes it, so this only shows
+    on an empty box.
+
+**Looked at and deliberately NOT changed:**
+- **Canonical / og:url / sitemap are already consistent** (`https://usectl.com` everywhere; the
+  root path normalises to `/`). An earlier reading of this as a trailing-slash mismatch was wrong.
+- **Two `<h1>`s and every `<h2>` twice**, because the pinned and stacked builds are BOTH in the
+  DOM with one `display:none` (that is also why the document is ~500KB). Multiple H1s are valid
+  HTML and this is one URL, so it is not duplicate content in the SEO sense; the real cost is
+  payload, and the fix would be rendering only one tree — which needs either client-only rendering
+  (hurts LCP and SEO) or a user-agent branch (kills the static cache). Left as a documented
+  trade-off; the existing "next steps if more perf is needed" note above is the place to start.
+- **Content questions for the team, not bugs**: the footer still reads `© 2026 SYSTEMCTL` (verbatim
+  from the design — flagged before, still unanswered) and `+995 511 11 11 11` looks like a
+  placeholder.
+
+**6. A nav click's hash outlived its visit, so refresh teleported you back to it.** Reported
+alongside the above ("მენიუში თუ დავაჭერდი კონკრეტულად გვერდს, მაგ დროს დავარეგრეშებდი…"). Two
+behaviours that are each correct on their own: `onNavClick` writes the target's hash with
+`replaceState` (so the back button isn't filled with in-page steps), and the reload-restore lets a
+hash WIN over the saved session state (so a pasted `/#pricing` opens on Pricing). Together the hash
+described a page the visitor had long since scrolled away from — measured: nav to Pricing, scroll
+back up to state 4 (y 5408), refresh, and the page jumped to 11439.
+- `sessionStorage.setItem(STATE_KEY, …)` was duplicated in `goToState` and `jumpToState`; both now
+  call one `rememberState(i)`, which additionally drops the hash (`replaceState` to
+  `pathname + search`) as soon as `NAV_STATE_BY_HASH[hash] !== i`. It only ever runs after the
+  visitor has moved, so deep links are untouched.
+- Verified: scrolling off a nav target clears the hash and a refresh resumes at **5402 → 5402**;
+  a pasted `/#pricing` still opens on Pricing; refreshing immediately after a nav click still
+  returns to that page; a second nav click updates the hash and lands correctly.
+
+**Not reproduced: "the restored page's text is written on top of the texts above it."** Reported in
+the same message and seen by the user on the LIVE site (so HMR, this project's usual suspect for
+duplicated-animation symptoms, is ruled out). Tried and failed to trigger it in ~20 scenarios:
+production build, the dev server, and usectl.com itself; 1920 / 2560 / 1920×800; discrete flicks,
+slow continuous scroll, and a synthesised real-trackpad momentum tail; chained flicks, mid-flight
+turnarounds and impatient no-pause bursts; reloads at 0 / 120 / 300 / 400 / 700 / 1200 / 2500ms
+after the click; all four nav targets. A detector that lists every showing text-bearing block in
+the stage (not just headings) reported exactly one state's column at every step, every time.
+- The strongest remaining suspect, for whoever picks this up: **the reload-restore seeks with
+  events ENABLED** — `tl.time(SNAP_TIMES[i])` at the end of the restore block, whereas
+  `jumpToState` learned in pass 62 to use `tl.time(enter, true)` for exactly this reason. Crossing
+  the gates forward during that seek can start the out-of-timeline, real-seconds sequences
+  (seq6/seq7 typing, the pipe, the power-up), and the main timeline does not own what they leave
+  behind. `restoring7` already patches one symptom of this. If the report recurs, the fix is to
+  give the restore the same discipline `jumpToState` has (suppress the seek, reset the sequences
+  by hand BEFORE it — pass 63's rule).
+- Asked the user for a screenshot of the overlap; which two states overlap would point straight at
+  the owning tween.
+
+**Regression suite** (`next start`, production build) — all green: the wheel journey down AND up
+hitting every snap (1000 / 2089 / 3859 / 5402 / 7990 / 10168 / 11439 / 12801 / 13601), four nav
+targets, the logo, the `/#pricing` deep link, the calculator inside the pin ($15.10 → $30.20),
+the five keyboard cases, reduce-motion at 1920 and 390, the phone sweep + burger menu, 2560 /
+1280×620 / 1024 / 1440, and the subscribe form end to end — with zero console errors anywhere.
+`tsc` / `eslint` / `next build` clean.
+  - Harness note: a single synthetic "flick" occasionally reads as a chained gesture and skips two
+    states (seen once in ~6 runs of the same script, never reproducible). Re-run before believing a
+    gesture failure — the same lesson as the HMR double-handler trap documented above.
+
 ## Open items / TODO
 
 - New design build-out from scratch (user is supplying new references: `public/navigation-bar/navigation-bar.png`, `Group 1574.png`).
 - Header nav anchors (`#the-machine` etc.) point at sections that no longer exist.
+- **The GA4 + Search Console work is still UNCOMMITTED** (`layout.tsx`, `package.json`,
+  `.env.example`), so it is not on the live site — a `curl` of usectl.com finds neither
+  `googletagmanager` nor a verification meta. It needs committing + deploying, and then
+  `NEXT_PUBLIC_GA_ID` set in the host's env (production AND preview).

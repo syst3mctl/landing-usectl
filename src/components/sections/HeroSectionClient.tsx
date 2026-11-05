@@ -619,9 +619,18 @@ export function HeroSectionClient({
       // height already matches; collapse it before the real pin-spacer takes over (never both).
       if (ssrReserveRef.current) ssrReserveRef.current.style.height = "0px";
 
-      // phones + portrait tablets (< 1024) render HeroMobile instead and this scene is display:none — build nothing
-      // (no pin, no wheel driver, no state restore). See RESPONSIVE-PLAN.md.
-      if (window.matchMedia("(max-width: 1023px)").matches) return;
+      // Two cases render the STACKED build (HeroMobile) instead of this pinned scene, which is
+      // display:none in both — so build nothing here: no pin, no wheel driver, no state restore.
+      //   · < 1024 — phones + portrait tablets (RESPONSIVE-PLAN.md);
+      //   · prefers-reduced-motion at any width — this scene only exists while its timeline plays,
+      //     so honouring the preference by skipping the timeline used to leave the page with the
+      //     hero and the footer and nothing in between (globals.css does the swap).
+      if (
+        window.matchMedia("(max-width: 1023px)").matches ||
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      ) {
+        return;
+      }
 
       // --- fit the s(980) design canvas into SHORT viewports --------------------------------
       // The stage is vertically centred whenever the viewport below the header is taller than
@@ -647,11 +656,8 @@ export function HeroSectionClient({
         window.removeEventListener("orientationchange", fitStage);
       };
 
-      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-        // no animation at all: just show the hero column, which is markup-hidden for the blur-in
-        gsap.set([heroText, serverSvgHost], { opacity: 1 });
-        return removeFitListeners;
-      }
+      // (reduce-motion no longer reaches this point — it returns above and the stacked build is
+      // shown instead, so there is no "static state 1" branch to keep in sync any more)
 
       const k = () => readScale();
 
@@ -1839,6 +1845,27 @@ export function HeroSectionClient({
       const LAST = SNAP_TIMES.length - 1;
       const FOOTER_INDEX = LAST + 1; // the footer is one more fullpage "page" past state 9
       const STATE_KEY = "usectl:state"; // session-scoped, so a reload reopens on the same page
+      // Remember the page for a reload — and keep the URL honest while doing it.
+      //
+      // Two existing behaviours combined into a bug. A nav click leaves its hash in the address
+      // bar (written with replaceState so the back button isn't filled with in-page steps), and
+      // the reload-restore deliberately lets a HASH WIN over the saved position — that is what
+      // makes a pasted /#pricing open straight on Pricing. Together they meant the hash outlived
+      // the visit it described: click Pricing, scroll back up to state 4, refresh, and the page
+      // teleported to Pricing again instead of resuming where you actually were (measured:
+      // y 5408 → 11439). So the hash is dropped the moment it stops describing where we are. A
+      // pasted deep link is unaffected — this only ever runs after the visitor has moved.
+      const rememberState = (i: number) => {
+        try {
+          sessionStorage.setItem(STATE_KEY, String(i));
+        } catch {
+          /* private mode — the restore is a nicety, never a hard dependency */
+        }
+        const hash = window.location.hash;
+        if (hash && NAV_STATE_BY_HASH[hash] !== i) {
+          history.replaceState(null, "", window.location.pathname + window.location.search);
+        }
+      };
       let stateIndex = 0;
       let transitionFrom = 0;
       let transitioning = false;
@@ -1947,11 +1974,7 @@ export function HeroSectionClient({
         const ease = tuned ? "power1.out" : "power2.out";
         skipDeadZone(SNAP_TIMES[i]);
         transitioning = true;
-        try {
-          sessionStorage.setItem(STATE_KEY, String(i));
-        } catch {
-          /* private mode — the restore is a nicety, never a hard dependency */
-        }
+        rememberState(i);
         const myFlight = ++flightId;
         transitionFrom = stateIndex;
         stateIndex = i;
@@ -2009,11 +2032,7 @@ export function HeroSectionClient({
         // the footer went straight back down to it).
         transitionFrom = target;
         stateIndex = target;
-        try {
-          sessionStorage.setItem(STATE_KEY, String(target));
-        } catch {
-          /* private mode */
-        }
+        rememberState(target);
         // land on the page first (scroll + the start of its entrance), then play it in.
         // The seek SUPPRESSES events: crossing a gate backwards would otherwise fire its
         // onReverseComplete, and state 7's gate starts a real-time power-down — which is why
@@ -2402,6 +2421,60 @@ export function HeroSectionClient({
       };
       window.addEventListener("wheel", onWheel, { passive: false });
 
+      // --- keyboard ---------------------------------------------------------------------
+      // Scroll the wheel handler can't see is quantised by the pin's onUpdate, which is enough
+      // for one-step keys but NOT for the jump keys: End scrolls to the document bottom in one
+      // go, the quantiser sees a single landing position and treats it as "one state along", so
+      // End advanced 0 → 1000 → 2089 → 3885 and Home went back one state at a time. A keyboard-only
+      // visitor could never reach the footer, and "back to the top" took nine presses.
+      //
+      // The page keys are therefore driven explicitly, through the same goToState the wheel uses
+      // (so a key press animates exactly like a flick, and the two can interrupt each other):
+      //   End / Home        → the footer page / the hero, in one glide
+      //   PageDown / PageUp → one page, like a flick
+      //   ArrowDown / Up    → one page as well (there is no "scroll a little" inside a state)
+      // Space is deliberately left alone: it activates whatever is focused, and the quantiser
+      // still catches it if it does scroll.
+      const PAGE_KEYS: Record<string, number> = {
+        PageDown: 1,
+        PageUp: -1,
+        ArrowDown: 1,
+        ArrowUp: -1,
+      };
+      const typingIn = (el: EventTarget | null) => {
+        const node = el as HTMLElement | null;
+        if (!node?.tagName) return false;
+        return (
+          node.isContentEditable ||
+          node.tagName === "INPUT" ||
+          node.tagName === "TEXTAREA" ||
+          node.tagName === "SELECT"
+        );
+      };
+      const onKeyDown = (e: KeyboardEvent) => {
+        if (!pinST || e.metaKey || e.ctrlKey || e.altKey) return;
+        if (typingIn(e.target)) return; // the footer's email field etc.
+        if (window.scrollY < pinST.start - 1) return; // above the scene — leave it native
+
+        if (e.key === "End") {
+          e.preventDefault();
+          if (stateIndex !== FOOTER_INDEX) goToState(FOOTER_INDEX);
+          return;
+        }
+        if (e.key === "Home") {
+          e.preventDefault();
+          if (stateIndex !== 0) goToState(0);
+          return;
+        }
+        const dir = PAGE_KEYS[e.key];
+        if (dir === undefined) return;
+        const target = stateIndex + dir;
+        if (target < 0) return; // above the hero — let the browser scroll
+        e.preventDefault();
+        if (!transitioning) goToState(Math.min(target, FOOTER_INDEX));
+      };
+      window.addEventListener("keydown", onKeyDown);
+
       // --- header navigation ------------------------------------------------------------
       // The header's links are plain hashes and there is no element with those ids on desktop
       // (the mobile sections carry them, and they are display:none here), so the jump is ours:
@@ -2601,6 +2674,7 @@ export function HeroSectionClient({
         unwind7?.kill();
         seq6.kill();
         window.removeEventListener("wheel", onWheel);
+        window.removeEventListener("keydown", onKeyDown);
         document.removeEventListener("click", onNavClick, true);
         window.removeEventListener("hashchange", onHashChange);
         ScrollTrigger.removeEventListener("refresh", onRefresh);

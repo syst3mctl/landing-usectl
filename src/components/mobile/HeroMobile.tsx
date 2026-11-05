@@ -213,17 +213,28 @@ export function HeroMobile() {
     (ctx) => {
       const root = rootRef.current;
       if (!root) return;
-      // crossing the 768 breakpoint swaps between two different builds — simplest correct answer
-      // for a preview is a reload (only happens when resizing a desktop window / rotating a tablet)
+      // Which of the two builds is on screen depends on the width AND on prefers-reduced-motion
+      // (globals.css shows this stacked one at every width when motion is reduced, because the
+      // pinned scene has no content without its timeline). Crossing either line swaps between two
+      // completely different builds, so the simplest correct answer is a reload — it only happens
+      // when someone resizes a desktop window, rotates a tablet, or toggles the OS setting.
       const mq = window.matchMedia("(max-width: 1023px)");
+      const rmq = window.matchMedia("(prefers-reduced-motion: reduce)");
       const onChange = () => window.location.reload();
       mq.addEventListener("change", onChange);
-      if (!mq.matches) return () => mq.removeEventListener("change", onChange);
+      rmq.addEventListener("change", onChange);
+      const unwatch = () => {
+        mq.removeEventListener("change", onChange);
+        rmq.removeEventListener("change", onChange);
+      };
+      // a wide screen WITHOUT reduced motion runs the pinned scene instead — nothing to build here
+      if (!mq.matches && !rmq.matches) return unwatch;
 
-      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const reduced = rmq.matches;
       const sections = Array.from(root.querySelectorAll<HTMLElement>("[data-m-section]"));
       if (reduced) {
-        return () => mq.removeEventListener("change", onChange);
+        // no entrance animations at all; every section is already in its settled, readable state
+        return unwatch;
       }
 
       // --- shared pieces -------------------------------------------------------------------
@@ -441,7 +452,7 @@ export function HeroMobile() {
 
       return () => {
         io.disconnect();
-        mq.removeEventListener("change", onChange);
+        unwatch();
       };
     },
     { scope: rootRef },

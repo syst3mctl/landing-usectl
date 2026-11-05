@@ -189,6 +189,37 @@ body {
   }
 }
 
+/* ============================================================================================
+   Reduce-motion on a DESKTOP screen gets the STACKED version of the page.
+   ============================================================================================
+   The ≥1024 layout is one pinned, scroll-driven scene: nine states stacked on the same 980px
+   canvas, revealed only by the GSAP timeline. Honouring prefers-reduced-motion by not building
+   that timeline left the page with the hero and the footer and nothing in between — every
+   state's copy (features, the machine, pods, deployment, agents, pricing, the closing CTA) was
+   simply unreachable, and the document was 1881px tall.
+
+   The stacked < 1024 build is already exactly what a reduce-motion visitor should get: the same
+   nine states as ordinary sections in normal flow, native scrolling, and (under this same media
+   query) no entrance animations at all. So the breakpoint swap is flipped here instead: the
+   pinned scene is hidden at every width and the stacked one is shown, footer included.
+
+   These rules are deliberately unlayered — Tailwind's `max-lg:hidden` / `lg:hidden` live in
+   @layer utilities, and plain CSS outranks a layered rule regardless of source order. */
+@media (prefers-reduced-motion: reduce) and (min-width: 1024px) {
+  [data-hero-pinned],
+  [data-footer-pinned] {
+    display: none;
+  }
+
+  [data-hero-stacked] {
+    display: block;
+  }
+
+  [data-footer-stacked] {
+    display: block;
+  }
+}
+
 /* state-7 agent board: the ring around the processor (swapped in by HeroSection.tsx). The
    circles live inside an isometric frame, so a plain rotate() about their own centre (the
    frame's origin — SVG elements default to transform-origin 0 0) is a true isometric spin.
