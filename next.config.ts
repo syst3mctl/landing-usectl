@@ -33,13 +33,20 @@ const isDev = process.env.NODE_ENV === "development";
 //   · `blob:`/`data:` on img-src — next/image and the inline SVG artwork.
 //   · fonts are self-hosted by next/font at build time, so font-src stays 'self'.
 //   · 'unsafe-eval' in development only: React uses eval there to rebuild server stacks.
+//   · analytics.usectl.com + `worker-src blob:` — the self-hosted OpenReplay session replay
+//     (src/components/SessionReplay.tsx). It posts to `/ingest` on that host, and the tracker
+//     runs its uploader in a worker built from a blob
+//     (`new Worker(URL.createObjectURL(new Blob([...])))`, verified in the package). Without
+//     BOTH, `default-src 'self'` blocks it — and since the component swallows its own start-up
+//     errors, the recording would simply never happen, with nothing in the console to say so.
 const csp = [
   `default-src 'self'`,
   `script-src 'self' 'unsafe-inline' https://www.googletagmanager.com${isDev ? " 'unsafe-eval'" : ""}`,
   `style-src 'self' 'unsafe-inline'`,
   `img-src 'self' blob: data: https://www.googletagmanager.com https://www.google-analytics.com`,
   `font-src 'self' data:`,
-  `connect-src 'self' https://www.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com`,
+  `connect-src 'self' https://www.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://analytics.usectl.com`,
+  `worker-src 'self' blob:`,
   `frame-src 'none'`,
   `object-src 'none'`,
   `base-uri 'self'`,

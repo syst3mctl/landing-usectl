@@ -978,6 +978,42 @@ the five keyboard cases, reduce-motion at 1920 and 390, the phone sweep + burger
     states (seen once in ~6 runs of the same script, never reproducible). Re-run before believing a
     gesture failure — the same lesson as the HMR double-handler trap documented above.
 
+## Rebased onto the team's session-replay commit; the CSP had to learn about it (2026-11-05)
+
+The repo moved AGAIN: `origin` is now **https://github.com/syst3mctl/landing-usectl.git** (the
+`usectl/usectl` remote is kept as `old-origin`; `benqsj/usectl` before that). A push of the audit
+work was rejected because `origin/master` had one commit nobody here had: **`6ff6025` "tracking
+for relay"** by j3dyy — `src/components/SessionReplay.tsx`, self-hosted OpenReplay posting to
+`https://analytics.usectl.com/ingest`, plus `@openreplay/tracker` and a `<SessionReplay />` in
+`layout.tsx`.
+
+The audit commit was rebased on top of it (it was unpublished, so history stays linear).
+`layout.tsx` auto-merged — GA goes after `</body>`, SessionReplay inside it, no overlap. Only the
+package files conflicted:
+- `package.json` — both dependency sets kept (`@next/third-parties` AND `@openreplay/tracker`).
+- `package-lock.json` — NOT hand-merged: `git checkout origin/master -- package-lock.json` then
+  `npm install`. **Watch this step**: taking their lock silently reverted the audit's `npm audit
+  fix`, putting `zod` back to 4.6.5 and `source-map-js` to 1.2.1 (both HIGH). Re-running `npm
+  audit fix` restored 4.6.7 / 1.2.2. After any lock-level merge, re-check `npm audit` before
+  trusting it — the counts are the only way to see it.
+
+**The CSP would have killed their feature, silently.** Two directives were missing for OpenReplay,
+and `SessionReplay.tsx` wraps its own start-up in `.catch(() => {})`, so there would have been
+nothing in the console to explain the missing recordings:
+- `connect-src` += `https://analytics.usectl.com` — the ingest endpoint;
+- `worker-src 'self' blob:` — the tracker runs its uploader in
+  `new Worker(URL.createObjectURL(new Blob([...])))` (verified by grepping the installed package).
+  Without it `default-src 'self'` blocks the worker.
+Both are in a separate commit from the audit work, since they are a response to their commit.
+Verified in a real browser against the merged production build: an OpenReplay-shaped blob worker
+starts and round-trips a message, a POST to `analytics.usectl.com/ingest` is not refused by CSP,
+gtag still loads and fires, the subscribe POST is accepted — **0 `securitypolicyviolation`
+events**. General rule for later: a new third-party script in this repo almost always needs a CSP
+line, and the failure mode is silence.
+
+Re-ran the full suite on the merged tree — all green (same list as the audit pass below).
+`tsc` / `eslint` / `next build` clean.
+
 ## Open items / TODO
 
 - New design build-out from scratch (user is supplying new references: `public/navigation-bar/navigation-bar.png`, `Group 1574.png`).
