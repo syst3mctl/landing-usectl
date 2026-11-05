@@ -7,7 +7,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import { m } from "./HeroMobile";
-import { DOCS_URL, SHOW_STORE_BADGES, X_URL, type NavLink } from "@/lib/nav";
+import { DOCS_URL, SHOW_STORE_BADGES, SYSTEMCTL_URL, X_URL, type NavLink } from "@/lib/nav";
 import { SubscribeForm } from "@/components/layout/SubscribeForm";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
@@ -195,7 +195,15 @@ export function FooterMobile() {
       />
 
       <p data-mf-reveal className="relative text-center font-heading text-white/45" style={{ marginTop: m(24), fontSize: m(12.5), letterSpacing: "0.05em" }}>
-        &copy; 2026 <span className="text-brand">SYSTEMCTL</span>
+        &copy; 2026{" "}
+        <a
+          href={SYSTEMCTL_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-brand transition-opacity hover:opacity-70"
+        >
+          SYSTEMCTL
+        </a>
       </p>
     </footer>
   );

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { SIGNUP_URL } from "@/lib/nav";
+import { SIGNUP_URL, SYSTEMCTL_URL } from "@/lib/nav";
 import { createPortal } from "react-dom";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
@@ -213,7 +213,15 @@ export function MobileMenu({ links }: { links: readonly NavLink[] }) {
                   hello@usectl.com
                 </a>
                 <span>
-                  &copy; 2026 <span className="text-brand">SYSTEMCTL</span>
+                  &copy; 2026{" "}
+                  <a
+                    href={SYSTEMCTL_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-brand transition-opacity hover:opacity-70"
+                  >
+                    SYSTEMCTL
+                  </a>
                 </span>
               </div>
             </div>

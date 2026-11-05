@@ -11,6 +11,8 @@ export type NavLink = { label: string; href: string; state?: number; external?: 
 export const DOCS_URL = "https://docs.usectl.com/#introduction";
 export const SIGNUP_URL = "https://manager.usectl.com/login";
 export const X_URL = "https://x.com/usectlcloud";
+// the company behind usectl — the "© 2026 SYSTEMCTL" credit in both footers and the burger menu
+export const SYSTEMCTL_URL = "https://systemctl.sh";
 
 // The App Store / Google Play badges are hidden until the apps are actually published — the markup
 // stays in both footers behind this flag, so publishing is a one-line change back to `true`.

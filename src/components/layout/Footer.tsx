@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { s } from "@/lib/grid";
-import { DOCS_URL, SHOW_STORE_BADGES, X_URL, type NavLink } from "@/lib/nav";
+import { DOCS_URL, SHOW_STORE_BADGES, SYSTEMCTL_URL, X_URL, type NavLink } from "@/lib/nav";
 import { SceneLight } from "./SceneLight";
 import { SubscribeForm } from "./SubscribeForm";
 
@@ -190,7 +190,15 @@ export function Footer() {
         className="absolute left-0 w-full text-center font-heading text-white/45"
         style={{ top: s(735), fontSize: s(14), letterSpacing: "0.05em" }}
       >
-        &copy; 2026 <span className="text-brand">SYSTEMCTL</span>
+        &copy; 2026{" "}
+        <a
+          href={SYSTEMCTL_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-brand transition-opacity hover:opacity-70"
+        >
+          SYSTEMCTL
+        </a>
       </p>
     </footer>
   );

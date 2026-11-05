@@ -1014,6 +1014,47 @@ line, and the failure mode is silence.
 Re-ran the full suite on the merged tree — all green (same list as the audit pass below).
 `tsc` / `eslint` / `next build` clean.
 
+## The state-7 power-down stopped riding the scroll; SYSTEMCTL links out (2026-11-05)
+
+**1. "© 2026 SYSTEMCTL" is now a link to https://systemctl.sh** (`SYSTEMCTL_URL` in `src/lib/nav.ts`,
+so the three places that render the credit — `Footer.tsx`, `FooterMobile.tsx` and the burger menu's
+`MobileMenu.tsx` — can't drift). New tab with `rel="noopener noreferrer"`, the same treatment
+Documentation and the X icon get. Verified in all three, including a real click that opens
+`https://systemctl.sh/`.
+
+**2. The state-7 green power-down followed you up the page.** Reported as: refresh, then scroll up
+quickly, and the connector animation comes along with the scroll. Reproduced with a per-frame
+recorder over `[data-connector-green]` (dash-offset × opacity, plus the layer's own opacity):
+after a reload at state 8, pushing up left the charge **visible for 650ms while the page travelled
+from y 9497 past state 6 down to 6985**. Two independent causes, both fixed:
+
+- **The connector layer belonged to the page, not to state 7.** Only the 7→8 exit (11.45) ever hid
+  it; at states 1-6 the `<svg>` was fully visible and the lines were "invisible" purely because of
+  their stroke-dashoffset. That is fine while the MAIN timeline owns them — but the charge and its
+  power-down are driven by `seq7` / `unwindPower7`, which run in REAL SECONDS, independent of the
+  scroll. So anything they did after you left state 7 played in full view. Pass 62 fixed exactly
+  this leak for `jumpToState`; this was the scroll path. Now
+  `tl.fromTo(connectors7, {autoAlpha: 0} → 1, 9.55)` folds the layer into state 7's own entrance,
+  mirroring the 11.45 exit. Measured: the layer is `opacity 0` at every state below 7.
+- **The retract itself left a half-drawn stub.** Shrinking the green back along the path is a
+  ~0.7s real-time animation and the scroll does not wait for it, so a fast push left a bright
+  half-length green squiggle hanging between the boards and moving with the page (screenshotted).
+  The lines now **fade out** (`POWER7_LINE_FADE` 0.22s, green + glow + the arrowheads' fill)
+  instead of retracting: a fade cannot leave a partial shape behind no matter how fast the scroll
+  is. `resetPower7` clears the inline opacity again, so the next arrival charges from empty.
+  The chips keep their animated shrink — pass 53's "don't just vanish in one frame" still holds,
+  it simply isn't a travelling artefact any more.
+- Result: 650ms → **67ms** in the worst of four scenarios, and what is left is a fading line while
+  the boards are still fully on screen (i.e. the board powering down), not a stub following the
+  page. Three of the four scenarios are completely clean.
+- Re-verified the whole state-7 family afterwards, since passes 49-53 and 62-63 all live here:
+  scrolling down into state 7 still plays the full ignition (3/3 lines charged, arrows green,
+  terminal typed 43/39/45); a reload at state 7 lands on the finished state; a 7→6→7 bounce comes
+  back fully lit; a logo jump from the footer shows nothing of state 7 on the hero; states 1-6
+  never show the layer. Zero console errors throughout.
+
+Full suite re-run on the production build — all green. `tsc` / `eslint` / `next build` clean.
+
 ## Open items / TODO
 
 - New design build-out from scratch (user is supplying new references: `public/navigation-bar/navigation-bar.png`, `Group 1574.png`).
