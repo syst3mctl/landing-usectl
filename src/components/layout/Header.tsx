@@ -65,6 +65,8 @@ export function Header() {
             21 (1739 = 1920 − 99 − 82), which is why the offset is one column inside the content
             inset; the geometry lives in globals.css's `.header-cta` because it is written in --sh,
             the scale the scene is really drawn at, exactly like the logo and the nav.
+            Unlike the logo and the nav, the band's grid lines are NOT masked away behind it — the
+            user wants them running through (2026-11-05: "მაგის უკან უნდა იყოს ხაზები").
             Phones don't get it here — the phone header is logo + burger, and Start Now lives in
             the burger menu instead. */}
         <Link

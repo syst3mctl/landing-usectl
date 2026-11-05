@@ -52,6 +52,21 @@ const GRADIENT_BORDER = (deg: number) =>
 // desktop float uses (PODS_SLAB_STARTS in HeroSectionClient)
 const PODS_SLAB_STARTS = [112, 58, 0] as const;
 
+// The hero server's height band, in design px at 390 (new-server.svg is 421×687).
+// MAX is the old fixed 270px width (270 × 687/421 ≈ 441) — a tall phone looks exactly as before.
+// MIN is the spec's 190px-wide floor (190 × 687/421 ≈ 310), but capped at a share of the VIEWPORT
+// too: on a 375×667 iPhone SE the copy alone (eyebrow + 3-line heading + 5-line paragraph +
+// buttons) leaves only ~220px under the header, so a hard 310 floor would push the base off the
+// first screen — which is the whole point of this change. The floor is therefore
+// `min(310, max(220, 32svh))`: the design floor on a normal phone, a share of the viewport where
+// that would not fit, and never below 220 (≈135 wide) — on a landscape phone the 32svh term is
+// tiny, and there the section is meant to GROW and the page scroll instead of the art becoming a
+// thumbnail.
+const SERVER_H_MAX = 441;
+const SERVER_H_MIN = 310;
+const SERVER_H_HARD_MIN = 220;
+const SERVER_H_FLOOR = `min(${m(SERVER_H_MIN)}, max(${m(SERVER_H_HARD_MIN)}, 32svh))`;
+
 function Eyebrow({ children }: { children: ReactNode }) {
   return (
     <p data-m-copy className="flex items-center font-heading font-light text-white/60" style={{ gap: m(9), fontSize: m(12) }}>
@@ -471,8 +486,20 @@ export function HeroMobile() {
 
   return (
     <div ref={rootRef} className="relative overflow-x-clip" style={{ ["--m" as string]: "min(calc(100vw / 390), 1.3px)" }}>
-      {/* 1 — hero */}
-      <section data-m-section className="m-hero relative" style={{ ...sectionStyle, paddingTop: m(44) }}>
+      {/* 1 — hero. The section fills the FIRST screen and the server takes whatever is left of it
+          (user, 2026-11-05: at a fixed 270px the 421×687 artwork is ~440 tall, and after the
+          header + eyebrow + heading + paragraph + buttons the base fell below the fold). Nothing
+          clipped it — it simply didn't fit, so the art is sized by the space instead:
+          `SERVER_BOX` is a flex child that takes the leftover height, and the wrapper inside it is
+          height-driven through `aspect-ratio`, so the width follows from whatever height is going.
+          The max-height caps it at today's 270px-wide look on a tall phone; the min-height is the
+          floor (190 wide) — below that the section grows past the viewport and the page scrolls
+          rather than the server shrinking into a thumbnail. */}
+      <section
+        data-m-section
+        className="m-hero relative flex flex-col"
+        style={{ ...sectionStyle, paddingTop: m(44), paddingBottom: m(12), minHeight: "calc(100svh - var(--header-h))" }}
+      >
         <Eyebrow>Managed Kubernetes &amp; AI Agent Infrastructure</Eyebrow>
         <Heading as="h1">Build your product. We&rsquo;ll handle the infrastructure.</Heading>
         <Para>
@@ -480,14 +507,24 @@ export function HeroMobile() {
           production with managed infrastructure and predictable pricing.
         </Para>
         <Buttons />
-        <div className="relative mx-auto" style={{ width: m(270), marginTop: m(34) }}>
-          <div
-            aria-hidden="true"
-            className="absolute left-1/2 -translate-x-1/2"
-            style={{ bottom: m(-10), width: m(216), height: m(90), background: "radial-gradient(ellipse at center, rgba(17,163,42,0.35) 0%, rgba(17,163,42,0) 70%)", filter: "blur(12px)" }}
-          />
-          <div data-m-server className="relative">
-            <Image src="/section-hero/new-server.svg" alt="" width={421} height={687} priority unoptimized className="block h-auto w-full" />
+        <div
+          className="relative flex-1"
+          style={{ marginTop: m(16), minHeight: SERVER_H_FLOOR, maxHeight: m(SERVER_H_MAX) }}
+        >
+          {/* absolute inset-0 on purpose: a percentage height only resolves against a parent with
+              a DEFINITE height, and `h-full` on a plain child of the flex item did not — the box
+              fell back to the column's full width (350) and 571px tall, overflowing again. Pinned
+              to the box, `h-full` + aspect-ratio give a height-driven server: the width simply
+              follows (190…270 design px, exactly the old look at the top of the range). */}
+          <div data-m-server className="absolute inset-0 flex items-center justify-center">
+            <div className="relative h-full" style={{ aspectRatio: "421 / 687" }}>
+              <div
+                aria-hidden="true"
+                className="absolute left-1/2 -translate-x-1/2"
+                style={{ bottom: "-2%", width: "80%", height: "20%", background: "radial-gradient(ellipse at center, rgba(17,163,42,0.35) 0%, rgba(17,163,42,0) 70%)", filter: "blur(12px)" }}
+              />
+              <Image src="/section-hero/new-server.svg" alt="" width={421} height={687} priority unoptimized className="relative block h-full w-full" />
+            </div>
           </div>
         </div>
       </section>
@@ -544,7 +581,7 @@ export function HeroMobile() {
           Run your apps, databases, storage, and background jobs together. Everything stays connected and organized while
           usectl manages the infrastructure underneath.
         </Para>
-        <div className="relative mx-auto" style={{ width: m(220), marginTop: m(32) }}>
+        <div className="relative mx-auto" style={{ width: m(260), marginTop: m(32) }}>
           <Image data-m-top src="/stack-section/top-server-piece.svg" alt="" width={420} height={284} className="relative z-10 block w-full" style={{ height: "auto" }} />
           <div className="relative flex justify-center" style={{ height: m(30), gap: m(48) }} aria-hidden="true">
             {[0, 1, 2].map((i) => (
@@ -612,7 +649,7 @@ export function HeroMobile() {
         </Para>
         {/* [&>svg]:overflow-visible: the slabs rise in from +70 and then float, and an inline svg
             clips at its viewBox by default (same cause as the hero server's sliced base) */}
-        <div data-m-pods className="relative mx-auto [&>svg]:overflow-visible" style={{ width: m(180), marginTop: m(26), aspectRatio: "689 / 1007" }} />
+        <div data-m-pods className="relative mx-auto [&>svg]:overflow-visible" style={{ width: m(280), marginTop: m(26), aspectRatio: "689 / 1007" }} />
         <div className="font-mono" style={{ marginTop: m(24), display: "grid", gap: m(10) }}>
           {[
             { t: "[ POD // FRONTEND ]", st: "RUNNING v1.4.2", d: "Independent Deploy • 1 vCPU / 2GB" },

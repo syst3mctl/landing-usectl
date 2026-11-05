@@ -108,21 +108,6 @@
     font-size: max(16px, calc(var(--sh) * 16));
     gap: max(2rem, calc(var(--sh) * 32));
   }
-  /* The header band's grid is cleared behind "Start Now" the same way it is behind the logo and
-     the nav — geometrically rather than through grid.ts's hide-lists, because the pill's box has
-     px FLOORS, so WHICH columns it covers changes with the viewport (20-21 at 1920, 19-21 at
-     1280). The window is the pill's own box, found from the right edge: the row's padding (99)
-     plus one column (82) of margin, then its width. */
-  .header-cols {
-    mask-image: linear-gradient(
-      to right,
-      #000 0,
-      #000 calc(100% - var(--sh) * 82 - max(132px, var(--sh) * 132) - 10px),
-      transparent calc(100% - var(--sh) * 82 - max(132px, var(--sh) * 132) - 10px),
-      transparent calc(100% - var(--sh) * 82 + 8px),
-      #000 calc(100% - var(--sh) * 82 + 8px)
-    );
-  }
 }
 
 /* 1024-1279 (landscape tablets): the header's hide-lists are tuned for ≥1280, so here the lines are
@@ -139,12 +124,7 @@
       #000 calc(50% - 247px),
       transparent calc(50% - 247px),
       transparent calc(50% + 247px),
-      #000 calc(50% + 247px),
-      /* and clear of the "Start Now" pill at the right edge (see the ≥1280 rule) */
-      #000 calc(100% - var(--sh) * 82 - 142px),
-      transparent calc(100% - var(--sh) * 82 - 142px),
-      transparent calc(100% - var(--sh) * 82 + 8px),
-      #000 calc(100% - var(--sh) * 82 + 8px)
+      #000 calc(50% + 247px)
     );
   }
 }

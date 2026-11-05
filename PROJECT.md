@@ -1072,10 +1072,11 @@ Geometry is in **--sh**, not `--s` — the same canvas the logo and nav were mov
 with the design values as a FLOOR, so it grows with a big display and never shrinks below 132×44.
 Its right margin is exactly one grid column (82), which lands the pill's right edge on column 21
 (1739) where Figma has it; the row's own 99 padding supplies the rest.
-- The header band's grid lines are cleared behind it the way they are behind the logo and the nav,
-  but **geometrically rather than through grid.ts's hide-lists** — the pill's box has px floors, so
-  which columns it covers changes with the width (20-21 at 1920, 19-21 at 1280). A new ≥1280
-  `.header-cols` mask does it, and the 1024-1279 mask gained the same window.
+- **The band's grid lines run THROUGH it** — unlike the logo and the nav, which are masked clear.
+  They were masked away at first; the user asked for them back ("მაგის უკან უნდა იყოს ხაზები"),
+  so the ≥1280 `.header-cols` mask that was added for this is gone again and the 1024-1279 one is
+  back to its logo+nav windows. Measured: 2 lines cross the pill at 1920, 3 at 1440/1280, 4 at
+  1024.
 - Verified at 3440 / 2560 / 1920×800 / 1600 / 1440 / 1280 / 1024: never overlaps the nav, no
   horizontal overflow, font 19.2px at 3440 and a flat 14px below 1920.
 - Phones don't get it in the bar (the phone header is logo + burger); it lives in the menu.
@@ -1178,6 +1179,35 @@ whole.
 - Verified frame by frame through the first 1.2s at 1920×1080 and at 1280×620 (where `fitStage`
   scales the stage): the base is whole in every frame. States 2-8 re-screenshotted afterwards —
   identical to before, nothing that used to be clipped now leaks.
+
+**9. Phone: the hero server now fits the FIRST screen, and the pods art is not a thumbnail**
+(TASKS item 13).
+- **S01.** At a fixed `width: m(270)` the 421×687 artwork is ~440 tall, so after the header, the
+  eyebrow, a 3-line heading, a 5-line paragraph and the buttons, the green-lit base fell below the
+  fold. Nothing clipped it — it simply did not fit. The art is sized by the space that is left
+  instead: the hero section is `min-height: calc(100svh - var(--header-h))` and a flex column, and
+  the server block is the flex child that takes the remainder.
+  - Inside it, the sizing is HEIGHT-driven: an `absolute inset-0` layer (that is also
+    `[data-m-server]`, so the CSS load-in and float still drive it) holds a box with
+    `height: 100%` + `aspect-ratio: 421/687`, so the width simply follows. **`h-full` on a plain
+    child of the flex item does NOT work** — a percentage height needs a parent with a definite
+    height, and the box fell back to the column's full width (350px) and 571px tall, overflowing
+    exactly as before. Pinning it to an `inset-0` layer is what makes the percentage resolve.
+  - The band is `max-height: m(441)` (= the old 270-wide look, so a tall phone is unchanged) and
+    `min-height: min(m(310), max(m(220), 32svh))`. The spec's floor was a flat 190px wide (310
+    tall), but on a 375×667 iPhone SE the copy alone leaves ~228px under the header, so a hard
+    floor would have defeated the whole point; the `32svh` term only bites on short screens, and
+    the `m(220)` term stops it collapsing on a LANDSCAPE phone — there the section grows past the
+    viewport and the page scrolls, which is what the spec asks for.
+  - Measured, settled AND mid-load-in (the float's 6px is inside the bottom gap):
+    390×844 → 239×390 (bottom 827/844), 375×667 → 140×228 (651/667), 360×780 → 218×356 (764/780),
+    430×932 → 268×438 (914/932) — all fully on the first screen. 740×360 landscape: the server
+    stays 175 wide and the section grows to 715, i.e. it scrolls. Desktop reduce-motion (which
+    renders this same build) at 1920×1080: 340×555, bottom 1065/1080.
+- **S05.** The pods stack went `m(180)` → **`m(280)`** (~72% of a 390 screen) — at 180 it read as a
+  thumbnail in the middle of the section. The Stacks pieces went `m(220)` → **`m(260)`** for the
+  same reason; Machine (330), Deploy board (250) and Agent (300) were already in the 250-330 band
+  and are untouched.
 
 **Verified** (production build, real Chromium): nav all four targets (11439 / 3859 / 10168 / 2089)
 with the right hash, the logo, the `/#pricing` deep link (11439), the calculator inside the pin,
