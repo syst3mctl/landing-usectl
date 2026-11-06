@@ -1223,7 +1223,86 @@ footers, and no horizontal overflow at 3440 / 2560 / 1920 / 1600 / 1440 / 1280 /
   so a gesture "failure" from that script is the harness, not the page. The deterministic checks
   (the Scroll Down pill, nav clicks, the keyboard) hit every snap exactly.
 
+## Reload / refresh robustness + header Start Now sized like the scene's pills (2026-11-06)
+
+Three user reports, all reproduced in real Chromium (dev + prod build) before fixing:
+
+- **Texts written over each other / pages coming back empty after a refresh** (e.g. The Machine →
+  refresh → Features showed both columns + the Machine dome). Cause: `onRefresh` ran
+  `tl.invalidate()` while the timeline was parked mid-way; invalidate drops every tween's recorded
+  START values and each re-records them from what is on screen at its next render — so every
+  `.to()`/`.set()` behind the playhead took the CURRENT page as its "start" and never hid it again
+  going back. ScrollTrigger refreshes on resize, the late `load` event after a reload, font swaps —
+  hence "sometimes". Fix: `tl.time(0, true); tl.invalidate(); tl.time(t, true)` (rewind first so the
+  re-record happens against the real initial page; both seeks suppress events so no 6/7 gate
+  re-fires). Verified: resize on every page then a full down/up walk is pixel-identical to a clean
+  run (only the float / cursor differ). **Rule: never invalidate this timeline away from 0.**
+  - The user had proposed putting the section in the URL so a refresh "knows what to load" — that
+    already existed (`#the-machine` etc. + `sessionStorage` `usectl:state`); the page was always
+    restored correctly, it was the timeline state that was corrupted.
+- **Refresh on Pricing, scroll at once → landed on section 2 (down) / stayed on the hero (up).**
+  Cause: the restore waits (≤30 rAF) for the pin spacer before landing, and during that window
+  `stateIndex` was still 0, so the wheel driver stepped from the hero. Fix (HeroSectionClient):
+  `restoringPage` window — `stateIndex` is set to the saved page immediately; wheel/arrow input in
+  the window is swallowed but its direction remembered (`pendingDirRef`, a REF because dev
+  StrictMode builds the scene twice and the first build can catch the push) and played from the
+  restored page once it has landed (gesture bookkeeping kept so the swipe's tail isn't a 2nd push).
+  A header/logo jump in the window aborts the restore (`restoreAborted`).
+- **The hero flashed for ~1s before the restored page.** `layout.tsx` now has a tiny inline
+  pre-paint script (`RESTORE_HIDE_SCRIPT`; CSP already allows inline) that sets
+  `html[data-restoring]` when a desktop reload/deep link will restore a page > 0 (same <1024 /
+  reduced-motion guards as the scene); `globals.css` hides `[data-hero-stage]` under it;
+  `revealStage()` fades the stage in once the restore lands (or at once when there's nothing to
+  restore). 4s self-removal as a safety net. `<html suppressHydrationWarning>` for the attribute.
+  The storage key is shared as `STATE_STORAGE_KEY` in `src/lib/nav.ts`.
+- **Header "Start Now"**: same HEIGHT as the scene's pills (s(48)), width kept at the Figma 132
+  (user: "width ისევ ისე, height დაამთხვიე"). `.header-cta` (globals.css) is on `--sh` with NO
+  height floor, so on smaller screens it shrinks together with the scene's buttons (user asked for
+  that); width/text shrink too but floor at 104px / 12px so the label fits. Measured: header vs
+  section height equal at 2560/1920/1680/1440/1366/1280/1024 (64/48/42/36/32.9/30.6/25.6).
+
+## The address bar names the page you are on (2026-11-06)
+
+User: when the section changes by scroll, the URL should say where we are. `SECTION_HASHES`
+(`src/lib/nav.ts`) is the one list, index = page: `""` hero (clean URL), `#build`, `#features`,
+`#the-machine`, `#pods`, `#deploy`, `#agents`, `#pricing`, `#start` (closing CTA), `#contact`
+(footer). The four nav hashes are unchanged; `STATE_BY_HASH` is its inverse (deep link, refresh,
+hand-typed hash, the pre-paint hide script).
+
+- Desktop: `rememberState()` now WRITES the page's hash on every page change (it used to only drop
+  a stale nav hash) — `replaceState`, so no Back-button entries and no `hashchange` re-jump. The
+  pin's onUpdate footer/state-9 adoption calls it too. Restore/deep link accept the footer
+  (`FOOTER_INDEX`); `goToHash` glides to the footer for `#contact` (jumpToState clamps to LAST).
+- Mobile (`HeroMobile`): ids added to the four unnamed sections (+ `scroll-mt`), `id="contact"` on
+  `FooterMobile`; a rAF-throttled scroll listener sets the hash of the section whose top has passed
+  40% of the viewport. Nothing runs at mount, so a deep link's own anchor jump is respected.
+- Verified (Chromium): desktop down/up through all 10 pages gives the right hash each step and
+  `history.length` doesn't grow; opening each hash fresh lands there, a step up + refresh keeps
+  the new page; header nav still works. Mobile 390×844: scroll down yields the 10 hashes in order,
+  top clears it, `/#pods` `/#pricing` `/#contact` open on their sections.
+- **Open:** GA4 "page changes based on browser history events" listens to `replaceState`; whether
+  a hash-only change produces a `page_view` couldn't be tested here (googletagmanager is blocked
+  from the sandbox). Once GA is live, check DebugView while scrolling: if every section becomes a
+  page_view, either untick that option or keep it deliberately as a "how far do people get" metric.
+
 ## Open items / TODO
+
+- **NEXT BIG STEP — split the desktop scene into per-section components (user's idea, agreed
+  2026-11-06). DISCUSS AND PLAN FIRST, no code until the user says so** ("ჯერ ვილაპარაკოთ"). When
+  the user brings it up, start by drafting the plan together. What was agreed so far:
+  - Why: one 14-unit GSAP timeline for all 9 pages is the root of most bugs (invalidate/seek
+    corruption, `restoring7`, the state-6 ring leaking to the hero, dead zones, `ENTER_TIMES`).
+    Each section should own `enter(direction)` / `leave(direction)`; a small controller holds the
+    current index and drives them; refresh = mount the saved section and play its entrance.
+  - Keep: the wheel/keyboard push driver (gesture detection, momentum, mid-flight turnaround,
+    chained pushes) — it is architecture-independent and well tuned; it just targets sections.
+  - Hard part: shared elements that MORPH across sections (hero server → Stacks two-piece →
+    Machine unfold; state-6 board → AI composition) need an explicit handoff (FLIP-style), or they
+    degrade to crossfades.
+  - Approach: incremental, never a big-bang rewrite. Pilot = Pricing + closing CTA (no shared
+    elements) on the new controller while the rest stays on the old timeline; user evaluates; then
+    migrate section by section, morph pairs last. Commit a stable point before starting.
+  - Mobile (`HeroMobile`) is separate and not part of this.
 
 - New design build-out from scratch (user is supplying new references: `public/navigation-bar/navigation-bar.png`, `Group 1574.png`).
 - `design/mobile/*.html` are the phone layout's source of truth (390-wide boards, inline styles).

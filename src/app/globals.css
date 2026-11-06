@@ -90,14 +90,17 @@
   .header-logo {
     width: max(150px, calc(var(--sh) * 150));
   }
-  /* "Start Now" (Header.tsx): the Figma box — 132×44, r40, 14px/100% — on the same --sh canvas as
-     the logo and the nav, with the design values as a FLOOR so it never shrinks below them. The
-     right margin is one grid column (82), which puts the pill's right edge on column 21 (1739),
-     where the design has it; the row's own padding-right supplies the remaining 99. */
+  /* "Start Now" (Header.tsx): the Figma box — 132 wide, r40, 14px/100% — on the same --sh canvas as
+     the logo and the nav. Its HEIGHT is the scene's pill height (s(48) in HeroSectionClient — user
+     2026-11-06: same height as the section's buttons, width as before), and on --sh with NO floor,
+     so on smaller screens it shrinks together with the scene's buttons (fitStage scales those).
+     Width and text shrink with it too, but only down to 104px / 12px so the label always fits and
+     stays readable next to the nav. The right margin is one grid column (82), which puts the
+     pill's right edge on column 21 (1739), where the design has it. */
   .header-cta {
-    width: max(132px, calc(var(--sh) * 132));
-    height: max(44px, calc(var(--sh) * 44));
-    font-size: max(14px, calc(var(--sh) * 14));
+    width: max(104px, calc(var(--sh) * 132));
+    height: calc(var(--sh) * 48);
+    font-size: max(12px, calc(var(--sh) * 14));
     line-height: 1;
     margin-right: calc(var(--sh) * 82);
   }
@@ -324,5 +327,36 @@ body {
   .m-hero > [data-m-copy],
   .m-hero [data-m-server] {
     animation: none;
+  }
+}
+
+/* Reload / deep-link restore (layout.tsx's pre-paint script sets html[data-restoring] when the
+   desktop scene is about to reopen on a later page): the stage stays hidden until
+   HeroSectionClient has landed there and fades it in, so the server-rendered hero never flashes
+   first. Header and background stay visible. The script removes the attribute by itself after a
+   few seconds, so a JS failure can never leave the stage invisible. */
+html[data-restoring] [data-hero-stage] {
+  opacity: 0;
+}
+
+/* ButtonArrow (components/ui/icons.tsx — every pill with the ↗: header Start Now, "See how it
+   works", the burger menu's Start Now): on hover the arrow turns 45° and straightens to →
+   (user 2026-11-06), in step with the label/border warming to brand green. Hover only where a
+   real pointer exists, so a tap on a phone doesn't leave it stuck turned; keyboard focus gets the
+   same cue. */
+.btn-arrow {
+  transition: transform 300ms ease-out;
+}
+@media (hover: hover) {
+  :is(a, button):hover .btn-arrow {
+    transform: rotate(45deg);
+  }
+}
+:is(a, button):focus-visible .btn-arrow {
+  transform: rotate(45deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn-arrow {
+    transition: none;
   }
 }

@@ -8,7 +8,14 @@
 // currentColor so it warms to brand green together with its label on hover.
 export function ButtonArrow({ size, opacity = 0.7 }: { size: string | number; opacity?: number }) {
   return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" style={{ width: size, height: size, flexShrink: 0 }}>
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      fill="none"
+      // .btn-arrow (globals.css): turns ↗ into → when its button is hovered / keyboard-focused
+      className="btn-arrow"
+      style={{ width: size, height: size, flexShrink: 0 }}
+    >
       <path
         d="M8 16L16 8M16 14L16 8L10 8"
         stroke="currentColor"
