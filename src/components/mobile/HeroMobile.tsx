@@ -10,6 +10,7 @@ import { mountMachine } from "./machineUnfold";
 import { processAgentSvg } from "@/lib/agentSvg";
 import { ButtonArrow } from "@/components/ui/icons";
 import { pressRipple } from "@/lib/pressRipple";
+import { SECTION_HASHES } from "@/lib/nav";
 import { CLOSE_MENU_EVENT } from "@/components/layout/MobileMenu";
 import { SIGNUP_URL } from "@/lib/nav";
 
@@ -246,8 +247,39 @@ export function HeroMobile() {
         );
       };
       document.addEventListener("click", onHomeClick, true);
+
+      // --- the address bar names the section you are reading ---------------------------------
+      // Same hashes, same order as the desktop scene (SECTION_HASHES in lib/nav.ts; user
+      // 2026-11-06), so a refresh or a shared link opens on that section here too. The section
+      // whose top has passed 40% of the viewport is "current"; the hero keeps a clean URL.
+      // replaceState only — no history entries, no `hashchange`. Nothing runs at mount, so a
+      // /#pricing deep link keeps its hash until the browser's own anchor jump (or the reader)
+      // actually scrolls.
+      const hashSections = Array.from(root.querySelectorAll<HTMLElement>("[data-m-section]"));
+      const footerEl = document.querySelector<HTMLElement>("[data-footer-stacked]");
+      let hashRaf = 0;
+      const syncHash = () => {
+        hashRaf = 0;
+        const line = window.innerHeight * 0.4;
+        let idx = 0;
+        hashSections.forEach((sec, i) => {
+          if (sec.getBoundingClientRect().top <= line) idx = i;
+        });
+        if (footerEl && footerEl.getBoundingClientRect().top <= line) idx = SECTION_HASHES.length - 1;
+        const want = SECTION_HASHES[idx] ?? "";
+        if (window.location.hash !== want) {
+          history.replaceState(null, "", window.location.pathname + window.location.search + want);
+        }
+      };
+      const onHashScroll = () => {
+        if (!hashRaf) hashRaf = requestAnimationFrame(syncHash);
+      };
+      window.addEventListener("scroll", onHashScroll, { passive: true });
+
       const unwatchAll = () => {
         document.removeEventListener("click", onHomeClick, true);
+        window.removeEventListener("scroll", onHashScroll);
+        cancelAnimationFrame(hashRaf);
         unwatch();
       };
 
@@ -530,7 +562,7 @@ export function HeroMobile() {
       </section>
 
       {/* 2 — Infrastructure Freedom */}
-      <section data-m-section className="relative" style={sectionStyle}>
+      <section id="build" data-m-section className="scroll-mt-[calc(var(--header-h)+16px)] relative" style={sectionStyle}>
         <Eyebrow>Infrastructure Freedom</Eyebrow>
         <Heading>You came here to build.</Heading>
         <Para>
@@ -636,7 +668,7 @@ export function HeroMobile() {
       </section>
 
       {/* 5 — Pods */}
-      <section data-m-section className="relative" style={sectionStyle}>
+      <section id="pods" data-m-section className="scroll-mt-[calc(var(--header-h)+16px)] relative" style={sectionStyle}>
         <Eyebrow>Isolated Spaces</Eyebrow>
         <Heading>
           Run each part
@@ -693,7 +725,7 @@ export function HeroMobile() {
       </section>
 
       {/* 6 — Continuous Deployment */}
-      <section data-m-section className="relative" style={sectionStyle}>
+      <section id="deploy" data-m-section className="scroll-mt-[calc(var(--header-h)+16px)] relative" style={sectionStyle}>
         <Eyebrow>Continuous Deployment</Eyebrow>
         <Heading>
           Push your code.
@@ -903,7 +935,7 @@ export function HeroMobile() {
       </section>
 
       {/* 9 — closing CTA */}
-      <section data-m-section className="relative overflow-hidden" style={{ ...sectionStyle, paddingTop: m(88), paddingBottom: m(90) }}>
+      <section id="start" data-m-section className="scroll-mt-[calc(var(--header-h)+16px)] relative overflow-hidden" style={{ ...sectionStyle, paddingTop: m(88), paddingBottom: m(90) }}>
         <div
           data-m-glow9
           aria-hidden="true"

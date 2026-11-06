@@ -4,7 +4,14 @@ import { GoogleAnalytics } from "@next/third-parties/google";
 import { Header } from "@/components/layout/Header";
 import { BackgroundLines } from "@/components/layout/BackgroundLines";
 import { SessionReplay } from "@/components/SessionReplay";
-import { FACEBOOK_URL, INSTAGRAM_URL, SIGNUP_URL, X_URL } from "@/lib/nav";
+import {
+  FACEBOOK_URL,
+  INSTAGRAM_URL,
+  SIGNUP_URL,
+  STATE_BY_HASH,
+  STATE_STORAGE_KEY,
+  X_URL,
+} from "@/lib/nav";
 import {
   SHARE_DESCRIPTION,
   SITE_DESCRIPTION,
@@ -128,12 +135,30 @@ const jsonLd = {
   ],
 };
 
+// Runs before first paint (inline, so it can't wait for hydration). If the desktop scene is about
+// to reopen on a later page — a reload mid-journey, or a /#pricing deep link — it hides the stage
+// (html[data-restoring], globals.css) so the server-rendered hero doesn't flash for the second it
+// takes HeroSectionClient to hydrate and land there; that component fades the stage back in. Same
+// guards as the scene itself (<1024 and reduced-motion get the stacked build, which never hides).
+// The 4s timeout is a safety net only: the page can never stay hidden if JS fails.
+const RESTORE_HIDE_SCRIPT = `(function(){try{
+if(matchMedia("(max-width: 1023px)").matches||matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+var s=${JSON.stringify(STATE_BY_HASH)}[location.hash];
+if(s===undefined)s=Number(sessionStorage.getItem(${JSON.stringify(STATE_STORAGE_KEY)}))||0;
+if(s>0){var r=document.documentElement;r.setAttribute("data-restoring","");setTimeout(function(){r.removeAttribute("data-restoring")},4000);}
+}catch(e){}})();`;
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
+      // the pre-paint script below may add data-restoring before React hydrates
+      suppressHydrationWarning
       className={`${geistMono.variable} ${spaceGrotesk.variable} h-full antialiased`}
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: RESTORE_HIDE_SCRIPT }} />
+      </head>
       <body className="relative min-h-full flex flex-col bg-background text-foreground">
         <script
           type="application/ld+json"

@@ -8,7 +8,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ScrollToPlugin } from "gsap/ScrollToPlugin";
 import { useGSAP } from "@gsap/react";
 import { s, readScale, HEADER_HEIGHT_PX } from "@/lib/grid";
-import { NAV_STATE_BY_HASH, SIGNUP_URL } from "@/lib/nav";
+import { SECTION_HASHES, SIGNUP_URL, STATE_BY_HASH, STATE_STORAGE_KEY } from "@/lib/nav";
 import { SceneLight } from "@/components/layout/SceneLight";
 import { ButtonArrow, ScrollDownArrow } from "@/components/ui/icons";
 import { pressRipple, RIPPLE_SOFT } from "@/lib/pressRipple";
@@ -484,6 +484,10 @@ export function HeroSectionClient({
 }) {
   const sectionRef = useRef<HTMLElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
+  // a wheel/arrow push that arrived while a reload-restore was still landing (see `restoringPage`).
+  // A ref, not an effect local: in dev, StrictMode tears the scene down and builds it again right
+  // after mount, and a push caught by the first build must still be played by the second.
+  const pendingDirRef = useRef(0);
   const heroTextRef = useRef<HTMLDivElement>(null);
   const secondTextRef = useRef<HTMLDivElement>(null);
   const thirdTextRef = useRef<HTMLDivElement>(null);
@@ -1842,7 +1846,7 @@ export function HeroSectionClient({
       const TRANSITION_SECONDS = 1.7;
       const LAST = SNAP_TIMES.length - 1;
       const FOOTER_INDEX = LAST + 1; // the footer is one more fullpage "page" past state 9
-      const STATE_KEY = "usectl:state"; // session-scoped, so a reload reopens on the same page
+      const STATE_KEY = STATE_STORAGE_KEY; // session-scoped, so a reload reopens on the same page
       // Remember the page for a reload — and keep the URL honest while doing it.
       //
       // Two existing behaviours combined into a bug. A nav click leaves its hash in the address
@@ -1859,9 +1863,12 @@ export function HeroSectionClient({
         } catch {
           /* private mode — the restore is a nicety, never a hard dependency */
         }
-        const hash = window.location.hash;
-        if (hash && NAV_STATE_BY_HASH[hash] !== i) {
-          history.replaceState(null, "", window.location.pathname + window.location.search);
+        // ...and the address bar now always NAMES the page we are on (user 2026-11-06: "scroll-ით
+        // რომ შევცვლით, url-ში დაიწეროს სად ვდგავართ"), instead of only dropping a stale nav hash.
+        // replaceState: no history entry per page, and no `hashchange` (which would re-jump us).
+        const want = SECTION_HASHES[i] ?? "";
+        if (window.location.hash !== want) {
+          history.replaceState(null, "", window.location.pathname + window.location.search + want);
         }
       };
       let stateIndex = 0;
@@ -1875,6 +1882,25 @@ export function HeroSectionClient({
       // which is what produced the occasional extra state and the twitch at the range edges.
       let flightId = 0;
       let pinST: ScrollTrigger | null = null;
+      // --- reload restore window ------------------------------------------------------------
+      // Between hydration and the moment the reload-restore below has actually landed on the
+      // saved page (it waits up to ~30 frames for the pin spacer), input used to be read against
+      // state 0: a wheel/arrow push in that window became "hero → 1" (down) or "stay on hero" (up)
+      // instead of starting from the page we were restoring (user: refresh on Pricing, scroll
+      // down at once → section 2). While `restoringPage` is set the drivers only REMEMBER the
+      // push direction; the restore plays it from the right page once it has landed.
+      let restoringPage = false;
+      let restoreAborted = false; // a header/logo jump during the window wins over the restore
+      // layout.tsx's inline head script hides the stage BEFORE first paint when a reload/deep
+      // link is about to restore a later page (html[data-restoring], globals.css), so the SSR'd
+      // hero never flashes first. Every path that ends the restore window shows it again.
+      const revealStage = () => {
+        const root = document.documentElement;
+        if (!root.hasAttribute("data-restoring")) return;
+        // fromTo renders opacity 0 inline first, so dropping the attribute can't pop it in
+        if (stage) gsap.fromTo(stage, { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power2.out" });
+        root.removeAttribute("data-restoring");
+      };
 
       // The "Scroll Down" pill is hidden on the last state and on the footer page — there is
       // nothing below either of them to go to. Called from everywhere `stateIndex` changes.
@@ -2026,6 +2052,12 @@ export function HeroSectionClient({
       const jumpToState = (i: number) => {
         if (!pinST) return;
         const target = Math.min(Math.max(0, Math.round(i)), LAST);
+        // a jump during the reload-restore window replaces the restore (it fades the stage in
+        // itself just below)
+        restoreAborted = true;
+        restoringPage = false;
+        pendingDirRef.current = 0;
+        document.documentElement.removeAttribute("data-restoring");
         gsap.killTweensOf(window);
         gsap.killTweensOf(tl);
         killServerIntro();
@@ -2124,12 +2156,14 @@ export function HeroSectionClient({
             if (self.progress > 0.999) return;
             stateIndex = LAST;
             syncScrollDown();
+            rememberState(LAST);
           }
           // scrollbar drag / keyboard that lands PAST the pin is a move to the footer page, not
           // something to quantise back to state 9
           if (self.progress > 0.999 && pinST && window.scrollY > pinST.end + 5) {
             stateIndex = FOOTER_INDEX;
             syncScrollDown();
+            rememberState(FOOTER_INDEX);
             return;
           }
           const t = self.progress * total;
@@ -2158,8 +2192,9 @@ export function HeroSectionClient({
         saved = 0;
       }
       // an explicit deep link (usectl.dev/#pricing) wins over the restored session state
-      const deepLink = NAV_STATE_BY_HASH[window.location.hash];
-      if (deepLink !== undefined) saved = Math.min(Math.max(0, deepLink), LAST);
+      // (every page has a hash now, the footer's #contact included — hence FOOTER_INDEX, not LAST)
+      const deepLink = STATE_BY_HASH[window.location.hash];
+      if (deepLink !== undefined) saved = Math.min(Math.max(0, deepLink), FOOTER_INDEX);
       if (saved > 0) {
         // The pin's spacer only exists after ScrollTrigger's first refresh, so for the first few
         // frames the document is too short and a scrollTo would be CLAMPED — which is what the
@@ -2167,8 +2202,14 @@ export function HeroSectionClient({
         // state 1. So wait (up to ~30 frames) until the page is actually tall enough, and hold
         // `transitioning` across the jump so the quantiser stays out of it.
         transitioning = true;
+        // The page we are restoring IS the current page from this moment on — not after the
+        // wait — so nothing (scroll-down pill, nav, a stray read) sees state 0 meanwhile.
+        restoringPage = true;
+        stateIndex = Math.min(Math.max(0, Math.round(saved)), FOOTER_INDEX);
+        transitionFrom = stateIndex;
+        syncScrollDown();
         const restore = (tries: number) => {
-          if (!pinST) return;
+          if (!pinST || restoreAborted) return;
           const i = Math.min(Math.max(0, Math.round(saved)), FOOTER_INDEX);
           const targetY =
             i > LAST
@@ -2185,11 +2226,26 @@ export function HeroSectionClient({
           tl.time(SNAP_TIMES[Math.min(i, LAST)]);
           restoring7 = false;
           window.scrollTo(0, targetY);
+          revealStage();
           window.setTimeout(() => {
+            if (restoreAborted) return;
             transitioning = false;
+            restoringPage = false;
+            // a push that arrived during the window now plays — FROM the restored page
+            const dir = pendingDirRef.current;
+            pendingDirRef.current = 0;
+            const next = stateIndex + dir;
+            if (dir !== 0 && next >= 0 && next <= FOOTER_INDEX) {
+              // this gesture owns the flight, so its own momentum tail can't count as a 2nd push
+              flickFresh = false;
+              gestureFiredFlight = true;
+              goToState(next);
+            }
           }, 120);
         };
         requestAnimationFrame(() => restore(0));
+      } else {
+        revealStage(); // nothing to restore (e.g. a stale saved value) — never stay hidden
       }
 
       // --- idle float on states 2 and 5 ------------------------------------------------------
@@ -2304,6 +2360,18 @@ export function HeroSectionClient({
       const hurryNow = () => Math.max(0.4, Math.pow(0.62, chain));
       const onWheel = (e: WheelEvent) => {
         if (!pinST) return;
+        if (restoringPage) {
+          // reload-restore still landing: hold the page still and only note the direction. The
+          // gesture bookkeeping keeps running so the rest of this same swipe reads as its tail
+          // once the restore plays it, not as a fresh second push.
+          e.preventDefault();
+          const now = performance.now();
+          recentMax = Math.max(Math.abs(e.deltaY), recentMax * Math.pow(0.5, (now - lastWheelAt) / 300));
+          lastWheelAt = now;
+          lastDelta = e.deltaY;
+          if (Math.abs(e.deltaY) >= 2) pendingDirRef.current = e.deltaY > 0 ? 1 : -1;
+          return;
+        }
         // scroll-position check, NOT isActive — isActive stays false at load until the first
         // scroll event, which let the very first gesture fall through to native scrolling.
         const sc = window.scrollY;
@@ -2479,6 +2547,15 @@ export function HeroSectionClient({
       const onKeyDown = (e: KeyboardEvent) => {
         if (!pinST || e.metaKey || e.ctrlKey || e.altKey) return;
         if (typingIn(e.target)) return; // the footer's email field etc.
+        if (restoringPage) {
+          // same as the wheel: remember the step, play it once the restore has landed
+          const d = PAGE_KEYS[e.key];
+          if (d !== undefined) {
+            e.preventDefault();
+            pendingDirRef.current = d;
+          }
+          return;
+        }
         if (window.scrollY < pinST.start - 1) return; // above the scene — leave it native
 
         if (e.key === "End") {
@@ -2507,9 +2584,11 @@ export function HeroSectionClient({
       // listening for `hashchange`, so clicking the same item twice still works, and the hash is
       // written with replaceState so the back button isn't filled with in-page steps.
       const goToHash = (hash: string) => {
-        const i = NAV_STATE_BY_HASH[hash];
+        const i = STATE_BY_HASH[hash];
         if (i === undefined) return false;
-        jumpToState(i);
+        // the footer isn't a timeline page — jumpToState clamps to LAST — so it glides there
+        if (i > LAST) goToState(FOOTER_INDEX);
+        else jumpToState(i);
         return true;
       };
       // CAPTURE phase on purpose: next/link's own click handler runs first otherwise, calls
@@ -2547,10 +2626,22 @@ export function HeroSectionClient({
 
       // resize: re-evaluate the timeline's function-based (scale-dependent) values and re-render
       // the parked state with them — the old scrub's invalidateOnRefresh used to cover this
+      //
+      // The timeline is rewound to 0 BEFORE invalidating, then sent back. invalidate() throws
+      // away every tween's recorded START values, and each tween re-records them from whatever
+      // is on screen the next time it renders. Invalidated while parked mid-way (e.g. on The
+      // Machine), every `.to()`/`.set()` behind the playhead re-recorded the CURRENT page's
+      // values as its "start" — so going back up never hid them again: the reported overlap
+      // (Machine text written over Features after a refresh) and pages that came back empty.
+      // A refresh fires on resize, on the late `load` event after a reload, on font swaps — hence
+      // "sometimes, after a refresh". From 0 the tweens re-record against the real initial page,
+      // exactly like the first build. Both seeks suppress events so no state-6/7 gate re-fires.
       const onRefresh = () => {
         fitStage(); // --s or the viewport height may both have changed
+        const t = tl.time();
+        tl.time(0, true);
         tl.invalidate();
-        tl.seek(tl.time(), false);
+        tl.time(t, true);
       };
       ScrollTrigger.addEventListener("refresh", onRefresh);
 
@@ -2693,6 +2784,8 @@ export function HeroSectionClient({
       );
 
       return () => {
+        restoreAborted = true;
+        document.documentElement.removeAttribute("data-restoring");
         removeFitListeners();
         gsap.ticker.remove(tick6);
         gsap.ticker.remove(tickFloat);
@@ -2722,6 +2815,7 @@ export function HeroSectionClient({
     >
     <div
       ref={stageRef}
+      data-hero-stage
       className="absolute inset-x-0"
       style={{ top: `max(0px, calc((100% - ${s(980)}) / 2))`, height: s(980) }}
     >

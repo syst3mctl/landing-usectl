@@ -44,6 +44,33 @@ export const NAV_LINKS: readonly NavLink[] = [
   { label: "Documentation", href: DOCS_URL, external: true },
 ];
 
+// Every page of the scene, in order (desktop SNAP_TIMES index = mobile stacked section index), and
+// the hash the address bar shows while you are on it — written on EVERY page change (scroll, keys,
+// nav), so a refresh or a shared link reopens exactly there (user 2026-11-06). The hero keeps a
+// clean URL; index 9 is the footer page. The four header targets keep their nav hashes — these
+// must match NAV_LINKS' `state`s above. Written with replaceState, so Back never steps through them.
+export const SECTION_HASHES = [
+  "", // 0 hero
+  "#build", // 1 "You came here to build."
+  "#features", // 2 "Your Stacks, in one place."
+  "#the-machine", // 3 "Give every project its own space."
+  "#pods", // 4 "Run each part independently."
+  "#deploy", // 5 "Push your code."
+  "#agents", // 6 "Give your agent a place to work"
+  "#pricing", // 7 the calculator
+  "#start", // 8 closing CTA "Give your next product a place"
+  "#contact", // 9 the footer
+] as const;
+
+// hash → page, for every page that has one (deep links, refresh, a hand-typed hash)
+export const STATE_BY_HASH: Readonly<Record<string, number>> = Object.fromEntries(
+  SECTION_HASHES.flatMap((hash, i) => (hash ? [[hash, i] as const] : [])),
+);
+
+// The desktop scene saves the page it is on here (sessionStorage) so a reload reopens on it.
+// layout.tsx's pre-paint script reads the same key to hide the stage until that restore lands.
+export const STATE_STORAGE_KEY = "usectl:state";
+
 export const NAV_STATE_BY_HASH: Readonly<Record<string, number>> = Object.fromEntries(
   NAV_LINKS.flatMap((link) => (link.state === undefined ? [] : [[link.href, link.state] as const])),
 );

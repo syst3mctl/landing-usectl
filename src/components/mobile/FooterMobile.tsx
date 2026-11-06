@@ -59,6 +59,8 @@ export function FooterMobile() {
   return (
     <footer
       ref={ref}
+      // #contact: the footer's hash in SECTION_HASHES (lib/nav.ts) — the anchor a /#contact link lands on
+      id="contact"
       data-footer-stacked
       className="relative overflow-hidden lg:hidden"
       style={{

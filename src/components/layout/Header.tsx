@@ -61,7 +61,7 @@ export function Header() {
           </ul>
         </nav>
         {/* "Start Now" — the header's own CTA, opposite the logo (Figma: left 1606 / top 27 on the
-            1920 frame, 132×44, r40, Space Grotesk Medium 14). Its right edge lands on grid column
+            1920 frame, 132 wide, r40, Space Grotesk Medium 14; height = the scene's pills since 2026-11-06, see `.header-cta`). Its right edge lands on grid column
             21 (1739 = 1920 − 99 − 82), which is why the offset is one column inside the content
             inset; the geometry lives in globals.css's `.header-cta` because it is written in --sh,
             the scale the scene is really drawn at, exactly like the logo and the nav.
