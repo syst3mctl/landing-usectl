@@ -186,6 +186,22 @@ export const en = {
     thanks: "Thanks — we’ll be in touch.",
   },
 
+  // the cookie consent banner (components/layout/CookieBanner.tsx) and the footers' link that
+  // reopens it. Accept and Reject are deliberately the same size and weight.
+  cookies: {
+    title: "Cookies",
+    body:
+      "We use cookies to measure how this page is used and how people find us. " +
+      "Nothing optional loads until you choose.",
+    accept: "Accept",
+    reject: "Reject",
+    // the footers' withdrawal link, and the banner's aria-label
+    settings: "Cookie settings",
+    // TODO: there is no privacy policy page yet. When one exists, add its URL to CookieBanner's
+    // PRIVACY_URL and this becomes the link's label.
+    privacy: "Privacy policy",
+  },
+
   // screen-reader / assistive copy. `{name}` is filled in with the row's label — see fill().
   a11y: {
     home: "usectl home",

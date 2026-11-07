@@ -6,6 +6,10 @@
 // is never recorded (defaultInputMode 2), emails in text are masked, URLs lose their query string
 // and hash. Only runs on the production hosts — previews and `next dev` stay silent.
 //
+// Since 2026-11-07 it also waits for the cookie banner: nothing is imported, no session is started
+// and no request reaches analytics.usectl.com until consent is granted (src/lib/consent.ts). A
+// withdrawal stops the running session — the effect's cleanup calls tracker.stop().
+//
 // Links into the dashboard get ?lsid=<this session id>; the dashboard's tracker stores it as
 // `landingSession` metadata, which joins a landing visit to the signup that follows it.
 //
@@ -13,6 +17,7 @@
 // hero scene for the first paint.
 
 import { useEffect } from "react";
+import { useConsent } from "@/lib/useConsent";
 
 const HOSTS = new Set(["usectl.com", "www.usectl.com"]);
 const PROJECT_KEY = "DfkHZqqNNpgulYasVwNQ";
@@ -20,10 +25,15 @@ const INGEST_POINT = "https://analytics.usectl.com/ingest";
 const DASHBOARD_HOST = "manager.usectl.com";
 
 export function SessionReplay() {
+  const consent = useConsent();
+
   useEffect(() => {
+    if (consent !== "granted") return;
     if (!HOSTS.has(window.location.hostname)) return;
     let sessionId: string | null = null;
     let cancelled = false;
+    // kept so a withdrawal (this effect being torn down) can end the running session
+    let active: { stop: () => unknown } | null = null;
 
     const start = async () => {
       const { tracker } = await import("@openreplay/tracker");
@@ -43,11 +53,15 @@ export function SessionReplay() {
         urls: { urlSanitizer: (url: string) => url.split(/[?#]/)[0] },
       });
       await tracker.start();
-      if (tracker.isActive()) sessionId = tracker.getSessionID() ?? null;
+      if (cancelled) { tracker.stop(); return; } // consent was withdrawn while starting
+      if (tracker.isActive()) {
+        sessionId = tracker.getSessionID() ?? null;
+        active = tracker;
+      }
     };
 
     const idle = window.requestIdleCallback ?? ((fn: () => void) => window.setTimeout(fn, 1500));
-    const go = () => idle(() => { start().catch(() => { /* blocked or opted out — the page works without it */ }); });
+    const go = () => { idle(() => { start().catch(() => { /* blocked or opted out — the page works without it */ }); }); };
     if (document.readyState === "complete") go();
     else window.addEventListener("load", go, { once: true });
 
@@ -68,8 +82,9 @@ export function SessionReplay() {
       cancelled = true;
       window.removeEventListener("load", go);
       document.removeEventListener("click", onClick, true);
+      try { active?.stop(); } catch { /* already gone */ }
     };
-  }, []);
+  }, [consent]);
 
   return null;
 }

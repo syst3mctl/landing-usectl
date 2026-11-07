@@ -20,6 +20,7 @@ import {
 } from "@/lib/nav";
 import { langPath, type Dict, type Lang } from "@/lib/i18n";
 import { SubscribeForm } from "@/components/layout/SubscribeForm";
+import { CookieSettingsButton } from "@/components/layout/CookieSettingsButton";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
@@ -230,6 +231,12 @@ export function FooterMobile({ t, lang }: { t: Dict; lang: Lang }) {
           </a>
         </span>
         <span>usectl.com</span>
+      </div>
+
+      {/* "Cookie settings" — the withdrawal link, on its own row: the Georgian label is long and
+          would wrap inside the row above on a 360px phone */}
+      <div data-mf-reveal className="relative font-heading text-white/40" style={{ marginTop: m(10), fontSize: m(12) }}>
+        <CookieSettingsButton label={t.cookies.settings} className="active:text-white/70" />
       </div>
     </footer>
   );

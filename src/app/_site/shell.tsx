@@ -2,10 +2,11 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { Geist_Mono, Space_Grotesk } from "next/font/google";
 import localFont from "next/font/local";
-import { GoogleAnalytics } from "@next/third-parties/google";
 import { Header } from "@/components/layout/Header";
 import { BackgroundLines } from "@/components/layout/BackgroundLines";
 import { SessionReplay } from "@/components/SessionReplay";
+import { Analytics } from "@/components/Analytics";
+import { CookieBanner } from "@/components/layout/CookieBanner";
 import {
   CONTACT_EMAIL,
   FACEBOOK_URL,
@@ -229,10 +230,15 @@ export function SiteShell({ lang, children }: { lang: Lang; children: ReactNode 
         <Header t={t} lang={lang} />
         {children}
         <SessionReplay />
+        {/* The cookie banner. It is what lets the Pixel, GA4 and the session replay load at all
+            (src/lib/consent.ts) — before a choice, none of the three does anything. Renders
+            nothing on the server, so it cannot affect the hero's first paint. */}
+        <CookieBanner t={t.cookies} />
       </body>
       {/* gtag.js, loaded after hydration by @next/third-parties (Next 16's own integration), so it
-          can't delay the hero's LCP. GA4's Enhanced Measurement handles pageviews by itself. */}
-      {GA_ID ? <GoogleAnalytics gaId={GA_ID} /> : null}
+          can't delay the hero's LCP. GA4's Enhanced Measurement handles pageviews by itself.
+          Wrapped in <Analytics> since 2026-11-07: it mounts only after consent is granted. */}
+      {GA_ID ? <Analytics gaId={GA_ID} /> : null}
     </html>
   );
 }
