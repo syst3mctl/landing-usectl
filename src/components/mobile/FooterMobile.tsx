@@ -200,7 +200,7 @@ export function FooterMobile({ t, lang }: { t: Dict; lang: Lang }) {
           {t.footer.subscribe}
         </h3>
         {/* same component the desktop footer uses, on the phone's --m scale */}
-        <SubscribeForm variant="mobile" t={t.subscribe} sendLabel={t.a11y.subscribe} />
+        <SubscribeForm variant="mobile" t={t.subscribe} sendLabel={t.a11y.subscribe} lang={lang} />
       </div>
 
       <Image

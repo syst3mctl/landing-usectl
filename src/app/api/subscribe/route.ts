@@ -1,8 +1,22 @@
 import { NextResponse } from "next/server";
 import { CONTACT_EMAIL } from "@/lib/nav";
 
-// The footer's "Subscribe" box posts here. The job is only to get the visitor's address into our
-// inbox so we can reach out later — nothing is stored on our side.
+// NOT IN USE since 2026-11-07 — kept deliberately, do not delete.
+//
+// The footer's Subscribe box no longer posts here: it submits DIRECTLY to Web3Forms from the
+// browser (src/components/layout/SubscribeForm.tsx), because Web3Forms' free plan refuses
+// server-side submissions ("Server side usage requires paid plan + server IP whitelisting") — so
+// the web3forms branch of deliver() below could never have delivered in production.
+//
+// This route stays because it is the whole server-side path, ready for the day delivery moves to
+// Resend (a real transactional send from our own domain, which MUST happen server-side so the API
+// key is never in the browser) or to a paid Web3Forms plan. To switch back, point the form's fetch
+// at /api/subscribe again and set RESEND_API_KEY + SUBSCRIBE_TO in the host's env. Everything
+// below — the per-IP / global rate limits, the per-email dedupe, the honeypot and the IP-spoofing
+// notes — is still correct and still the stricter half of the protection.
+//
+// What it does when it IS wired up: get the visitor's address into our inbox so we can reach out
+// later — nothing is stored on our side.
 //
 // Delivery is provider-agnostic and picked up from the environment, so no key ever lives in the
 // repo (see .env.example):
@@ -157,7 +171,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "bad-request" }, { status: 400 });
   }
 
-  // honeypot: a real visitor never sees this field
+  // honeypot: a real visitor never sees this field. NOTE: the form's field is now named `botcheck`
+  // (Web3Forms' own convention) — rename this to match if the form is ever pointed back here.
   if (typeof body.company === "string" && body.company.trim() !== "") {
     return NextResponse.json({ ok: true, dropped: true });
   }

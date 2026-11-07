@@ -1555,6 +1555,69 @@ burger menu still point at `SIGNUP_URL`.
   `requestStorageAccess` inside the iframe). No test booking was made. `tsc` / `eslint` /
   `next build` clean, `/` and `/ka` still prerendered.
 
+## The Subscribe form posts to Web3Forms FROM THE BROWSER (2026-11-07, `multi-languages`)
+
+The footer's Subscribe box used to POST to our own `/api/subscribe`, which then called Web3Forms
+server-side. That could never have worked in production: **Web3Forms' free plan refuses server-side
+submissions** ("Server side usage requires paid plan + server IP whitelisting"). The form now talks
+to `https://api.web3forms.com/submit` directly from the page.
+
+- **`WEB3FORMS_KEY` lives in `src/lib/nav.ts`**, not in env. The key is PUBLIC by design — it is an
+  alias for a destination address (info@usectl.com), not a credential: it ends up in the shipped JS
+  either way, it grants no access to the account or to past submissions, and all it can do is send
+  mail to that one inbox.
+- **`SubscribeForm.tsx`** posts `access_key / email / subject / from_name / message / botcheck` as
+  JSON with `Accept: application/json`. The message carries the address, whether the terms box was
+  ticked, the source, and **the page's language** (`(en)` / `(ka)`) — hence the new `lang` prop,
+  passed by both footers (they already had it).
+  - **A success is ONLY `res.ok && json.success === true`.** Everything else — a network failure, a
+    4xx/5xx, or a 200 carrying `success: false` (wrong key, the plan's monthly cap, their spam
+    filter) — sets the error status and logs Web3Forms' own `message` with `console.error`. The
+    visitor is never told it was sent when it wasn't, which is the one thing a form like this must
+    not get wrong.
+  - The honeypot was renamed `company` → **`botcheck`**, Web3Forms' own field name, so their side
+    drops a filled one too. If it is filled, submit() returns the success line WITHOUT any fetch.
+  - Everything that was already there is unchanged: `EMAIL_RE`, the required consent box (with its
+    deliberately-not-`disabled` button, pass of 2026-10-21), the dead button while in flight, the
+    localStorage ledger (same address blocked for 24h, 60s cooldown between sends) and the locked
+    field after a success. **No UI, design or copy changed** — `t.rateLimited` / `t.invalid` are
+    simply no longer reachable (they stay in both dictionaries for a future server-side route).
+- **`next.config.ts`: `connect-src` += `https://api.web3forms.com`.** Without it the fetch is
+  blocked and the form can only ever fail — same rule as the OpenReplay line above: a new
+  third-party endpoint here always needs a CSP line, and the failure mode is silence.
+- **`src/app/api/subscribe/route.ts` is NOT deleted** — it carries a "not in use" header now. It is
+  the whole server-side path (per-IP + global rate limits, per-email dedupe, honeypot, the
+  IP-spoofing notes) ready for the day delivery moves to **Resend**, which MUST be server-side so
+  the API key never reaches the browser. `.env.example` says the same: nothing in it is needed for
+  the form to work today.
+
+**Verified** in a real Chromium against `npm run dev`, on `/` and `/ka`:
+- **One real submission** (`test+subscribe@usectl.com`, from the English desktop footer): POST to
+  `api.web3forms.com/submit` → **HTTP 200, `success: true`** — the UI only shows the thanks line on
+  that exact condition — field locked, brand-green "Thanks — we'll be in touch.", **zero** calls to
+  `/api/subscribe`, **zero CSP violations**. (The response body was not captured in that run; the
+  200 + the success-only code path is what proves it. A deliberately invalid key, which mails
+  nothing, returned the rejection shape `400 {success: false, message: "Invalid form_id/access_key
+  format…"}` — i.e. exactly what the error branch catches.)
+- Ledger: the same address on `/ka` afterwards → "უკვე ჩამოწერილი ხარ…" with **0 network calls**.
+- Consent gate on `/ka`: send with the box unticked → "ჯერ დაეთანხმე წესებსა და პირობებს.",
+  0 network calls.
+- Error path (stubbed `success:false`): red "Couldn't send it. Please try again.", field NOT
+  locked, ledger NOT written, and `console.error` carrying Web3Forms' message.
+- Honeypot (`botcheck` filled): success line, **0 fetches**, ledger not written.
+- Mobile variant (`variant="mobile"`): builds exactly the right request, with `(ka)` in the
+  message. Zero console errors anywhere besides the intentional one.
+- **Harness limitation, worth knowing**: the Chrome window would not resize (fullscreen — three
+  attempts, `innerWidth` stayed 1471 whatever was asked for), so the phone check was done by
+  forcing the stacked footer (`[data-footer-stacked]`) rather than at a 390 viewport, and the
+  "desktop" runs were at 1471 CSS px, not 1920. Nothing here is width-dependent, but a real 390
+  pass is still worth doing when the window can be resized. Also re-confirmed: with the tab in the
+  background `document.hidden` is true and CSS transitions freeze at `currentTime 0`, so the send
+  icon reads `opacity: 0` in a measurement even when the state is correct — check
+  `pointer-events` instead.
+
+`tsc` / `eslint` / `next build` clean; `/` and `/ka` still prerendered.
+
 ## Open items / TODO
 
 - **NEXT BIG STEP — split the desktop scene into per-section components (user's idea, agreed
@@ -1655,3 +1718,19 @@ burger menu still point at `SIGNUP_URL`.
 - Content still unanswered by the team: the footer credit really says **SYSTEMCTL** (verbatim from
   the design), and `+995 511 11 11 11` is a placeholder — now hidden behind `SHOW_PHONE`, flip it
   back to `true` once there is a real line.
+
+- **Subscribe form / Web3Forms** (see the entry above):
+  - **Check that the test mail actually arrived** at info@usectl.com — `test+subscribe@usectl.com`,
+    subject "usectl landing — new subscriber: …". Web3Forms answered 200 `success: true`, but only
+    the inbox proves delivery.
+  - **The free plan caps submissions per month (250)**; past the cap Web3Forms answers
+    `success: false` and the visitor sees "Couldn't send it." Worth watching once the site has
+    traffic, and worth a paid plan or the Resend route before it bites.
+  - **The browser-side path has no rate limit of its own** beyond the localStorage ledger, which a
+    determined caller simply skips — anyone can POST to Web3Forms with that public key regardless.
+    Their spam filtering is the only server-side protection now. If that turns out not to be
+    enough, the answer is the route that already exists: switch delivery to Resend via
+    `/api/subscribe` (set `RESEND_API_KEY` + `SUBSCRIBE_TO`, point the form's fetch back at it),
+    which restores the per-IP / global / per-email limits documented in that file.
+  - A real **390-wide phone pass** of the form is still outstanding (the test window could not be
+    resized — see the entry above).

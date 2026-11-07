@@ -198,7 +198,7 @@ export function Footer({ t, lang }: { t: Dict; lang: Lang }) {
         </h3>
         {/* the field, its send icon, the consent box and the status line (client component — it
             posts to /api/subscribe and carries the repeat-send guards) */}
-        <SubscribeForm variant="desktop" t={t.subscribe} sendLabel={t.a11y.subscribe} />
+        <SubscribeForm variant="desktop" t={t.subscribe} sendLabel={t.a11y.subscribe} lang={lang} />
       </div>
 
       {/* copyright */}

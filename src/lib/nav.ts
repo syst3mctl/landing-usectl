@@ -35,6 +35,16 @@ export const SHOW_STORE_BADGES = false;
 export const CONTACT_EMAIL = "info@usectl.com";
 export const CONTACT_HREF = `mailto:${CONTACT_EMAIL}`;
 
+// The footer's Subscribe box posts STRAIGHT to Web3Forms from the browser (2026-11-07) — their
+// free plan does not allow server-side submissions ("Server side usage requires paid plan + server
+// IP whitelisting"), so the previous route through /api/subscribe could never have delivered.
+//
+// This key is PUBLIC by design: it is an alias for a destination address, not a secret. Anyone can
+// read it out of the shipped JS either way, and all it can do is send an email to info@usectl.com
+// — it grants no access to the account or to past submissions. Abuse protection is Web3Forms' own
+// (spam filtering + the `botcheck` honeypot) plus the client-side guards in SubscribeForm.tsx.
+export const WEB3FORMS_KEY = "63bff0c5-1cc9-4183-911d-5e385db7d0c9";
+
 // Same idea for the footer's phone number: hidden on request (2026-11-05) while the line is a
 // placeholder, with the markup kept in both footers so a real number is one line away.
 export const SHOW_PHONE = false;
