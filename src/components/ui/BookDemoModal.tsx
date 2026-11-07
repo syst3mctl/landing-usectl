@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { createPortal } from "react-dom";
 import { BOOKING_EMBED_URL, BOOKING_URL } from "@/lib/nav";
 import { OPEN_BOOK_DEMO_EVENT, setBookDemoOpen } from "@/lib/bookDemo";
@@ -31,7 +37,8 @@ declare global {
 // how long the closing fade runs before the modal unmounts (keep in step with the duration below)
 const FADE_MS = 180;
 
-const FOCUSABLE = 'a[href], button:not([disabled]), iframe, [tabindex]:not([tabindex="-1"])';
+const FOCUSABLE =
+  'a[href], button:not([disabled]), iframe, [tabindex]:not([tabindex="-1"])';
 
 export function BookDemoModal({ t }: { t: Dict }) {
   const [open, setOpen] = useState(false);
@@ -100,7 +107,9 @@ export function BookDemoModal({ t }: { t: Dict }) {
       const last = items[items.length - 1];
       const active = document.activeElement;
       const outside = !panel.contains(active);
-      if (e.shiftKey ? active === first || outside : active === last || outside) {
+      if (
+        e.shiftKey ? active === first || outside : active === last || outside
+      ) {
         e.preventDefault();
         (e.shiftKey ? last : first).focus({ preventScroll: true });
       }
@@ -145,11 +154,15 @@ export function BookDemoModal({ t }: { t: Dict }) {
         aria-label={t.hero.bookDemo}
         // phone / portrait tablet: full screen. ≥1024: a framed window in the page's own style.
         className={`relative flex h-full w-full flex-col overflow-hidden border-white/10 bg-[#1b1a1a] shadow-[0_30px_80px_rgba(0,0,0,0.55)] transition-all duration-200 lg:h-[min(780px,88vh)] lg:w-[min(900px,92vw)] lg:rounded-2xl lg:border ${
-          shown ? "modal-panel-in translate-y-0 opacity-100" : "translate-y-2 opacity-0"
+          shown
+            ? "modal-panel-in translate-y-0 opacity-100"
+            : "translate-y-2 opacity-0"
         }`}
       >
         <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-5 py-4">
-          <p className="font-heading text-[15px] font-medium text-foreground">{t.hero.bookDemo}</p>
+          <p className="font-heading text-[15px] font-medium text-foreground">
+            {t.hero.bookDemo}
+          </p>
           <button
             ref={closeRef}
             type="button"
@@ -157,7 +170,12 @@ export function BookDemoModal({ t }: { t: Dict }) {
             aria-label={t.bookDemo.close}
             className="flex h-9 w-9 items-center justify-center rounded-full text-white/60 transition-colors hover:bg-white/5 hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/60"
           >
-            <svg aria-hidden="true" viewBox="0 0 16 16" fill="none" className="h-4 w-4">
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 16 16"
+              fill="none"
+              className="h-4 w-4"
+            >
               <path
                 d="M3.5 3.5L12.5 12.5M12.5 3.5L3.5 12.5"
                 stroke="currentColor"
