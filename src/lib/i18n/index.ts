@@ -5,11 +5,12 @@ export type { Dict } from "./en";
 
 // EN / KA, decided 2026-11-06 (PROJECT.md). English keeps the bare `/` — it is the URL Google has
 // indexed — and Georgian lives at `/ka` (ISO 639-1; `ge` is the COUNTRY code). Both are prerendered
-// by the optional catch-all route `app/[[...lang]]`, so there is no proxy/middleware and no
-// dynamic rendering: the CSP and the CDN caching both depend on these pages staying static.
+// by the optional catch-all route `app/[[...lang]]`; the only proxy (src/proxy.ts) redirects `/` and never
+// renders, so there is no dynamic rendering: the CSP and the CDN caching both depend on these pages staying static.
 //
-// There is deliberately NO redirect by `Accept-Language` — the visitor chooses, which is also the
-// friendlier thing for search engines.
+// There is deliberately NO redirect by `Accept-Language`. The one automatic step is by COUNTRY:
+// src/proxy.ts sends visitors from Georgia (Cloudflare's `cf-ipcountry`) from `/` to `/ka`, once —
+// after the visitor picks a language with the switcher, LANG_COOKIE remembers it and wins.
 
 export const LANGS = ["en", "ka"] as const;
 export type Lang = (typeof LANGS)[number];
@@ -20,6 +21,9 @@ export const LANG_SEGMENT: Record<Lang, string> = { en: "", ka: "ka" };
 
 /** BCP 47 tags for <html lang> and the hreflang alternates. */
 export const HTML_LANG: Record<Lang, string> = { en: "en", ka: "ka" };
+
+/** Cookie the EN / KA switcher writes; while it exists src/proxy.ts never redirects by country. */
+export const LANG_COOKIE = "lang";
 
 /** What the switcher shows for each language. */
 export const LANG_LABEL: Record<Lang, string> = { en: "EN", ka: "KA" };

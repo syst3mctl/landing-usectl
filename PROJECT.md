@@ -1755,3 +1755,20 @@ to `https://api.web3forms.com/submit` directly from the page.
     which restores the per-IP / global / per-email limits documented in that file.
   - A real **390-wide phone pass** of the form is still outstanding (the test window could not be
     resized — see the entry above).
+
+## Visitors from Georgia land on /ka (2026-11-07, `src/proxy.ts`)
+
+- `src/proxy.ts` (Next 16's renamed middleware, `matcher: "/"`) reads Cloudflare's `cf-ipcountry`
+  header — Cloudflare fronts usectl.com and adds it to every request, no dashboard setting needed
+  (checked: `/cdn-cgi/trace` reports `loc=GE`; `/` is `cf-cache-status: DYNAMIC`, so every request
+  reaches the pod). `GE` on a bare `/` page load → **307 to `/ka`** (query string kept, the browser
+  keeps the #hash), `Cache-Control: private, no-store` on the redirect.
+- Never redirects: a visitor with the `lang` cookie (`LANG_COOKIE`; the EN / KA switcher now writes
+  it for a year on click, so a Georgian who picks English stays on English), any path but `/`,
+  fetch/RSC requests (`sec-fetch-dest` other than `document`), crawlers (UA regex), or a request
+  without the header (local dev).
+- `next build` still reports `○ /` and `○ /ka` (static) plus `ƒ Proxy`. Verified against
+  `next start` with forged headers: GE → 307 /ka, GE+cookie → 200, US → 200, no header → 200,
+  GE fetch → 200, GE Googlebot → 200, GE /ka and /robots.txt → 200.
+- After deploy, check from Georgia in a fresh/incognito window: `usectl.com` → `/ka`. If it does
+  NOT redirect, the platform's ingress isn't passing `cf-ipcountry` to the pod.

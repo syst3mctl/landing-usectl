@@ -1,6 +1,6 @@
 "use client";
 
-import { LANGS, LANG_LABEL, langPath, type Lang } from "@/lib/i18n";
+import { LANGS, LANG_COOKIE, LANG_LABEL, langPath, type Lang } from "@/lib/i18n";
 
 // EN / KA. Lives in the header on ≥1024 and in the burger menu below that.
 //
@@ -50,6 +50,8 @@ export function LangSwitcher({
                 onClick={(e) => {
                   e.preventDefault();
                   onNavigate?.();
+                  // remembered for a year, so the country redirect in src/proxy.ts never overrides it
+                  document.cookie = `${LANG_COOKIE}=${l}; path=/; max-age=31536000; samesite=lax; secure`;
                   window.location.assign(langPath(l) + window.location.hash);
                 }}
                 className="text-white/45 transition-colors duration-300 ease-out hover:text-brand"
