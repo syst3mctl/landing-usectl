@@ -5,6 +5,8 @@
 // (HeroSectionClient's SNAP_TIMES) and the mobile stacked sections run in the SAME order, so one
 // number drives both: desktop glides the timeline to that state, mobile scrolls to the section
 // carrying that id. `external` links leave the site instead (no state, opened in a new tab).
+import type { Dict } from "@/lib/i18n/en";
+
 export type NavLink = { label: string; href: string; state?: number; external?: boolean };
 
 // The off-site destinations, kept here so every button/link that points at them agrees.
@@ -36,13 +38,31 @@ export const SOCIAL_LINKS = [
   { label: "usectl on Facebook", href: FACEBOOK_URL, icon: "/footer/fb.svg", size: 20 },
 ] as const;
 
-export const NAV_LINKS: readonly NavLink[] = [
-  { label: "The Machine", href: "#the-machine", state: 3 }, // "Give every project its own space"
-  { label: "Agents", href: "#agents", state: 6 }, // "Give your agent a place to work"
-  { label: "Features", href: "#features", state: 2 }, // "Your Stacks, in one place"
-  { label: "Pricing", href: "#pricing", state: 7 }, // the calculator
-  { label: "Documentation", href: DOCS_URL, external: true },
+// The nav, without its labels: the label comes from the active language's dictionary (`key` is the
+// entry in `Dict["nav"]`), so the header, the burger menu and BOTH footer columns can't drift from
+// each other or from the translation.
+type NavItem = { key: keyof Dict["nav"]; href: string; state?: number; external?: boolean };
+
+const NAV_ITEMS: readonly NavItem[] = [
+  { key: "machine", href: "#the-machine", state: 3 }, // "Give every project its own space"
+  { key: "agents", href: "#agents", state: 6 }, // "Give your agent a place to work"
+  { key: "features", href: "#features", state: 2 }, // "Your Stacks, in one place"
+  { key: "pricing", href: "#pricing", state: 7 }, // the calculator
+  { key: "documentation", href: DOCS_URL, external: true },
 ];
+
+/** The header / burger-menu nav in one language. */
+export const navLinks = (t: Dict): readonly NavLink[] =>
+  NAV_ITEMS.map(({ key, href, state, external }) => ({ label: t.nav[key], href, state, external }));
+
+/** The same destinations in the footer column, where Documentation is shortened to "Doc". */
+export const footerNavLinks = (t: Dict): readonly NavLink[] =>
+  NAV_ITEMS.map(({ key, href, state, external }) => ({
+    label: key === "documentation" ? t.nav.doc : t.nav[key],
+    href,
+    state,
+    external,
+  }));
 
 // Every page of the scene, in order (desktop SNAP_TIMES index = mobile stacked section index), and
 // the hash the address bar shows while you are on it — written on EVERY page change (scroll, keys,
@@ -72,12 +92,12 @@ export const STATE_BY_HASH: Readonly<Record<string, number>> = Object.fromEntrie
 export const STATE_STORAGE_KEY = "usectl:state";
 
 export const NAV_STATE_BY_HASH: Readonly<Record<string, number>> = Object.fromEntries(
-  NAV_LINKS.flatMap((link) => (link.state === undefined ? [] : [[link.href, link.state] as const])),
+  NAV_ITEMS.flatMap((link) => (link.state === undefined ? [] : [[link.href, link.state] as const])),
 );
 
 // the mobile section that each state index owns an id for (inverse of the map above)
 export const NAV_ID_BY_STATE: Readonly<Record<number, string>> = Object.fromEntries(
-  NAV_LINKS.flatMap((link) =>
+  NAV_ITEMS.flatMap((link) =>
     link.state === undefined ? [] : [[link.state, link.href.slice(1)] as const],
   ),
 );

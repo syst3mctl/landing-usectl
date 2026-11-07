@@ -8,15 +8,15 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import { m } from "./HeroMobile";
 import {
-  DOCS_URL,
+  footerNavLinks,
   PHONE_HREF,
   PHONE_NUMBER,
   SHOW_PHONE,
   SHOW_STORE_BADGES,
   SOCIAL_LINKS,
   SYSTEMCTL_URL,
-  type NavLink,
 } from "@/lib/nav";
+import { langPath, type Dict, type Lang } from "@/lib/i18n";
 import { SubscribeForm } from "@/components/layout/SubscribeForm";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
@@ -25,16 +25,9 @@ gsap.registerPlugin(ScrollTrigger, useGSAP);
 // reflow, so phones get this flow-layout version with the same content, stacked. Same staggered
 // fade-up on enter as the desktop one.
 
-const NAV_LINKS: readonly NavLink[] = [
-  { label: "The Machine", href: "#the-machine" },
-  { label: "Agents", href: "#agents" },
-  { label: "Features", href: "#features" },
-  { label: "Pricing", href: "#pricing" },
-  { label: "Doc", href: DOCS_URL, external: true },
-];
-
-export function FooterMobile() {
+export function FooterMobile({ t, lang }: { t: Dict; lang: Lang }) {
   const ref = useRef<HTMLElement>(null);
+  const navLinks = footerNavLinks(t);
 
   useGSAP(
     () => {
@@ -84,11 +77,11 @@ export function FooterMobile() {
       />
 
       <div data-mf-reveal className="relative">
-        <Link href="/" aria-label="usectl home" className="inline-block">
+        <Link href={langPath(lang)} aria-label={t.a11y.home} className="inline-block">
           <Image src="/logo/logo.svg" alt="usectl" width={151} height={25} style={{ width: m(130), height: "auto" }} />
         </Link>
         <p className="font-heading font-light text-white/50" style={{ marginTop: m(14), fontSize: m(13), lineHeight: 1.5 }}>
-          37 Zhiuli Shartava st., Tbilisi 2209 Georgia
+          {t.footer.address}
         </p>
         {/* store badges — hidden until the apps ship (see SHOW_STORE_BADGES) */}
         {SHOW_STORE_BADGES && (
@@ -144,10 +137,10 @@ export function FooterMobile() {
       <div className="relative grid grid-cols-2" style={{ marginTop: m(40), columnGap: m(20), rowGap: m(36) }}>
         <div data-mf-reveal>
           <h3 className={h3} style={{ fontSize: m(16) }}>
-            Navigation
+            {t.footer.navigation}
           </h3>
           <ul style={{ marginTop: m(16) }}>
-            {NAV_LINKS.map((l) => (
+            {navLinks.map((l) => (
               <li key={l.href} style={{ marginBottom: m(12) }}>
                 <Link
                   href={l.href}
@@ -163,7 +156,7 @@ export function FooterMobile() {
         </div>
         <div data-mf-reveal>
           <h3 className={h3} style={{ fontSize: m(16) }}>
-            Contact
+            {t.footer.contact}
           </h3>
           <p style={{ marginTop: m(16) }}>
             <a href="mailto:hello@usectl.com" className={link} style={{ fontSize: m(14) }}>
@@ -202,10 +195,10 @@ export function FooterMobile() {
 
       <div data-mf-reveal className="relative" style={{ marginTop: m(36) }}>
         <h3 className={h3} style={{ fontSize: m(16) }}>
-          Subscribe
+          {t.footer.subscribe}
         </h3>
         {/* same component the desktop footer uses, on the phone's --m scale */}
-        <SubscribeForm variant="mobile" />
+        <SubscribeForm variant="mobile" t={t.subscribe} sendLabel={t.a11y.subscribe} />
       </div>
 
       <Image

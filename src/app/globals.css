@@ -97,12 +97,25 @@
      Width and text shrink with it too, but only down to 104px / 12px so the label always fits and
      stays readable next to the nav. The right margin is one grid column (82), which puts the
      pill's right edge on column 21 (1739), where the design has it. */
+  /* EN / KA, immediately left of Start Now — on --sh like the rest of the row, with a floor so it
+     stays readable when a short window shrinks the scene */
+  .header-lang {
+    font-size: max(12px, calc(var(--sh) * 14));
+    margin-right: max(16px, calc(var(--sh) * 22));
+  }
   .header-cta {
     width: max(104px, calc(var(--sh) * 132));
     height: calc(var(--sh) * 48);
     font-size: max(12px, calc(var(--sh) * 14));
     line-height: 1;
     margin-right: calc(var(--sh) * 82);
+  }
+  /* "დაიწყე ახლავე" is a much longer label than "Start Now": at 14 it measured 113px of text +
+     16 arrow + 4 gap = 133 inside the design's 132-wide pill, i.e. it touched both borders
+     (user, 2026-11-07: "არ ეტევა button-ში"). The pill keeps the Figma box; only the label
+     shrinks. */
+  html[lang="ka"] .header-cta {
+    font-size: max(10px, calc(var(--sh) * 12));
   }
 }
 @media (min-width: 1280px) {
@@ -136,11 +149,30 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-brand: var(--brand);
-  /* Space Grotesk everywhere by default: Geist Sans was only reached by a few stray glyphs (store
-     badges, pricing +/−), so its font file was a render-blocking preload for almost nothing */
+}
+
+/* The font stacks are a NON-inline @theme on purpose: `@theme inline` bakes the value straight
+   into every utility (`.font-heading { font-family: var(--font-space-grotesk) }`), which makes the
+   per-language override below a no-op. Without `inline` the utilities reference the theme variable
+   itself, so html[lang="ka"] can extend the stack.
+   Space Grotesk everywhere by default: Geist Sans was only reached by a few stray glyphs (store
+   badges, pricing +/−), so its font file was a render-blocking preload for almost nothing. */
+@theme {
   --font-sans: var(--font-space-grotesk);
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-space-grotesk);
+}
+
+/* Georgian (/ka). Space Grotesk and Geist Mono are both latin-subset — they carry NO Georgian
+   glyphs — so the Georgian face is APPENDED to each stack instead of replacing it: a font stack
+   resolves per GLYPH, so Latin runs (usectl, Kubernetes, vCPU, $15.10) keep rendering in Space
+   Grotesk / Geist Mono exactly as on `/`, and only Georgian letters come from Noto Sans Georgian.
+   Unlayered on purpose: Tailwind's `@theme` vars live in a layer, so a plain rule outranks them
+   (same reason .header-row's rules are unlayered). */
+html[lang="ka"] {
+  --font-sans: var(--font-space-grotesk), var(--font-noto-georgian), sans-serif;
+  --font-heading: var(--font-space-grotesk), var(--font-noto-georgian), sans-serif;
+  --font-mono: var(--font-geist-mono), var(--font-noto-georgian), monospace;
 }
 
 body {

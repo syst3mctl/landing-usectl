@@ -1285,6 +1285,149 @@ hand-typed hash, the pre-paint hide script).
   from the sandbox). Once GA is live, check DebugView while scrolling: if every section becomes a
   page_view, either untick that option or keep it deliberately as a "how far do people get" metric.
 
+## Georgian is live at /ka — dictionary, routes, font, switcher (2026-11-07, branch `multi-languages`)
+
+Steps 1-3 of the multi-language plan, built in one pass on the CURRENT architecture (the agreed
+order: Georgian first, the per-section split afterwards). `/` is unchanged; `/ka` is the same page
+in Georgian. Both are **prerendered** — `next build` reports `○ /` and `○ /ka`, plus a share card
+each. Verified end to end in real Chromium against the production build; `tsc` / `eslint` /
+`next build` clean and `npm run dev` starts cleanly.
+
+**1. Every visible string now lives in `src/lib/i18n/`.**
+- `en.ts` is the source of truth AND the contract: `export type Dict = typeof en`, so a missing or
+  extra key in `ka.ts` is a TypeScript error, not a runtime blank.
+- `ka.ts` is a DRAFT from the team's `usectl-georgian-translation.md` with the editorial fixes
+  agreed on 2026-11-06 (one word for deploy — "გაშვება"; "ობიექტების საცავი", not the file's wrong
+  "ობიექტური"; "ფასი", not "გადასახადი" = tax; shorter eyebrows/headings so the fixed-width columns
+  hold). **The user supplies the approved copy later**, which is why the whole file is meant to be
+  replaced wholesale and nothing else in the repo contains Georgian.
+- `index.ts` — `LANGS` / `Lang`, `LANG_SEGMENT` (`en: ""`, `ka: "ka"`), `HTML_LANG`, `getDict`,
+  `langPath(lang, hash?)` and `fill()` for `{name}` placeholders. The dict crosses the
+  server→client boundary as a prop, so it must stay plain JSON — no functions in it.
+- Headings the design breaks over two lines are ARRAYS (one entry per line), rendered by a small
+  `Lines` component as `text<br/>text`. That is byte-identical to what was there, which matters
+  because `splitWords()` walks those text nodes — and it lets a translation break where its own
+  text wants to.
+- Geometry was separated from copy in the module constants: `CALLOUT_LABELS`, `PANEL_ITEMS`,
+  `PANEL4_ITEMS`, `PODS` and `PRICING_ROWS` keep their numbers and lose their text, which now comes
+  from the dictionary index-matched (`t.s2.callouts[i]`, `t.s5.podDescs[i]`, …).
+- `nav.ts` holds `NAV_ITEMS` (key + href + state) and builds labels per language through
+  `navLinks(t)` / `footerNavLinks(t)` — the header, the burger menu and BOTH footer columns now
+  come from one list instead of three hand-copied arrays.
+
+**What deliberately STAYS ENGLISH in every language** (user's call, and the code comments say so at
+each site): the terminal windows (title bar + typed rows — `git push origin main`,
+`Code push detected: commit-a7f3d`, `usectl agent attach …`), the pod/deploy card titles and
+statuses (`[ POD // API ]`, `RUNNING v1.4.2`, `DEPLOYING ... v2.1.0`, `BUILD: IN-PROGRESS`,
+`[ ✓ LIVE // v2.1.0 ]`, `HTTPS Active`, `POD // AI AGENT`), and the uppercase mono spec labels
+(`USECTL MANAGED INFRASTRUCTURE`, `MACHINE BOUNDARY`, `DEDICATED RESOURCES`, `ENVIRONMENT CONFIG`).
+Three reasons: it is a real CLI/dashboard mock, there is no good Georgian monospace face, and those
+are exactly the fixed-width windows that would wrap. Their state-4 DESCRIPTIONS are translated, so
+each row reads "01/ MACHINE BOUNDARY" + Georgian — flip-able in one line if the team disagrees.
+
+**2. Routing — two ROOT layouts, no dynamic segment.** This took three attempts, worth recording:
+- Next's own i18n guide (`node_modules/next/dist/docs/01-app/02-guides/internationalization.md`)
+  proposes `app/[lang]` + a proxy redirect. Rejected: it turns `/` into `/en` (the indexed URL) and
+  reintroduces dynamic rendering, which the CSP and the CDN caching in next.config.ts avoid on
+  purpose.
+- `app/[[...lang]]` (optional catch-all, `generateStaticParams` → `[]` and `["ka"]`) built fine
+  until the share-card files were added, then **`Optional catch-all must be the last part of the
+  URL in route "/[[...lang]]/opengraph-image"`** — an optional catch-all may not have ANY child
+  route, and `opengraph-image` / `twitter-image` are child routes. (`next dev` fails the same way
+  with a Turbopack panic.)
+- Final shape: **route groups with one root layout each** — `app/(en)/{layout,page,opengraph-image,
+  twitter-image}.tsx` → `/`, and `app/(ka)/layout.tsx` + `app/(ka)/ka/{page,opengraph-image,
+  twitter-image}.tsx` → `/ka`. Only a root layout can render `<html>`, and `<html lang>` has to
+  differ. The shared parts live in the private folder `app/_site/`: `shell.tsx` (the `<html>/<body>`
+  tree, the fonts, `buildMetadata(lang)`, the JSON-LD and the pre-paint restore script) and
+  `landing.tsx` (the page body). Each layout/page file is 5-10 lines, so the two languages can't
+  drift.
+- **Icons had to move.** With no `app/layout.tsx` there is no root segment for `app/icon.svg` /
+  `app/favicon.ico`, and the same file can't sit in both groups (two routes, one URL). They are now
+  `public/icon.svg` + `public/favicon.ico`, declared explicitly in `metadata.icons`. Verified in the
+  HTML of both pages.
+- Navigating between two root layouts is a FULL page load — which is what the language switch
+  wants anyway (the pre-paint restore script has to run).
+
+**3. Georgian font.** `Noto_Sans_Georgian` (next/font/google, `preload: false` — `/` never uses it).
+It is **appended** to the stacks under `html[lang="ka"]`, not substituted:
+`--font-heading: var(--font-space-grotesk), var(--font-noto-georgian), sans-serif`. A font stack
+resolves per GLYPH, so Latin runs (usectl, Kubernetes, vCPU, $15.10) still render in Space Grotesk
+and only Georgian letters come from Noto — numbers and prices look identical in both languages.
+- **Trap that cost a build**: the fonts were in `@theme inline`, and `inline` bakes the value
+  straight into every utility (`.font-heading { font-family: var(--font-space-grotesk) }`), so
+  overriding `--font-heading` did nothing — `/ka` silently rendered Georgian in the metric-adjusted
+  Arial fallback. The font vars are now a separate NON-inline `@theme`; the colours stay inline.
+  Measured after: `font-family` on `/ka` is the three-name stack and `document.fonts` has Noto
+  loaded, while `/` is unchanged.
+
+**4. Switcher** — `components/layout/LangSwitcher.tsx` ("EN / KA"), in the header next to Start Now
+(`.header-lang`, on `--sh` like the rest of the row) and as a row in the burger menu. It navigates
+with a real page load and **carries the current hash over**, which works for free because
+`SECTION_HASHES` is identical in both languages: measured, `/#pricing` → `/ka#pricing` lands on
+y 11439 → 11439 with the stage faded in, and back again.
+
+**5. SEO** — `seo.ts` now holds only what never translates (`SITE_NAME`, `SITE_URL`,
+`STARTING_PRICE_USD`); title/description/share-description/keywords/image-alt moved into each
+dictionary's `seo` block. `buildMetadata(lang)` emits per-language title + description, canonical
+(`/` · `/ka`), hreflang alternates (`en`, `ka`, `x-default` → `/`), `og:locale` en_US/ka_GE, and the
+JSON-LD `inLanguage`. `sitemap.ts` lists both URLs with their `xhtml:link` alternates.
+
+**6. The share card is bilingual.** satori needs real font FILES, so `_og/NotoSansGeorgian-{Regular,
+Medium}.woff` (OFL, copied out of @fontsource, which was then uninstalled — the Space Grotesk woffs
+live there the same way) sit next to the Space Grotesk pair. The Georgian card registers both
+families and sets `fontFamily: "Space Grotesk, Noto Sans Georgian"`, so satori falls back per glyph
+exactly like the browser. Its heading is 44 (vs 57) and the pitch 20 (vs 23): the Georgian heading
+runs to three lines, and at 50 the price pill ended 2px from the card's bottom edge.
+
+**7. Per-language geometry lives in ONE table**, `src/lib/i18n/typeScale.ts`, instead of
+`lang === "ka" ? …` scattered through nine states. Only one entry was actually needed so far:
+state 9's closing line is `whitespace-nowrap` with a hand-placed `<br/>`, so it cannot reflow —
+measured at 1920 the Georgian line was 1773px wide (139px past the content inset) and ran off the
+screen. `s9Heading` 60 → 52 for `ka`. Add an entry only when a measurement shows the English value
+breaking.
+
+**Verified** (production build, real Chromium, zero console errors anywhere):
+- `/` and `/ka` both 200 and static, `/nope` 404; the English page renders exactly as before.
+- All ten pages of the desktop scene walked on BOTH languages — every snap lands
+  (1000 / 2089 / 3859 / 5402 / 7990 / 10168 / 11439 / 12801 / 13601), every section's hash is
+  written, and a box-geometry probe reports **nothing outside the frame** in either language.
+- Phone 390×844 on `/ka`: all ten sections, `scrollWidth == 390` everywhere, every entrance
+  completes, burger menu in Georgian with the EN/KA row.
+- Both share cards render (`200 image/png 1200×630`) and were eyeballed.
+- `<html lang>`, title, canonical, hreflang, og:locale, the icon links and the sitemap all checked
+  in the served HTML.
+
+**Known, and intentionally left for the next round:** the Georgian HERO heading wraps to 3 lines
+where English takes 2 (it fits; buttons sit ~100px lower), and the state-2/5 headings take 3 lines
+in the narrow column. The mono panels and the phone's mono bullets render Georgian through Noto
+with the mono letter-spacing — readable, slightly loose. These are copy/layout judgement calls for
+the per-section pass, not bugs.
+
+**One deliberate English change**: the state-2 paragraph on DESKTOP was missing its final period
+(the phone build had it). Both now come from one dictionary entry, with the period.
+
+### Follow-ups the same day: the Georgian header pill, and the tab icon is the real mark
+
+- **`html[lang="ka"] .header-cta { font-size: max(10px, sh × 12) }`** (globals.css). "დაიწყე
+  ახლავე" measured 113px of text + 16 arrow + 4 gap = 133 inside the design's 132-wide pill, i.e.
+  it touched both borders. At 12 the content is 115 with ~9px of air each side (English: 87 in 132,
+  22px each side). The pill keeps its Figma box — only the label shrank, which is what the user
+  asked for; widening it is the other lever if 12 ever reads too small.
+- **`public/icon.svg` is now the wave + the asterisk** — the logo WITHOUT the wordmark (user:
+  "ისე როგორც logo გვაქვს: ~* … usectl არ ჩასვა"). It used to be the asterisk alone. All five
+  paths are copied VERBATIM out of `public/logo/logo.svg` (its path 10, the 2px-stroked wave, plus
+  paths 6-9, the asterisk bars) under ONE transform, so the mark can't drift from the logo. The
+  placement maths: the pair's combined VISUAL bbox is x 0 → 48.026 (the wave's stroke adds 1 on
+  each side of its 1 → 20.738 geometry — `getBBox()` ignores stroke) and y 0 → 24.278, hence
+  `translate(0.5 8.164) scale(31/48.026)` inside the 32 box.
+- **`public/favicon.ico` regenerated from that same SVG** (16/32/48 PNG-in-ICO). The pipeline, if
+  it ever has to be redone: Playwright renders `icon.svg` at each size with `omitBackground: true`,
+  then a 12-line Python script writes the ICONDIR + directory entries + the PNG blobs. No image
+  library needed.
+  - Known and accepted: the mark is 2:1 and thin, so the **16px** raster is mushy. 32 and 48 read
+    perfectly, Chrome/Firefox prefer `/icon.svg` anyway, and HiDPI tabs draw the 32px entry.
+
 ## Open items / TODO
 
 - **NEXT BIG STEP — split the desktop scene into per-section components (user's idea, agreed
@@ -1303,6 +1446,73 @@ hand-typed hash, the pre-paint hide script).
     elements) on the new controller while the rest stays on the old timeline; user evaluates; then
     migrate section by section, morph pairs last. Commit a stable point before starting.
   - Mobile (`HeroMobile`) is separate and not part of this.
+
+- **MULTI-LANGUAGE (EN / KA) — branch `multi-languages`. Steps 1-3 ARE BUILT (2026-11-07, see the
+  entry above). What is still open: (a) the approved Georgian copy from the user — drop it into
+  `src/lib/i18n/ka.ts`, nothing else holds Georgian; (b) the per-section Georgian layout pass
+  (step 4), whose numbers belong in `src/lib/i18n/typeScale.ts`; (c) the team's call on whether the
+  uppercase mono spec labels and the mono bullets should be Georgian too.** The plan as originally
+  agreed, for context: Source text: `usectl-georgian-translation.md`
+  (repo root, untracked — the team's translation of every visible string; review notes below).
+  Proposed steps:
+  1. Move every visible string out of the components into two dictionaries (`en`, `ka`); components
+     read from them. Do this FIRST — it also makes the per-section split above easier.
+  2. Routes: `/` stays English, `/ka` Georgian — both statically generated (no proxy/middleware:
+     next.config.ts deliberately avoids nonces/dynamic rendering), `hreflang` alternates, per-language
+     metadata + OG card. Section hashes (`SECTION_HASHES`) are the same in both languages.
+  3. Georgian font: Space Grotesk and Geist Mono have NO Georgian glyphs (`subsets: ["latin"]`) —
+     pick a Georgian face that pairs with Space Grotesk (candidates: Noto Sans Georgian, FiraGO),
+     loaded on `/ka` only. Footer uses CSS `uppercase` → Georgian renders as Mtavruli; decide.
+  4. Per-section layout pass in Georgian (≈30–50% longer text, wider glyphs; the scene's headline
+     wraps and the fixed-width cards/callouts were tuned for English), desktop + mobile.
+  5. Switcher: EN / KA in the header, in the burger menu on phones; switching keeps the current
+     section (`/ka#pricing`).
+  - **DECIDED with the user 2026-11-06** (the plan discussion; no code written yet):
+    - **Order = Georgian FIRST, on today's architecture** (my recommendation, user: "რომელიც
+      სწორია"): steps 1→2→3, then step 4's layout pass on the CURRENT components, ship `/ka`, and
+      do the per-section split afterwards with both languages already known. Rationale: the split
+      is a big refactor and would block the Georgian launch for weeks; step 1 (the dictionary) is
+      needed either way and makes the split easier.
+    - **Path = `/ka`** (ISO 639-1 for Georgian; `/ge` is the COUNTRY code). No auto-redirect by
+      `Accept-Language` — the visitor chooses.
+    - **Routing = optional catch-all `app/[[...lang]]/page.tsx`** + `generateStaticParams()`
+      returning `[{lang: []}, {lang: ["ka"]}]` → `/` (unchanged, still the indexed English URL)
+      and `/ka`, BOTH prerendered, one root layout, `<html lang>` / metadata / JSON-LD derived
+      from the param, `notFound()` on anything else. Next 16's own i18n guide
+      (`node_modules/next/dist/docs/01-app/02-guides/internationalization.md`) proposes
+      `app/[lang]` + a **proxy redirect** — deliberately NOT used: it would turn `/` into `/en`
+      (losing the indexed URL) and bring back dynamic rendering, which the CSP/caching design
+      avoids on purpose. Fallback if the catch-all misbehaves: two root layouts via route groups
+      (`app/(en)/page.tsx` + `app/(ka)/ka/page.tsx`).
+    - **Font = Noto Sans Georgian** (Google Fonts, variable), loaded on `/ka` only.
+    - **Mono / terminal / status copy STAYS ENGLISH** (user's call): `git push origin main`,
+      `usectl // repository-pipeline`, `Code push detected: commit-a7f3d`, `BUILD: IN-PROGRESS`,
+      `POD // API`, `RUNNING` / `DEPLOYING` / `LIVE`, `HTTPS Active`, `Status: Synchronized with
+      env-prod-01`. Three reasons: it is a real CLI/dashboard mock, there is no good Georgian
+      monospace face, and those are exactly the fixed-width windows that would wrap. The
+      `uppercase` mono panel labels (`USECTL MANAGED INFRASTRUCTURE`, `01/ MACHINE BOUNDARY`)
+      belong to the same family — CSS `uppercase` would render Georgian as Mtavruli.
+    - **Copy source = `usectl-georgian-translation.md` for now**, with my review fixes applied as
+      a DRAFT; the user supplies the approved final copy later ("მე მოგცემ მაგას მერე") — so the
+      `ka` dictionary must stay a single file that can be replaced wholesale.
+  - Two things the discussion surfaced that the original steps missed:
+    - **`src/app/_og/card.tsx` is satori** — it needs an explicit font FILE, so the `/ka` link
+      preview needs a Noto Sans Georgian `.woff` in `_og/` or it renders tofu boxes.
+    - **Per-language geometry, not per-language `if`s**: every text column is fixed-width
+      (`width: s(520)`, `maxWidth: s(460)`, `fontSize: s(56)`…) and state 9 has a hand-placed
+      `<br/>` tuned to the English line break. Plan: ONE table of per-language type-scale
+      overrides (2-4 numbers per state, `{en, ka}`), so the Georgian pass lives in one file
+      instead of being scattered through the nine states.
+  - The switcher needs no new state logic: `SECTION_HASHES` is identical in both languages and the
+    reload-restore + pre-paint hide script already key off the hash, so `/ka#pricing` lands on
+    Pricing by itself.
+  - Open: who approves the final Georgian copy (the user will hand it over).
+  - Review notes on the translation file (given to the user 2026-11-06): too formal for a landing
+    page ("უზრუნველყოფს" repeated); pick ONE word for deploy ("გაშვება" > "განთავსება" on a landing);
+    fixes — "დაიწყე შექმნა" → "დაიწყე ახლავე"; "ობიექტური საცავი" is WRONG ("objective") →
+    "ობიექტების საცავი"/Object Storage; "ყოველთვიური გადასახადი" ("tax") → "თვიური ჯამი";
+    Monthly/Annual → "თვიური / წლიური"; shorter eyebrows/headlines; keep the mock terminal / pod
+    status strings (RUNNING, DEPLOYING, LIVE…) in English. Its phone-number note is outdated.
 
 - New design build-out from scratch (user is supplying new references: `public/navigation-bar/navigation-bar.png`, `Group 1574.png`).
 - `design/mobile/*.html` are the phone layout's source of truth (390-wide boards, inline styles).

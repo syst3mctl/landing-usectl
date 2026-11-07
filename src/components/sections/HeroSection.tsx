@@ -3,6 +3,7 @@ import path from "node:path";
 import { HeroSectionClient } from "./HeroSectionClient";
 import { HeroMobile } from "@/components/mobile/HeroMobile";
 import { processAgentSvg } from "@/lib/agentSvg";
+import { getDict, type Lang } from "@/lib/i18n";
 
 const readPublic = (file: string) => readFileSync(path.join(process.cwd(), "public", file), "utf8");
 
@@ -26,7 +27,8 @@ const podsSvg = readPublic("section-5/server2.svg").replace('width="689" height=
 const rightBoardSvg = readPublic("section-6/right-bottom.svg").replace('width="348" height="220"', 'width="100%"');
 const bottomBoardSvg = readPublic("section-7/bottom-left-server.svg").replace(/width="348" height="\d+"/, 'width="100%"');
 
-export function HeroSection() {
+export function HeroSection({ lang }: { lang: Lang }) {
+  const t = getDict(lang);
   // < 1024px (phones + portrait tablets) get the stacked, native-scroll version (RESPONSIVE-PLAN.md, model B); the
   // pinned desktop scene is display:none there and its effect bails out before building anything.
   // The same swap happens at ANY width under prefers-reduced-motion — see the rule in globals.css:
@@ -41,10 +43,12 @@ export function HeroSection() {
           podsSvg={podsSvg}
           rightBoardSvg={rightBoardSvg}
           bottomBoardSvg={bottomBoardSvg}
+          t={t}
+          lang={lang}
         />
       </div>
       <div data-hero-stacked className="lg:hidden">
-        <HeroMobile />
+        <HeroMobile t={t} />
       </div>
     </>
   );

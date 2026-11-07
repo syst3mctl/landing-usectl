@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useMemo, useRef, useState } from "react";
 import { s } from "@/lib/grid";
+import type { Dict } from "@/lib/i18n";
 
 // The footer's subscribe box (desktop + phone share this one component — `variant` only picks the
 // scale variable, `--s` for the 1920 canvas or `--m` for the phone one, so the markup can't drift).
@@ -55,7 +56,15 @@ function writeLedger(email: string) {
 
 type Status = "idle" | "sending" | "done" | "error";
 
-export function SubscribeForm({ variant }: { variant: "desktop" | "mobile" }) {
+export function SubscribeForm({
+  variant,
+  t,
+  sendLabel,
+}: {
+  variant: "desktop" | "mobile";
+  t: Dict["subscribe"];
+  sendLabel: string;
+}) {
   const desktop = variant === "desktop";
   // the phone footer scales with --m, the desktop canvas with --s (= `s()` from lib/grid)
   const u = useMemo(() => (desktop ? s : (px: number) => `calc(var(--m) * ${px})`), [desktop]);
@@ -86,7 +95,7 @@ export function SubscribeForm({ variant }: { variant: "desktop" | "mobile" }) {
 
     if (!consent) {
       setStatus("error");
-      setMessage("Please accept the terms and conditions first.");
+      setMessage(t.needConsent);
       return;
     }
 
@@ -95,12 +104,12 @@ export function SubscribeForm({ variant }: { variant: "desktop" | "mobile" }) {
     const now = Date.now();
     if (ledger.sent[value] !== undefined && now - ledger.sent[value]! < REMEMBER_MS) {
       setStatus("done");
-      setMessage("You're already on the list — we'll be in touch.");
+      setMessage(t.already);
       return;
     }
     if (now - ledger.last < COOLDOWN_MS) {
       setStatus("error");
-      setMessage("Just a moment — try again in a minute.");
+      setMessage(t.cooldown);
       return;
     }
 
@@ -117,21 +126,21 @@ export function SubscribeForm({ variant }: { variant: "desktop" | "mobile" }) {
         setStatus("error");
         setMessage(
           data.error === "rate-limited"
-            ? "Too many tries — please come back later."
+            ? t.rateLimited
             : data.error === "invalid-email"
-              ? "That address doesn't look right."
+              ? t.invalid
               : data.error === "consent-required"
-                ? "Please accept the terms and conditions first."
-                : "Couldn't send it. Please try again.",
+                ? t.needConsent
+                : t.failed,
         );
         return;
       }
       writeLedger(value);
       setStatus("done");
-      setMessage("Thanks — we'll be in touch.");
+      setMessage(t.thanks);
     } catch {
       setStatus("error");
-      setMessage("Couldn't send it. Please try again.");
+      setMessage(t.failed);
     }
   }
 
@@ -147,7 +156,7 @@ export function SubscribeForm({ variant }: { variant: "desktop" | "mobile" }) {
           type="email"
           name="email"
           autoComplete="email"
-          placeholder="email"
+          placeholder={t.placeholder}
           value={email}
           disabled={status === "done"}
           onChange={(e) => {
@@ -172,7 +181,7 @@ export function SubscribeForm({ variant }: { variant: "desktop" | "mobile" }) {
             address. No box, no border (design board S10-Footer). */}
         <button
           type="submit"
-          aria-label="Subscribe"
+          aria-label={sendLabel}
           // deliberately NOT disabled / aria-disabled when the box is unticked: the click is what
           // produces the "accept the terms first" hint, and a disabled control fires no events
           // (and would read as dead to a screen reader with nothing to explain why)
@@ -253,7 +262,7 @@ export function SubscribeForm({ variant }: { variant: "desktop" | "mobile" }) {
             <path d="M3 6.2 5.1 8.3 9 4.2" stroke="#1e1d1d" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </span>
-        I agree to the terms and conditions.
+        {t.consent}
       </label>
 
       {message ? (
