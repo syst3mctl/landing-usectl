@@ -115,6 +115,23 @@ function Para({ children }: { children: ReactNode }) {
   );
 }
 
+// The hero's single CTA (user, 2026-11-07) — "Start Building" + "See how it works" were replaced
+// by "Book a demo" here only; `Buttons` below still serves S09 with the original pair.
+// No href/handler yet: the booking flow comes later.
+function BookDemoButton({ t }: { t: Dict }) {
+  return (
+    <div data-m-copy className="flex" style={{ marginTop: m(24) }}>
+      <button
+        type="button"
+        className={`${PILL} shrink-0 whitespace-nowrap font-semibold`}
+        style={{ height: m(44), paddingLeft: m(20), paddingRight: m(16), fontSize: m(14), gap: m(4) }}
+      >
+        {t.hero.bookDemo} <ButtonArrow size={m(16)} />
+      </button>
+    </div>
+  );
+}
+
 function Buttons({ t, marginTop = 24 }: { t: Dict; marginTop?: number }) {
   return (
     // compact enough that both pills stay on ONE row down to a 360px phone (m() shrinks with the width)
@@ -552,7 +569,7 @@ export function HeroMobile({ t }: { t: Dict }) {
         <Eyebrow>{t.hero.eyebrow}</Eyebrow>
         <Heading as="h1">{t.hero.heading}</Heading>
         <Para>{t.hero.body}</Para>
-        <Buttons t={t} />
+        <BookDemoButton t={t} />
         <div
           className="relative flex-1"
           style={{ marginTop: m(16), minHeight: SERVER_H_FLOOR, maxHeight: m(SERVER_H_MAX) }}

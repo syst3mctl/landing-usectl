@@ -1,5 +1,5 @@
-// Link-preview image for /ka (og:image) — the same card, drawn in Georgian with Noto Sans
-// Georgian (satori needs real font files; see _og/card.tsx).
+// Link-preview image for /ka (og:image) — the same card, drawn in Georgian with BPG Banner Caps
+// (satori needs real font files; see _og/card.tsx).
 import { renderShareCard, OG_SIZE } from "../../_og/card";
 import { ka } from "@/lib/i18n/ka";
 

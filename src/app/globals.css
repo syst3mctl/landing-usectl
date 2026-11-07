@@ -113,7 +113,7 @@
   /* "დაიწყე ახლავე" is a much longer label than "Start Now": at 14 it measured 113px of text +
      16 arrow + 4 gap = 133 inside the design's 132-wide pill, i.e. it touched both borders
      (user, 2026-11-07: "არ ეტევა button-ში"). The pill keeps the Figma box; only the label
-     shrinks. */
+     shrinks. Kept for 1024-1279 only — see the ≥1280 rule for the wider Georgian box. */
   html[lang="ka"] .header-cta {
     font-size: max(10px, calc(var(--sh) * 12));
   }
@@ -123,6 +123,27 @@
   .header-nav {
     font-size: max(16px, calc(var(--sh) * 16));
     gap: max(2rem, calc(var(--sh) * 32));
+  }
+}
+
+/* The Georgian pill gets its own, BIGGER box instead of squeezing the label into the Figma 132:
+   shrinking the text to 12 fixed the overflow but read as a smaller button than the English one
+   (user, 2026-11-07: "უფრო განიერი და დიდი"). Measured at 1920 with BPG Banner Caps: label 120.5
+   at 15 + arrow 17.3 (1.15em) + gap 4 = 141.8, so 174 leaves ~16.1px of air each side — the same
+   optical padding "Start Now" has inside its 132. Height stays the scene's pill height, shared
+   with English, so the two languages' headers are the same shape.
+   The media query is the measured limit, not a guess. The pill is ~46px wider than the English one
+   wherever the floors hold (a 13px label needs ~123px of content), and the row's remaining slack
+   between the CENTRED nav and this right-hand group is: 352 at 2560×1440, 261 at 1920×1080, 155 at
+   1600×900, 102 at 1440×900, 52 at 1366×768, 37 at 1280×800, 46 at 760 tall — but −2 at 700 tall
+   and only 17-48 at 1024-1100 (and −10 at 1280×620, where ENGLISH already overlaps), because a
+   narrow or SHORT window shrinks --sh, i.e. the row's paddings, while the px floors hold the pill's
+   size. Hence the 1280 / 760 gate: below either, the Georgian label keeps the tight 12px box in the
+   ≥1024 block above. */
+@media (min-width: 1280px) and (min-height: 760px) {
+  html[lang="ka"] .header-cta {
+    width: max(150px, calc(var(--sh) * 174));
+    font-size: max(13px, calc(var(--sh) * 15));
   }
 }
 
@@ -166,13 +187,19 @@
 /* Georgian (/ka). Space Grotesk and Geist Mono are both latin-subset — they carry NO Georgian
    glyphs — so the Georgian face is APPENDED to each stack instead of replacing it: a font stack
    resolves per GLYPH, so Latin runs (usectl, Kubernetes, vCPU, $15.10) keep rendering in Space
-   Grotesk / Geist Mono exactly as on `/`, and only Georgian letters come from Noto Sans Georgian.
+   Grotesk / Geist Mono exactly as on `/`, and only Georgian letters come from BPG Banner Caps.
    Unlayered on purpose: Tailwind's `@theme` vars live in a layer, so a plain rule outranks them
-   (same reason .header-row's rules are unlayered). */
+   (same reason .header-row's rules are unlayered).
+   font-synthesis: none — BPG Banner Caps ships ONE weight (400), and the scene is full of
+   font-medium / font-semibold headings; without this the browser synthesises a fake bold by
+   smearing the outlines, which on this face reads as a different (blurrier) typeface than the
+   body copy right under it. Latin runs are unaffected: Space Grotesk has real weights, and
+   font-synthesis only ever applies where a real face is missing. */
 html[lang="ka"] {
-  --font-sans: var(--font-space-grotesk), var(--font-noto-georgian), sans-serif;
-  --font-heading: var(--font-space-grotesk), var(--font-noto-georgian), sans-serif;
-  --font-mono: var(--font-geist-mono), var(--font-noto-georgian), monospace;
+  --font-sans: var(--font-space-grotesk), var(--font-bpg-banner), sans-serif;
+  --font-heading: var(--font-space-grotesk), var(--font-bpg-banner), sans-serif;
+  --font-mono: var(--font-geist-mono), var(--font-bpg-banner), monospace;
+  font-synthesis: none;
 }
 
 body {

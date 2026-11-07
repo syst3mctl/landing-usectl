@@ -1434,6 +1434,68 @@ the per-section pass, not bugs.
   it can't drift again. `.env.example` updated too. Verified in the served HTML of both languages:
   `info@usectl.com` is the only address on the page.
 
+## Georgian face swapped to BPG Banner Caps; the hero is one "Book a demo" (2026-11-07, `multi-languages`)
+
+Three asks in one round. `/` is untouched apart from the hero's button.
+
+**1. `/ka` is set in BPG Banner Caps instead of Noto Sans Georgian.** Self-hosted (it is not on
+Google Fonts) via `next/font/local` in `src/app/_site/shell.tsx` → `--font-bpg-banner`;
+`globals.css`'s `html[lang="ka"]` block appends it to the three stacks exactly where Noto used to
+sit, so the per-glyph split is unchanged (Latin runs — usectl, Kubernetes, vCPU, $15.10 — still
+render in Space Grotesk / Geist Mono). Noto is gone from the repo entirely.
+- Files: `src/app/_site/fonts/BPGBannerCaps.{woff2,woff}` + a copy of the `.woff` in `src/app/_og/`
+  for the share card. They are npm `bpg-banner-caps@1.0.0`'s `bpg-banner-caps-webfont.{woff2,woff}`
+  **byte for byte** — deliberately not subset or re-converted, see the licence note below.
+- **`font-synthesis: none` on `html[lang="ka"]`** — the face ships ONE weight (400) and the scene is
+  full of `font-medium` / `font-semibold` headings; without it the browser fakes a bold by smearing
+  the outlines, which reads as a second, blurrier typeface next to the body copy. Latin is
+  unaffected (Space Grotesk has real weights; synthesis only fires where a real face is missing).
+- **Share card** (`_og/card.tsx`): satori needs font FILES, so the Georgian card registers the SAME
+  unmodified `.woff` as both weight 500 and 300 — the light rows would otherwise find no 300 face
+  and satori would drop the text. Rendered and eyeballed: 200 `image/png` 1200×630, no tofu.
+- **`typeScale.ts` needed no new numbers.** BPG Banner Caps measures within ~1.5% of Noto at the
+  same size here (the state-9 Georgian line is 1559px wide at the existing `s9Heading: 52`, vs 1537
+  with Noto — still 75px inside the 99px content inset).
+- **LICENCE — must be settled before production.** The npm wrapper is MIT but **the font files are
+  CC BY-NC-ND 4.0**: *NonCommercial* (usectl.com is a commercial product site, so this is not
+  covered as-is — a licence from Besarion Gugushvili, or a different face, is needed),
+  *NoDerivatives* (don't subset/convert — hence the byte-identical files), *Attribution*. Written up
+  in `src/app/_site/fonts/NOTICE-BPGBannerCaps.md` and flagged to the user.
+
+**2. The hero has ONE button: "Book a demo" / "დაჯავშნე დემო".** "Start Building" + "See how it
+works" are gone from state 1 (`HeroSectionClient.tsx`) and from the phone hero (`HeroMobile.tsx`,
+new `BookDemoButton` — `Buttons` is shared with S09, so the hero needed its own component). State 9
+and the burger menu keep the original pair, and `hero.startBuilding` / `hero.seeHow` stay in both
+dictionaries for them. New key `hero.bookDemo`.
+- It is a `<button type="button">` with **no handler** — the booking flow comes later. It still
+  rides the hero's blur-in as one block because `splitWords()`'s `whole` test is
+  `field.querySelector("a,button")`, i.e. a `<button>` behaves exactly like the old `<Link>`s
+  (measured: the row goes 0 → 1.00 opacity, and a nav-to-Pricing + logo click brings it back at
+  opacity 1).
+
+**3. The Georgian header pill is bigger: 174 wide / 15px** (`html[lang="ka"] .header-cta`), on
+`--sh` like everything else in the row, floors `max(150px, …)` / `max(13px, …)`. Measured at 1920
+with the new font: label 120.5 + arrow 17.3 (1.15em) + gap 4 = 141.8, so 174 leaves **16.1px of air
+each side** — the same optical padding "Start Now" has in its 132.
+- **It is gated `@media (min-width: 1280px) and (min-height: 760px)`, and that is a measured limit,
+  not a guess.** Wherever the floors hold, the pill is ~46px wider than the English one, and the
+  slack between the CENTRED nav and this right-hand group runs out: 352 at 2560×1440, 261 at 1920,
+  155 at 1600×900, 102 at 1440×900, 52 at 1366×768, 37 at 1280×800, 46 at 760 tall — but **−2** at
+  700 tall and only 8-48 at 1024-1100, because a narrow or SHORT window shrinks `--sh` (the row's
+  paddings) while the px floors hold the pill's size. Below either limit the Georgian label keeps
+  the old tight 12px box in the ≥1024 block.
+- Pre-existing and NOT touched: at 1280×620 the lang switcher already overlaps the nav by 10px in
+  English (20 in Georgian, whose nav labels are wider) — same cause, the short-window `--sh`.
+
+**Verified** on `next start` (production build), real Chromium, **zero console/page/HTTP errors
+anywhere**: both languages walked through all 10 desktop pages with PageDown at 1920×1080, 1440×900
+and 2560×1440 — every snap lands, every section's hash is written, and a visibility-aware box probe
+reports nothing off-screen or past the content inset in either language; the header measured at 12
+viewport sizes from 3440×1440 down to 1024×768 incl. the short ones (1920×800/760, 1280×620/699/
+759/760); phone 390×844 in both languages (one hero button, `scrollWidth == 390` at every scroll
+position, the server still ends at 831/844 i.e. on the first screen); both share cards. `tsc` /
+`eslint` / `next build` clean, `/` and `/ka` still prerendered.
+
 ## Open items / TODO
 
 - **NEXT BIG STEP — split the desktop scene into per-section components (user's idea, agreed
@@ -1457,7 +1519,10 @@ the per-section pass, not bugs.
   entry above). What is still open: (a) the approved Georgian copy from the user — drop it into
   `src/lib/i18n/ka.ts`, nothing else holds Georgian; (b) the per-section Georgian layout pass
   (step 4), whose numbers belong in `src/lib/i18n/typeScale.ts`; (c) the team's call on whether the
-  uppercase mono spec labels and the mono bullets should be Georgian too.** The plan as originally
+  uppercase mono spec labels and the mono bullets should be Georgian too; (d) **a commercial
+  licence for BPG Banner Caps, or a different Georgian face** — the files shipped on 2026-11-07 are
+  CC BY-NC-ND 4.0 (NonCommercial), see the entry above and
+  `src/app/_site/fonts/NOTICE-BPGBannerCaps.md`.** The plan as originally
   agreed, for context: Source text: `usectl-georgian-translation.md`
   (repo root, untracked — the team's translation of every visible string; review notes below).
   Proposed steps:

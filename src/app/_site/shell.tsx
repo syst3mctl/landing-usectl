@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
-import { Geist_Mono, Noto_Sans_Georgian, Space_Grotesk } from "next/font/google";
+import { Geist_Mono, Space_Grotesk } from "next/font/google";
+import localFont from "next/font/local";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import { Header } from "@/components/layout/Header";
 import { BackgroundLines } from "@/components/layout/BackgroundLines";
@@ -50,10 +51,21 @@ const spaceGrotesk = Space_Grotesk({
 // Georgian face. globals.css APPENDS it to the stacks under html[lang="ka"] rather than replacing
 // them: Latin runs (usectl, Kubernetes, vCPU, $15.10) keep rendering in Space Grotesk and only
 // Georgian letters fall through to this one — a font stack resolves per glyph.
+//
 // preload: false because `/` never uses it (it would otherwise be fetched on the English page too).
-const notoGeorgian = Noto_Sans_Georgian({
-  variable: "--font-noto-georgian",
-  subsets: ["georgian"],
+//
+// BPG Banner Caps (Besarion Gugushvili) — the team's pick, self-hosted from _site/fonts because it
+// is not on Google Fonts. Files are the npm package's byte for byte; it has ONE weight, so
+// globals.css also sets `font-synthesis: none` on /ka — the browser would otherwise fake bold for
+// every font-medium/semibold heading and smear the letterforms.
+// LICENCE: the font files are CC BY-NC-ND 4.0 (NonCommercial) — see NOTICE-BPGBannerCaps.md.
+const bpgBanner = localFont({
+  src: [
+    { path: "./fonts/BPGBannerCaps.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/BPGBannerCaps.woff", weight: "400", style: "normal" },
+  ],
+  variable: "--font-bpg-banner",
+  display: "swap",
   preload: false,
 });
 
@@ -203,7 +215,7 @@ export function SiteShell({ lang, children }: { lang: Lang; children: ReactNode 
       lang={HTML_LANG[lang]}
       // the pre-paint script below may add data-restoring before React hydrates
       suppressHydrationWarning
-      className={`${geistMono.variable} ${spaceGrotesk.variable} ${notoGeorgian.variable} h-full antialiased`}
+      className={`${geistMono.variable} ${spaceGrotesk.variable} ${bpgBanner.variable} h-full antialiased`}
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: RESTORE_HIDE_SCRIPT }} />

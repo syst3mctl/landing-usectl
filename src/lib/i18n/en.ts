@@ -39,6 +39,8 @@ export const en = {
     body:
       "Deploy your apps, databases, workers, and AI agents without building a DevOps team. " +
       "usectl takes you from code to production with managed infrastructure and predictable pricing.",
+    // the hero's single CTA (user 2026-11-07); startBuilding / seeHow are still state 9's pair
+    bookDemo: "Book a demo",
     startBuilding: "Start Building",
     seeHow: "See how it works",
   },

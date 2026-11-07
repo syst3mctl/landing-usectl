@@ -2899,22 +2899,19 @@ export function HeroSectionClient({
           {t.hero.body}
         </p>
 
-        {/* gap 30 → 14 (team, 2026-09-29: "button ები ერთმანეთს დაშორება შეამცირე") */}
-        <div className="flex items-center" style={{ gap: s(14), marginTop: s(34) }}>
-          <Link
-            href={SIGNUP_URL}
+        {/* ONE CTA here now (user, 2026-11-07): "Start Building" + "See how it works" were replaced
+            by "Book a demo". State 9 and the burger menu keep the original pair.
+            Deliberately a <button> with no handler — the booking flow comes later. It still rides
+            the hero's blur-in as one block: splitWords() leaves any field containing an a/button
+            alone (see the `whole` check), so a <button> behaves exactly like the old <Link>s. */}
+        <div className="flex items-center" style={{ marginTop: s(34) }}>
+          <button
+            type="button"
             className="flex items-center justify-center rounded-full border border-white/25 font-heading font-semibold text-foreground transition-colors hover:border-brand hover:text-brand"
-            style={{ height: s(48), paddingLeft: s(32), paddingRight: s(32), fontSize: s(16) }}
-          >
-            {t.hero.startBuilding}
-          </Link>
-          <Link
-            href={SIGNUP_URL}
-            className="flex items-center justify-center rounded-full border border-white/25 font-heading font-normal text-white/90 transition-colors hover:border-brand hover:text-brand"
             style={{ height: s(48), paddingLeft: s(32), paddingRight: s(26), fontSize: s(16), gap: s(4) }}
           >
-            {t.hero.seeHow} <ButtonArrow size={s(24)} />
-          </Link>
+            {t.hero.bookDemo} <ButtonArrow size={s(24)} />
+          </button>
         </div>
       </div>
 

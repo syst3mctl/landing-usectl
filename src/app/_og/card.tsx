@@ -32,11 +32,10 @@ async function svgDataUrl(rel: string) {
 export async function renderShareCard(lang: Lang = "en") {
   const t = getDict(lang);
   const georgian = lang === "ka";
-  const [medium, light, geoMedium, geoRegular, logo, hatch, server] = await Promise.all([
+  const [medium, light, georgianFont, logo, hatch, server] = await Promise.all([
     readFile(join(process.cwd(), "src/app/_og/SpaceGrotesk-Medium.woff")),
     readFile(join(process.cwd(), "src/app/_og/SpaceGrotesk-Light.woff")),
-    readFile(join(process.cwd(), "src/app/_og/NotoSansGeorgian-Medium.woff")),
-    readFile(join(process.cwd(), "src/app/_og/NotoSansGeorgian-Regular.woff")),
+    readFile(join(process.cwd(), "src/app/_og/BPGBannerCaps.woff")),
     svgDataUrl("logo/logo.svg"),
     svgDataUrl("section-hero/hatch.svg"),
     svgDataUrl("section-hero/new-server.svg"),
@@ -55,8 +54,8 @@ export async function renderShareCard(lang: Lang = "en") {
           position: "relative",
           background: BG,
           // the same per-glyph idea as the page: Latin stays Space Grotesk, Georgian letters fall
-          // through to Noto Sans Georgian (satori resolves the list glyph by glyph)
-          fontFamily: georgian ? "Space Grotesk, Noto Sans Georgian" : "Space Grotesk",
+          // through to BPG Banner Caps (satori resolves the list glyph by glyph)
+          fontFamily: georgian ? "Space Grotesk, BPG Banner Caps" : "Space Grotesk",
           color: "#ededed",
           overflow: "hidden",
         }}
@@ -202,16 +201,16 @@ export async function renderShareCard(lang: Lang = "en") {
     {
       ...OG_SIZE,
       // Satori needs real font FILES (no CSS, no network), and Space Grotesk has no Georgian
-      // glyphs — so the Georgian card is drawn in Noto Sans Georgian (the same face /ka uses in
-      // the browser). Its Regular is registered as weight 300 too: the card's light rows would
-      // otherwise find no 300 face at all.
+      // glyphs — so the Georgian card is drawn in BPG Banner Caps (the same face /ka uses in the
+      // browser). It has a single weight, so the SAME file is registered as 500 and 300: the
+      // card's light rows would otherwise find no 300 face at all and satori would drop the text.
       fonts: [
         { name: "Space Grotesk", data: medium, weight: 500 as const, style: "normal" as const },
         { name: "Space Grotesk", data: light, weight: 300 as const, style: "normal" as const },
         ...(georgian
           ? [
-              { name: "Noto Sans Georgian", data: geoMedium, weight: 500 as const, style: "normal" as const },
-              { name: "Noto Sans Georgian", data: geoRegular, weight: 300 as const, style: "normal" as const },
+              { name: "BPG Banner Caps", data: georgianFont, weight: 500 as const, style: "normal" as const },
+              { name: "BPG Banner Caps", data: georgianFont, weight: 300 as const, style: "normal" as const },
             ]
           : []),
       ],
