@@ -8,6 +8,8 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import { m } from "./HeroMobile";
 import {
+  CONTACT_EMAIL,
+  CONTACT_HREF,
   footerNavLinks,
   PHONE_HREF,
   PHONE_NUMBER,
@@ -159,8 +161,8 @@ export function FooterMobile({ t, lang }: { t: Dict; lang: Lang }) {
             {t.footer.contact}
           </h3>
           <p style={{ marginTop: m(16) }}>
-            <a href="mailto:hello@usectl.com" className={link} style={{ fontSize: m(14) }}>
-              hello@usectl.com
+            <a href={CONTACT_HREF} className={link} style={{ fontSize: m(14) }}>
+              {CONTACT_EMAIL}
             </a>
           </p>
           {SHOW_PHONE && (

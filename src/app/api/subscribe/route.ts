@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { CONTACT_EMAIL } from "@/lib/nav";
 
 // The footer's "Subscribe" box posts here. The job is only to get the visitor's address into our
 // inbox so we can reach out later — nothing is stored on our side.
@@ -15,7 +16,7 @@ import { NextResponse } from "next/server";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const TO = process.env.SUBSCRIBE_TO ?? "hello@usectl.com";
+const TO = process.env.SUBSCRIBE_TO ?? CONTACT_EMAIL;
 const FROM = process.env.SUBSCRIBE_FROM ?? "onboarding@resend.dev";
 
 // --- the "don't send it 100 times" plan -------------------------------------------------------

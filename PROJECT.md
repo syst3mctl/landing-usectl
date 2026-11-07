@@ -1427,6 +1427,12 @@ the per-section pass, not bugs.
   library needed.
   - Known and accepted: the mark is 2:1 and thin, so the **16px** raster is mushy. 32 and 48 read
     perfectly, Chrome/Firefox prefer `/icon.svg` anyway, and HiDPI tabs draw the 32px entry.
+- **The contact address is `info@usectl.com`** (was `hello@`, changed on the user's call
+  2026-11-07). It is now `CONTACT_EMAIL` / `CONTACT_HREF` in `src/lib/nav.ts` — the five places
+  that used to hardcode it (both footers, the burger menu's footer row, the JSON-LD `email`, and
+  `/api/subscribe`'s fallback destination when `SUBSCRIBE_TO` is unset) all read it from there, so
+  it can't drift again. `.env.example` updated too. Verified in the served HTML of both languages:
+  `info@usectl.com` is the only address on the page.
 
 ## Open items / TODO
 

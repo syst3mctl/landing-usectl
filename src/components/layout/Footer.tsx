@@ -2,6 +2,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { s } from "@/lib/grid";
 import {
+  CONTACT_EMAIL,
+  CONTACT_HREF,
   footerNavLinks,
   PHONE_HREF,
   PHONE_NUMBER,
@@ -148,11 +150,11 @@ export function Footer({ t, lang }: { t: Dict; lang: Lang }) {
         </h3>
         <p style={{ marginTop: s(28) }}>
           <a
-            href="mailto:hello@usectl.com"
+            href={CONTACT_HREF}
             className="font-light text-white/55 transition-colors hover:text-white"
             style={{ fontSize: s(15.5) }}
           >
-            hello@usectl.com
+            {CONTACT_EMAIL}
           </a>
         </p>
         {/* the phone line is behind SHOW_PHONE — hidden while the number is a placeholder */}

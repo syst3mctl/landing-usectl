@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { SIGNUP_URL, SYSTEMCTL_URL } from "@/lib/nav";
+import { CONTACT_EMAIL, CONTACT_HREF, SIGNUP_URL, SYSTEMCTL_URL } from "@/lib/nav";
 import type { Dict, Lang } from "@/lib/i18n";
 import { LangSwitcher } from "@/components/layout/LangSwitcher";
 import { ButtonArrow } from "@/components/ui/icons";
@@ -209,8 +209,8 @@ export function MobileMenu({
 
             <div className="relative mx-auto mt-auto w-full max-w-[640px] px-5 pb-8 pt-10 sm:px-8">
               <div data-menu-foot className="flex items-center justify-between font-heading text-[13px] text-white/45">
-                <a href="mailto:hello@usectl.com" className="transition-colors hover:text-white">
-                  hello@usectl.com
+                <a href={CONTACT_HREF} className="transition-colors hover:text-white">
+                  {CONTACT_EMAIL}
                 </a>
                 <span>
                   &copy; 2026{" "}

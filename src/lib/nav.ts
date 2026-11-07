@@ -22,6 +22,12 @@ export const SYSTEMCTL_URL = "https://systemctl.sh";
 // stays in both footers behind this flag, so publishing is a one-line change back to `true`.
 export const SHOW_STORE_BADGES = false;
 
+// The public contact address — both footers, the burger menu, the JSON-LD and the subscribe
+// route's fallback destination all read it from here, so it can only ever be changed in one place
+// (it was hello@ until 2026-11-07).
+export const CONTACT_EMAIL = "info@usectl.com";
+export const CONTACT_HREF = `mailto:${CONTACT_EMAIL}`;
+
 // Same idea for the footer's phone number: hidden on request (2026-11-05) while the line is a
 // placeholder, with the markup kept in both footers so a real number is one line away.
 export const SHOW_PHONE = false;

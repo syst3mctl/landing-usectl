@@ -6,6 +6,7 @@ import { Header } from "@/components/layout/Header";
 import { BackgroundLines } from "@/components/layout/BackgroundLines";
 import { SessionReplay } from "@/components/SessionReplay";
 import {
+  CONTACT_EMAIL,
   FACEBOOK_URL,
   INSTAGRAM_URL,
   SIGNUP_URL,
@@ -150,7 +151,7 @@ const jsonLdFor = (lang: Lang) => {
         name: SITE_NAME,
         url: SITE_URL,
         logo: `${SITE_URL}/logo/logo.svg`,
-        email: "hello@usectl.com",
+        email: CONTACT_EMAIL,
         sameAs: [X_URL, INSTAGRAM_URL, FACEBOOK_URL],
       },
       {
