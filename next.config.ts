@@ -43,21 +43,47 @@ const isDev = process.env.NODE_ENV === "development";
 //     (src/components/layout/SubscribeForm.tsx). It has to be the browser: Web3Forms' free plan
 //     refuses server-side submissions, so the old route through /api/subscribe could not deliver.
 //     Without this line the fetch is blocked by connect-src and the form can only ever fail.
+//   · connect.facebook.net + www.facebook.com — the Meta Pixel (src/components/MetaPixel.tsx,
+//     src/lib/metaPixel.ts). fbevents.js is fetched from connect.facebook.net; the events
+//     themselves go to facebook.com/tr as an IMAGE request, and fbevents.js also uses fetch for
+//     some of them, which is why facebook.com appears in both img-src and connect-src. Nothing is
+//     loaded at all until the cookie banner is accepted and NEXT_PUBLIC_META_PIXEL_ID is set, so
+//     the allowance costs a visitor who declines nothing.
+//     connect.facebook.net is in img-src as well because fbevents reports its own failures by
+//     loading `connect.facebook.net//log/error?...` as an image — see the Open Bridge note below.
+//
+// DELIBERATELY NOT ALLOWED — Meta "Open Bridge" (CAPI Gateway). This dataset's config
+// (connect.facebook.net/signals/config/<id>) turns the OpenBridge plugin on and points it at
+//     https://1c-e0e78bd7d7fd408d87142c500d5b8890.ecs.us-west-1.on.aws/events
+//     (fallback https://vwdb33u4tj1q.cloud.run/events)
+// i.e. fbevents wants to POST every event to a third-party gateway as well as to Meta. Whoever
+// owns the dataset configured that; until it is confirmed to be usectl's own gateway, connect-src
+// does not list it — a host we cannot identify should not receive visitor event data. The
+// consequence is contained and was measured: the beacon to facebook.com/tr still carries every
+// event, the Pixel works, and the plugin's failure is reported to Meta's log endpoint instead of
+// filling the console. The clean fix is one of: add the two hosts here, or switch Open Bridge off
+// in Events Manager.
 const csp = [
   `default-src 'self'`,
-  `script-src 'self' 'unsafe-inline' https://www.googletagmanager.com${isDev ? " 'unsafe-eval'" : ""}`,
+  `script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://connect.facebook.net${isDev ? " 'unsafe-eval'" : ""}`,
   `style-src 'self' 'unsafe-inline'`,
-  `img-src 'self' blob: data: https://www.googletagmanager.com https://www.google-analytics.com`,
+  `img-src 'self' blob: data: https://www.googletagmanager.com https://www.google-analytics.com https://www.facebook.com https://connect.facebook.net`,
   `font-src 'self' data:`,
-  `connect-src 'self' https://www.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://analytics.usectl.com https://api.web3forms.com`,
+  `connect-src 'self' https://www.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://analytics.usectl.com https://api.web3forms.com https://www.facebook.com https://connect.facebook.net`,
   `worker-src 'self' blob:`,
   // the hero's "Book a demo" popup frames the team's Google Calendar appointment schedule
   // (BOOKING_EMBED_URL in src/lib/nav.ts). Without this the iframe is simply blocked and the
   // popup shows an empty window — so this line and that URL belong together.
-  `frame-src https://calendar.google.com`,
+  //
+  // www.facebook.com is the Pixel's SECOND transport: fbevents.js sends most events as an image
+  // GET to facebook.com/tr, but it falls back to POSTing a form inside a hidden iframe (seen in
+  // the browser as a `form-action` + `frame-src` violation when it is missing). Both are the same
+  // trust boundary as loading fbevents.js at all, so both are allowed; without them an event that
+  // takes the fallback path is silently lost.
+  `frame-src https://calendar.google.com https://www.facebook.com`,
   `object-src 'none'`,
   `base-uri 'self'`,
-  `form-action 'self'`,
+  `form-action 'self' https://www.facebook.com`,
   `frame-ancestors 'none'`,
   `upgrade-insecure-requests`,
 ].join("; ");

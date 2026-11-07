@@ -8,7 +8,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ScrollToPlugin } from "gsap/ScrollToPlugin";
 import { useGSAP } from "@gsap/react";
 import { s, readScale, HEADER_HEIGHT_PX } from "@/lib/grid";
-import { SECTION_HASHES, SIGNUP_URL, STATE_BY_HASH, STATE_STORAGE_KEY } from "@/lib/nav";
+import { ctaAttr, SECTION_HASHES, SIGNUP_URL, STATE_BY_HASH, STATE_STORAGE_KEY } from "@/lib/nav";
 import { fill, type Dict, type Lang } from "@/lib/i18n";
 import { TYPE_SCALE } from "@/lib/i18n/typeScale";
 import { SceneLight } from "@/components/layout/SceneLight";
@@ -4055,6 +4055,7 @@ export function HeroSectionClient({
         >
           <a
             href={SIGNUP_URL}
+            {...ctaAttr("pricing")}
             className="relative flex items-center justify-center border border-white/20 font-heading text-brand transition-colors hover:bg-white/5"
             style={{ width: s(345), height: s(60), fontSize: s(17) }}
           >
@@ -4262,6 +4263,7 @@ export function HeroSectionClient({
         <div className="absolute flex items-center" style={{ left: s(187), top: s(606), gap: s(14) }}>
           <Link
             href={SIGNUP_URL}
+            {...ctaAttr("closing-start")}
             className="flex items-center justify-center rounded-full border border-white/25 font-heading font-semibold text-foreground transition-colors hover:border-brand hover:text-brand"
             style={{ height: s(48), paddingLeft: s(32), paddingRight: s(32), fontSize: s(16) }}
           >
@@ -4269,6 +4271,7 @@ export function HeroSectionClient({
           </Link>
           <Link
             href={SIGNUP_URL}
+            {...ctaAttr("closing-see-how")}
             className="flex items-center justify-center rounded-full border border-white/25 font-heading font-normal text-white/90 transition-colors hover:border-brand hover:text-brand"
             style={{ height: s(48), paddingLeft: s(32), paddingRight: s(26), fontSize: s(16), gap: s(4) }}
           >

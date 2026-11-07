@@ -14,7 +14,7 @@ import { openBookDemo } from "@/lib/bookDemo";
 import { SECTION_HASHES } from "@/lib/nav";
 import { fill, type Dict } from "@/lib/i18n";
 import { CLOSE_MENU_EVENT } from "@/components/layout/MobileMenu";
-import { SIGNUP_URL } from "@/lib/nav";
+import { ctaAttr, SIGNUP_URL } from "@/lib/nav";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
@@ -139,11 +139,12 @@ function Buttons({ t, marginTop = 24 }: { t: Dict; marginTop?: number }) {
   return (
     // compact enough that both pills stay on ONE row down to a 360px phone (m() shrinks with the width)
     <div data-m-copy className="flex flex-nowrap items-center" style={{ gap: m(8), marginTop: m(marginTop) }}>
-      <Link href={SIGNUP_URL} className={`${PILL} shrink-0 whitespace-nowrap font-semibold`} style={{ height: m(44), paddingInline: m(20), fontSize: m(14) }}>
+      <Link href={SIGNUP_URL} {...ctaAttr("closing-start-mobile")} className={`${PILL} shrink-0 whitespace-nowrap font-semibold`} style={{ height: m(44), paddingInline: m(20), fontSize: m(14) }}>
         {t.hero.startBuilding}
       </Link>
       <Link
         href={SIGNUP_URL}
+        {...ctaAttr("closing-see-how-mobile")}
         className={`${PILL} shrink-0 whitespace-nowrap font-normal text-white/90`}
         style={{ height: m(44), paddingLeft: m(20), paddingRight: m(16), fontSize: m(14), gap: m(4) }}
       >
@@ -913,6 +914,7 @@ export function HeroMobile({ t }: { t: Dict }) {
         {/* the desktop CTA: bordered box with brighter blueprint corner brackets, brand label */}
         <a
           href={SIGNUP_URL}
+          {...ctaAttr("pricing-mobile")}
           className="relative flex items-center justify-center border border-white/20 font-heading text-brand transition-colors hover:bg-white/5 active:bg-white/5"
           style={{ marginTop: m(18), height: m(50), fontSize: m(14.5) }}
         >

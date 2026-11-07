@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { CONTACT_EMAIL, CONTACT_HREF, SIGNUP_URL, SYSTEMCTL_URL } from "@/lib/nav";
+import { CONTACT_EMAIL, CONTACT_HREF, ctaAttr, SIGNUP_URL, SYSTEMCTL_URL } from "@/lib/nav";
 import type { Dict, Lang } from "@/lib/i18n";
 import { LangSwitcher } from "@/components/layout/LangSwitcher";
 import { ButtonArrow } from "@/components/ui/icons";
@@ -190,6 +190,7 @@ export function MobileMenu({
               <Link
                 data-menu-row
                 href={SIGNUP_URL}
+                {...ctaAttr("mobile-menu")}
                 onClick={() => setOpen(false)}
                 className="mt-8 flex h-11 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-white/40 font-heading text-[14px] font-medium text-[#e6e6e6] transition-colors hover:border-brand hover:text-brand active:border-brand active:text-brand"
               >

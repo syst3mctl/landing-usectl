@@ -4,7 +4,7 @@ import { ColumnLines } from "@/components/layout/BackgroundLines";
 import { MobileMenu } from "@/components/layout/MobileMenu";
 import { ButtonArrow } from "@/components/ui/icons";
 import { INSET_VW, HEADER_HIDE_WIDE, HEADER_HIDE_NARROW, LINE_COLOR, LINE_THICKNESS_PX } from "@/lib/grid";
-import { navLinks, SIGNUP_URL } from "@/lib/nav";
+import { ctaAttr, navLinks, SIGNUP_URL } from "@/lib/nav";
 import { LangSwitcher } from "@/components/layout/LangSwitcher";
 import type { Dict, Lang } from "@/lib/i18n";
 import { langPath } from "@/lib/i18n";
@@ -79,6 +79,7 @@ export function Header({ t, lang }: { t: Dict; lang: Lang }) {
           <LangSwitcher lang={lang} label={t.a11y.language} className="header-lang" />
           <Link
             href={SIGNUP_URL}
+            {...ctaAttr("header")}
             className="header-cta hidden shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded-full border border-white/25 font-heading font-medium text-foreground transition-colors duration-300 ease-out hover:border-brand hover:text-brand lg:flex"
           >
             {t.header.startNow} <ButtonArrow size="1.15em" />

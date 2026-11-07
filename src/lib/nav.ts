@@ -13,6 +13,29 @@ export type NavLink = { label: string; href: string; state?: number; external?: 
 export const DOCS_URL = "https://docs.usectl.com/#introduction";
 export const SIGNUP_URL = "https://manager.usectl.com/login";
 export const X_URL = "https://x.com/usectlcloud";
+
+// Every link that sends someone to SIGNUP_URL carries one of these as `data-cta`, and that string
+// is the only parameter of the Meta `SignupClick` event (components/MetaPixel.tsx) — no PII, ever.
+// The union is what makes it typo-proof: a wrong value is a TypeScript error, not a silently
+// mislabelled event in Events Manager.
+//
+// Both builds of the page live in the DOM at the same time (the pinned desktop scene and the
+// stacked phone one, one of them display:none), so the phone's copies need their own names —
+// otherwise a report could not tell a phone click from a desktop one. `closing-*` is state 9's
+// pair ("Start Building" / "See how it works"): they used to be the hero's, but the hero now has
+// a single "Book a demo" button, which is NOT a signup and gets no Meta event.
+export type CtaPlacement =
+  | "header"
+  | "mobile-menu"
+  | "pricing"
+  | "pricing-mobile"
+  | "closing-start"
+  | "closing-start-mobile"
+  | "closing-see-how"
+  | "closing-see-how-mobile";
+
+/** Spread onto a link that points at SIGNUP_URL: `{...ctaAttr("header")}`. */
+export const ctaAttr = (placement: CtaPlacement) => ({ "data-cta": placement });
 // The "Book a demo" booking page (Google Calendar appointment schedule). Two forms of the SAME
 // schedule: the `?gv=true` one is the only one that may be framed (it is what Google's own embed
 // snippet uses, and it is the host the CSP's frame-src allows — see next.config.ts), the short
