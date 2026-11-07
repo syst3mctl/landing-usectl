@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRef, useState, type ReactNode } from "react";
+import { Fragment, useRef, useState, type ReactNode } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
@@ -10,7 +10,9 @@ import { mountMachine } from "./machineUnfold";
 import { processAgentSvg } from "@/lib/agentSvg";
 import { ButtonArrow } from "@/components/ui/icons";
 import { pressRipple } from "@/lib/pressRipple";
+import { openBookDemo } from "@/lib/bookDemo";
 import { SECTION_HASHES } from "@/lib/nav";
+import { fill, type Dict } from "@/lib/i18n";
 import { CLOSE_MENU_EVENT } from "@/components/layout/MobileMenu";
 import { SIGNUP_URL } from "@/lib/nav";
 
@@ -25,10 +27,11 @@ gsap.registerPlugin(ScrollTrigger, useGSAP);
 
 export const m = (px: number) => `calc(var(--m) * ${px})`;
 
+// keys + maths; label and the unit/max line come from the dictionary (t.s8.rows), index-matched
 const PRICING_ROWS = [
-  { key: "vcpu", label: "vCPU", sub: "1 vCPU — $10.00/mo · Max 16", price: 10, max: 16 },
-  { key: "memory", label: "Memory", sub: "1 GB — $5.00/mo · Max 64GB", price: 5, max: 64 },
-  { key: "storage", label: "Storage", sub: "1 GB — $0.10/mo · Max 1TB", price: 0.1, max: 1000 },
+  { key: "vcpu", price: 10, max: 16 },
+  { key: "memory", price: 5, max: 64 },
+  { key: "storage", price: 0.1, max: 1000 },
 ] as const;
 type RowKey = (typeof PRICING_ROWS)[number]["key"];
 const fmtPrice = (n: number) => (Number.isInteger(n) ? `$${n}` : `$${n.toFixed(2)}`);
@@ -90,6 +93,21 @@ function Heading({ children, as: Tag = "h2" }: { children: ReactNode; as?: "h1" 
   );
 }
 
+// a heading the design breaks over two lines; the dictionary keeps one entry per line, so a
+// translation breaks where ITS text wants to
+function Lines({ lines }: { lines: readonly string[] }) {
+  return (
+    <>
+      {lines.map((line, i) => (
+        <Fragment key={i}>
+          {i > 0 && <br />}
+          {line}
+        </Fragment>
+      ))}
+    </>
+  );
+}
+
 function Para({ children }: { children: ReactNode }) {
   return (
     <p data-m-copy className="font-heading font-light text-white/65" style={{ fontSize: m(15), lineHeight: 1.5, marginTop: m(16) }}>
@@ -98,19 +116,38 @@ function Para({ children }: { children: ReactNode }) {
   );
 }
 
-function Buttons({ marginTop = 24 }: { marginTop?: number }) {
+// The hero's single CTA (user, 2026-11-07) — "Start Building" + "See how it works" were replaced
+// by "Book a demo" here only; `Buttons` below still serves S09 with the original pair.
+// It opens the booking popup (components/ui/BookDemoModal.tsx, mounted once in
+// app/_site/landing.tsx — full screen below 1024).
+function BookDemoButton({ t }: { t: Dict }) {
+  return (
+    <div data-m-copy className="flex" style={{ marginTop: m(24) }}>
+      <button
+        type="button"
+        onClick={openBookDemo}
+        className={`${PILL} shrink-0 whitespace-nowrap font-semibold`}
+        style={{ height: m(44), paddingLeft: m(20), paddingRight: m(16), fontSize: m(14), gap: m(4) }}
+      >
+        {t.hero.bookDemo} <ButtonArrow size={m(16)} />
+      </button>
+    </div>
+  );
+}
+
+function Buttons({ t, marginTop = 24 }: { t: Dict; marginTop?: number }) {
   return (
     // compact enough that both pills stay on ONE row down to a 360px phone (m() shrinks with the width)
     <div data-m-copy className="flex flex-nowrap items-center" style={{ gap: m(8), marginTop: m(marginTop) }}>
       <Link href={SIGNUP_URL} className={`${PILL} shrink-0 whitespace-nowrap font-semibold`} style={{ height: m(44), paddingInline: m(20), fontSize: m(14) }}>
-        Start Building
+        {t.hero.startBuilding}
       </Link>
       <Link
         href={SIGNUP_URL}
         className={`${PILL} shrink-0 whitespace-nowrap font-normal text-white/90`}
         style={{ height: m(44), paddingLeft: m(20), paddingRight: m(16), fontSize: m(14), gap: m(4) }}
       >
-        See how it works <ButtonArrow size={m(16)} />
+        {t.hero.seeHow} <ButtonArrow size={m(16)} />
       </Link>
     </div>
   );
@@ -195,7 +232,7 @@ const fetchSvg = (url: string, prefix: string) =>
     .then((r) => r.text())
     .then((t) => t.replace(/id="([^"]+)"/g, `id="${prefix}$1"`).replace(/url\(#([^)]+)\)/g, `url(#${prefix}$1)`));
 
-export function HeroMobile() {
+export function HeroMobile({ t }: { t: Dict }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const [counts, setCounts] = useState<Record<RowKey, number>>({ vcpu: 1, memory: 1, storage: 1 });
   const [annual, setAnnual] = useState(false);
@@ -532,13 +569,10 @@ export function HeroMobile() {
         className="m-hero relative flex flex-col"
         style={{ ...sectionStyle, paddingTop: m(44), paddingBottom: m(12), minHeight: "calc(100svh - var(--header-h))" }}
       >
-        <Eyebrow>Managed Kubernetes &amp; AI Agent Infrastructure</Eyebrow>
-        <Heading as="h1">Build your product. We&rsquo;ll handle the infrastructure.</Heading>
-        <Para>
-          Deploy your apps, databases, workers, and AI agents without building a DevOps team. usectl takes you from code to
-          production with managed infrastructure and predictable pricing.
-        </Para>
-        <Buttons />
+        <Eyebrow>{t.hero.eyebrow}</Eyebrow>
+        <Heading as="h1">{t.hero.heading}</Heading>
+        <Para>{t.hero.body}</Para>
+        <BookDemoButton t={t} />
         <div
           className="relative flex-1"
           style={{ marginTop: m(16), minHeight: SERVER_H_FLOOR, maxHeight: m(SERVER_H_MAX) }}
@@ -563,12 +597,9 @@ export function HeroMobile() {
 
       {/* 2 — Infrastructure Freedom */}
       <section id="build" data-m-section className="scroll-mt-[calc(var(--header-h)+16px)] relative" style={sectionStyle}>
-        <Eyebrow>Infrastructure Freedom</Eyebrow>
-        <Heading>You came here to build.</Heading>
-        <Para>
-          Your next feature. Your first customer. The idea you can&rsquo;t stop thinking about. usectl handles the infrastructure,
-          giving you more time to move your product forward.
-        </Para>
+        <Eyebrow>{t.s2.eyebrow}</Eyebrow>
+        <Heading>{t.s2.heading}</Heading>
+        <Para>{t.s2.body}</Para>
         {/* the two figures between hairlines, then the three mono bullets — the phone board's
             own shape for this state (the desktop gradient-bordered card doesn't survive the
             narrow column) */}
@@ -577,25 +608,22 @@ export function HeroMobile() {
           className="grid grid-cols-2"
           style={{ marginTop: m(36), padding: `${m(20)} 0`, gap: m(16), borderTop: ROW_HAIRLINE, borderBottom: ROW_HAIRLINE }}
         >
-          {[
-            { v: "0 h", t: "spent on DevOps configuration" },
-            { v: "100%", t: "focus on product logic" },
-          ].map((stat) => (
-            <div key={stat.v}>
+          {t.s2.stats.map((stat) => (
+            <div key={stat.value}>
               <p className="font-heading font-medium text-brand" style={{ fontSize: m(32), lineHeight: 1.1 }}>
-                {stat.v}
+                {stat.value}
               </p>
               <p className="font-heading font-light text-white/65" style={{ fontSize: m(13), lineHeight: 1.4, marginTop: m(6) }}>
-                {stat.t}
+                {stat.label}
               </p>
             </div>
           ))}
         </div>
         <div className="font-mono" style={{ marginTop: m(28), display: "grid", gap: m(12) }}>
-          {["Auto-scaling K8s Cluster", "Isolated Micro-VM Kernel", "Encrypted Postgres Storage"].map((t) => (
-            <p data-m-label key={t} className="flex items-center text-white/75" style={{ fontSize: m(12), letterSpacing: "0.04em", gap: m(10) }}>
+          {t.s2.callouts.map((label) => (
+            <p data-m-label key={label} className="flex items-center text-white/75" style={{ fontSize: m(12), letterSpacing: "0.04em", gap: m(10) }}>
               <span data-m-dot className="shrink-0 rounded-full bg-brand" style={{ width: m(7), height: m(7) }} />
-              <span data-m-label-text>{t}</span>
+              <span data-m-label-text>{label}</span>
             </p>
           ))}
         </div>
@@ -603,16 +631,11 @@ export function HeroMobile() {
 
       {/* 3 — Your Stacks */}
       <section id="features" data-m-section className="scroll-mt-[calc(var(--header-h)+16px)] relative" style={sectionStyle}>
-        <Eyebrow>Infrastructure Freedom</Eyebrow>
+        <Eyebrow>{t.s3.eyebrow}</Eyebrow>
         <Heading>
-          Your Stacks,
-          <br />
-          in one place.
+          <Lines lines={t.s3.heading} />
         </Heading>
-        <Para>
-          Run your apps, databases, storage, and background jobs together. Everything stays connected and organized while
-          usectl manages the infrastructure underneath.
-        </Para>
+        <Para>{t.s3.body}</Para>
         <div className="relative mx-auto" style={{ width: m(260), marginTop: m(32) }}>
           <Image data-m-top src="/stack-section/top-server-piece.svg" alt="" width={420} height={284} className="relative z-10 block w-full" style={{ height: "auto" }} />
           <div className="relative flex justify-center" style={{ height: m(30), gap: m(48) }} aria-hidden="true">
@@ -627,27 +650,16 @@ export function HeroMobile() {
           </div>
           <Image data-m-bottom src="/stack-section/bottom-server-piece.svg" alt="" width={417} height={285} className="block w-full" style={{ height: "auto" }} />
         </div>
-        <Rows
-          items={[
-            { title: "Application Services", desc: "Automated deployment for APIs, web apps, and microservices." },
-            { title: "Application Storage", desc: "High-availability managed databases and S3-compatible object storage." },
-            { title: "Background Jobs", desc: "Isolated worker queues, scheduled CRONs, and async processing." },
-          ]}
-        />
+        <Rows items={t.s3.items} />
       </section>
 
       {/* 4 — Isolated Spaces (Machine) */}
       <section id="the-machine" data-m-section className="scroll-mt-[calc(var(--header-h)+16px)] relative" style={sectionStyle}>
-        <Eyebrow>Isolated Spaces</Eyebrow>
+        <Eyebrow>{t.s4.eyebrow}</Eyebrow>
         <Heading>
-          Give every project
-          <br />
-          its own space.
+          <Lines lines={t.s4.heading} />
         </Heading>
-        <Para>
-          Keep your app and the services it depends on together, with their own resources and access settings. In usectl, we
-          call this project space a Machine.
-        </Para>
+        <Para>{t.s4.body}</Para>
         {/* one inline opened.svg that starts collapsed (≡ closed.svg) and unfolds — machineUnfold.ts */}
         <div className="relative mx-auto" style={{ width: m(330), marginTop: m(26) }}>
           <div
@@ -657,36 +669,31 @@ export function HeroMobile() {
           />
           <div data-m-machine className="relative [&>svg]:overflow-visible" style={{ aspectRatio: "834 / 694" }} />
         </div>
+        {/* the uppercase mono titles stay English in every language — see the note in i18n/en.ts */}
         <Rows
           mono
-          items={[
-            { title: "MACHINE BOUNDARY", desc: "Zero cross-project interference" },
-            { title: "DEDICATED RESOURCES", desc: "CPU, RAM, and Storage isolated per space" },
-            { title: "ENVIRONMENT CONFIG", desc: "Independent secrets and access policies" },
-          ]}
+          items={["MACHINE BOUNDARY", "DEDICATED RESOURCES", "ENVIRONMENT CONFIG"].map((title, i) => ({
+            title,
+            desc: t.s4.itemDescs[i]!,
+          }))}
         />
       </section>
 
       {/* 5 — Pods */}
       <section id="pods" data-m-section className="scroll-mt-[calc(var(--header-h)+16px)] relative" style={sectionStyle}>
-        <Eyebrow>Isolated Spaces</Eyebrow>
+        <Eyebrow>{t.s5.eyebrow}</Eyebrow>
         <Heading>
-          Run each part
-          <br />
-          independently.
+          <Lines lines={t.s5.heading} />
         </Heading>
-        <Para>
-          Your frontend, API, and workers can each have their own resources and deploy separately while staying connected inside
-          the same project. In usectl, each running workload is a Pod.
-        </Para>
+        <Para>{t.s5.body}</Para>
         {/* [&>svg]:overflow-visible: the slabs rise in from +70 and then float, and an inline svg
             clips at its viewBox by default (same cause as the hero server's sliced base) */}
         <div data-m-pods className="relative mx-auto [&>svg]:overflow-visible" style={{ width: m(280), marginTop: m(26), aspectRatio: "689 / 1007" }} />
         <div className="font-mono" style={{ marginTop: m(24), display: "grid", gap: m(10) }}>
           {[
-            { t: "[ POD // FRONTEND ]", st: "RUNNING v1.4.2", d: "Independent Deploy • 1 vCPU / 2GB" },
-            { t: "[ POD // API ]", st: "DEPLOYING v2.1.0", d: "Zero Downtime • 2 vCPU / 4GB", deploying: true },
-            { t: "[ POD // WORKERS ]", st: "RUNNING v1.4.2", d: "Async Processing • 1 vCPU / 1GB" },
+            { t: "[ POD // FRONTEND ]", st: "RUNNING v1.4.2", d: t.s5.podDescs[0]! },
+            { t: "[ POD // API ]", st: "DEPLOYING v2.1.0", d: t.s5.podDescs[1]!, deploying: true },
+            { t: "[ POD // WORKERS ]", st: "RUNNING v1.4.2", d: t.s5.podDescs[2]! },
           ].map((p) => (
             <div
               data-m-pod
@@ -726,16 +733,11 @@ export function HeroMobile() {
 
       {/* 6 — Continuous Deployment */}
       <section id="deploy" data-m-section className="scroll-mt-[calc(var(--header-h)+16px)] relative" style={sectionStyle}>
-        <Eyebrow>Continuous Deployment</Eyebrow>
+        <Eyebrow>{t.s6.eyebrow}</Eyebrow>
         <Heading>
-          Push your code.
-          <br />
-          We&rsquo;ll put it live.
+          <Lines lines={t.s6.heading} />
         </Heading>
-        <Para>
-          Connect your repository and push your next update. usectl builds it, deploys it, and serves it over HTTPS while the
-          rest of your project keeps running.
-        </Para>
+        <Para>{t.s6.body}</Para>
         <div style={{ marginTop: m(30) }}>
           <Terminal
             dataKey="6"
@@ -792,16 +794,11 @@ export function HeroMobile() {
 
       {/* 7 — AI Infrastructure */}
       <section id="agents" data-m-section className="scroll-mt-[calc(var(--header-h)+16px)] relative" style={sectionStyle}>
-        <Eyebrow>AI Infrastructure</Eyebrow>
+        <Eyebrow>{t.s7.eyebrow}</Eyebrow>
         <Heading>
-          Give your agent
-          <br />
-          a place to work.
+          <Lines lines={t.s7.heading} />
         </Heading>
-        <Para>
-          Run AI agents alongside the apps, APIs, databases, and tools they use. Your coding assistant can also deploy updates
-          and inspect logs through the usectl CLI.
-        </Para>
+        <Para>{t.s7.body}</Para>
         {/* badge FIRST, then the short drop line into the board — the desktop composition's
             reading order, which the phone board keeps (design/mobile/S07) */}
         <div
@@ -838,29 +835,24 @@ export function HeroMobile() {
 
       {/* 8 — Pricing */}
       <section id="pricing" data-m-section className="scroll-mt-[calc(var(--header-h)+16px)] relative" style={sectionStyle}>
-        <Eyebrow>Pricing</Eyebrow>
+        <Eyebrow>{t.s8.eyebrow}</Eyebrow>
         <Heading>
-          Know your hosting bill
-          <br />
-          before you launch.
+          <Lines lines={t.s8.heading} />
         </Heading>
-        <Para>
-          Choose the CPU, memory, and storage your project needs and see the monthly price before you deploy. Need more capacity
-          later? You&rsquo;ll see the new price before making the change.
-        </Para>
+        <Para>{t.s8.body}</Para>
         <div
           data-m-calc
           className="font-heading"
           style={{ marginTop: m(28), padding: m(18), borderRadius: m(14), border: "1px solid rgba(255,255,255,0.09)", background: "linear-gradient(115deg, rgba(255,255,255,0.032) 0%, rgba(255,255,255,0.01) 100%)" }}
         >
           <div className="flex items-center justify-center" style={{ gap: m(10), fontSize: m(13.5) }}>
-            <span className={annual ? "text-white/50" : "text-white/90"}>Monthly</span>
+            <span className={annual ? "text-white/50" : "text-white/90"}>{t.s8.monthly}</span>
             {/* the desktop switch: 49×27 track r4, 22×23 #11A32A knob, travel 23 */}
             <button
               type="button"
               role="switch"
               aria-checked={annual}
-              aria-label="Bill annually"
+              aria-label={t.a11y.billAnnually}
               onClick={() => setAnnual((a) => !a)}
               className="relative cursor-pointer"
               style={{ width: m(44), height: m(24), borderRadius: m(4), background: "rgba(255,255,255,0.15)" }}
@@ -870,16 +862,16 @@ export function HeroMobile() {
                 style={{ top: m(2), left: m(2), width: m(20), height: m(20), borderRadius: m(4), background: "#11A32A", transform: annual ? `translateX(${m(20)})` : "translateX(0)" }}
               />
             </button>
-            <span className={annual ? "text-white/90" : "text-white/50"}>Annual</span>
+            <span className={annual ? "text-white/90" : "text-white/50"}>{t.s8.annual}</span>
           </div>
-          {PRICING_ROWS.map((row) => (
+          {PRICING_ROWS.map((row, i) => (
             <div data-m-calc-row key={row.key} className="flex items-center justify-between" style={{ marginTop: m(18) }}>
               <div>
                 <p className="text-white/90" style={{ fontSize: m(15) }}>
-                  {row.label}
+                  {t.s8.rows[i]!.label}
                 </p>
                 <p className="font-light text-white/45" style={{ fontSize: m(11), marginTop: m(3) }}>
-                  {row.sub}
+                  {t.s8.rows[i]!.unit} · {t.s8.rows[i]!.max}
                 </p>
               </div>
               <div className="flex items-center" style={{ gap: m(8) }}>
@@ -887,7 +879,7 @@ export function HeroMobile() {
                   <button
                     key={d}
                     type="button"
-                    aria-label={`${d < 0 ? "Decrease" : "Increase"} ${row.label}`}
+                    aria-label={fill(d < 0 ? t.a11y.decrease : t.a11y.increase, { name: t.s8.rows[i]!.label })}
                     onClick={() => step(row.key, d, row.max)}
                     onPointerDown={pressRipple}
                     disabled={d < 0 ? counts[row.key] <= 1 : counts[row.key] >= row.max}
@@ -905,7 +897,7 @@ export function HeroMobile() {
           ))}
           <div className="flex items-center justify-between" style={{ marginTop: m(22), padding: `${m(12)} ${m(16)}`, borderRadius: m(8), border: "1px dashed rgba(255,255,255,0.25)" }}>
             <span className="text-white/80" style={{ fontSize: m(14.5) }}>
-              Your {annual ? "annual" : "monthly"} price
+              {annual ? t.s8.totalAnnual : t.s8.totalMonthly}
             </span>
             <span className="font-medium text-brand" style={{ fontSize: m(22) }}>
               {fmtPrice(total)}
@@ -915,7 +907,7 @@ export function HeroMobile() {
             </span>
           </div>
           <p className="text-center font-light text-white/45" style={{ marginTop: m(12), fontSize: m(11.5) }}>
-            The first month is free. You don&rsquo;t need to link a card.
+            {t.s8.freeNote}
           </p>
         </div>
         {/* the desktop CTA: bordered box with brighter blueprint corner brackets, brand label */}
@@ -927,10 +919,10 @@ export function HeroMobile() {
           {(["-top-px -left-px border-t border-l", "-top-px -right-px border-t border-r", "-bottom-px -left-px border-b border-l", "-bottom-px -right-px border-b border-r"] as const).map((pos) => (
             <span key={pos} aria-hidden="true" className={`absolute ${pos} border-white/60`} style={{ width: m(10), height: m(10) }} />
           ))}
-          Start now from $15 / month
+          {t.s8.cta}
         </a>
         <p className="text-center font-heading font-light text-white/40" style={{ marginTop: m(10), fontSize: m(12.5) }}>
-          Not a surprise.
+          {t.s8.ctaNote}
         </p>
       </section>
 
@@ -943,20 +935,20 @@ export function HeroMobile() {
           style={{ right: m(-130), top: m(40), width: m(360), height: m(360), background: "radial-gradient(circle, rgba(90,255,200,0.16) 0%, rgba(17,163,42,0.07) 45%, rgba(17,163,42,0) 70%)", filter: "blur(20px)" }}
         />
         <p data-m-copy className="relative font-heading font-light text-white/50" style={{ fontSize: m(22), lineHeight: 1.25 }}>
-          What will you build next?
+          {t.s9.kicker}
         </p>
         <h2 data-m-copy className="relative font-heading font-light text-white/[0.88]" style={{ fontSize: m(30), lineHeight: 1.28, marginTop: m(14) }}>
-          Give your next product a place to run.{" "}
+          {t.s9.lead}{" "}
           <span className="font-medium" style={{ color: "#27a138" }}>
-            Keep building
+            {t.s9.green}
           </span>{" "}
           <span className="font-medium" style={{ color: "#6b8fa8" }}>
-            what matters
-          </span>{" "}
-          - we&rsquo;ll handle the infrastructure behind
+            {t.s9.blue}
+          </span>
+          {t.s9.tail}
         </h2>
         <div className="relative">
-          <Buttons marginTop={32} />
+          <Buttons t={t} marginTop={32} />
         </div>
       </section>
     </div>

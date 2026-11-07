@@ -5,12 +5,21 @@
 // (HeroSectionClient's SNAP_TIMES) and the mobile stacked sections run in the SAME order, so one
 // number drives both: desktop glides the timeline to that state, mobile scrolls to the section
 // carrying that id. `external` links leave the site instead (no state, opened in a new tab).
+import type { Dict } from "@/lib/i18n/en";
+
 export type NavLink = { label: string; href: string; state?: number; external?: boolean };
 
 // The off-site destinations, kept here so every button/link that points at them agrees.
 export const DOCS_URL = "https://docs.usectl.com/#introduction";
 export const SIGNUP_URL = "https://manager.usectl.com/login";
 export const X_URL = "https://x.com/usectlcloud";
+// The "Book a demo" booking page (Google Calendar appointment schedule). Two forms of the SAME
+// schedule: the `?gv=true` one is the only one that may be framed (it is what Google's own embed
+// snippet uses, and it is the host the CSP's frame-src allows — see next.config.ts), the short
+// calendar.app.google link is for opening it in a real tab.
+export const BOOKING_EMBED_URL =
+  "https://calendar.google.com/calendar/appointments/schedules/AcZssZ2fTKLczlgS8sWqwsR3TIw11IyRBcOEjP3RSStvzzRJ0X2dVkzxyy9eNIJY9ytmVvrCRZUqVCbe?gv=true";
+export const BOOKING_URL = "https://calendar.app.google/DfuCX39z6aacyU7Z8";
 export const INSTAGRAM_URL = "https://www.instagram.com/usectl.dev/";
 export const FACEBOOK_URL = "https://www.facebook.com/profile.php?id=61596061747860";
 // the company behind usectl — the "© 2026 SYSTEMCTL" credit in both footers and the burger menu
@@ -19,6 +28,22 @@ export const SYSTEMCTL_URL = "https://systemctl.sh";
 // The App Store / Google Play badges are hidden until the apps are actually published — the markup
 // stays in both footers behind this flag, so publishing is a one-line change back to `true`.
 export const SHOW_STORE_BADGES = false;
+
+// The public contact address — both footers, the burger menu, the JSON-LD and the subscribe
+// route's fallback destination all read it from here, so it can only ever be changed in one place
+// (it was hello@ until 2026-11-07).
+export const CONTACT_EMAIL = "info@usectl.com";
+export const CONTACT_HREF = `mailto:${CONTACT_EMAIL}`;
+
+// The footer's Subscribe box posts STRAIGHT to Web3Forms from the browser (2026-11-07) — their
+// free plan does not allow server-side submissions ("Server side usage requires paid plan + server
+// IP whitelisting"), so the previous route through /api/subscribe could never have delivered.
+//
+// This key is PUBLIC by design: it is an alias for a destination address, not a secret. Anyone can
+// read it out of the shipped JS either way, and all it can do is send an email to info@usectl.com
+// — it grants no access to the account or to past submissions. Abuse protection is Web3Forms' own
+// (spam filtering + the `botcheck` honeypot) plus the client-side guards in SubscribeForm.tsx.
+export const WEB3FORMS_KEY = "63bff0c5-1cc9-4183-911d-5e385db7d0c9";
 
 // Same idea for the footer's phone number: hidden on request (2026-11-05) while the line is a
 // placeholder, with the markup kept in both footers so a real number is one line away.
@@ -36,13 +61,31 @@ export const SOCIAL_LINKS = [
   { label: "usectl on Facebook", href: FACEBOOK_URL, icon: "/footer/fb.svg", size: 20 },
 ] as const;
 
-export const NAV_LINKS: readonly NavLink[] = [
-  { label: "The Machine", href: "#the-machine", state: 3 }, // "Give every project its own space"
-  { label: "Agents", href: "#agents", state: 6 }, // "Give your agent a place to work"
-  { label: "Features", href: "#features", state: 2 }, // "Your Stacks, in one place"
-  { label: "Pricing", href: "#pricing", state: 7 }, // the calculator
-  { label: "Documentation", href: DOCS_URL, external: true },
+// The nav, without its labels: the label comes from the active language's dictionary (`key` is the
+// entry in `Dict["nav"]`), so the header, the burger menu and BOTH footer columns can't drift from
+// each other or from the translation.
+type NavItem = { key: keyof Dict["nav"]; href: string; state?: number; external?: boolean };
+
+const NAV_ITEMS: readonly NavItem[] = [
+  { key: "machine", href: "#the-machine", state: 3 }, // "Give every project its own space"
+  { key: "agents", href: "#agents", state: 6 }, // "Give your agent a place to work"
+  { key: "features", href: "#features", state: 2 }, // "Your Stacks, in one place"
+  { key: "pricing", href: "#pricing", state: 7 }, // the calculator
+  { key: "documentation", href: DOCS_URL, external: true },
 ];
+
+/** The header / burger-menu nav in one language. */
+export const navLinks = (t: Dict): readonly NavLink[] =>
+  NAV_ITEMS.map(({ key, href, state, external }) => ({ label: t.nav[key], href, state, external }));
+
+/** The same destinations in the footer column, where Documentation is shortened to "Doc". */
+export const footerNavLinks = (t: Dict): readonly NavLink[] =>
+  NAV_ITEMS.map(({ key, href, state, external }) => ({
+    label: key === "documentation" ? t.nav.doc : t.nav[key],
+    href,
+    state,
+    external,
+  }));
 
 // Every page of the scene, in order (desktop SNAP_TIMES index = mobile stacked section index), and
 // the hash the address bar shows while you are on it — written on EVERY page change (scroll, keys,
@@ -72,12 +115,12 @@ export const STATE_BY_HASH: Readonly<Record<string, number>> = Object.fromEntrie
 export const STATE_STORAGE_KEY = "usectl:state";
 
 export const NAV_STATE_BY_HASH: Readonly<Record<string, number>> = Object.fromEntries(
-  NAV_LINKS.flatMap((link) => (link.state === undefined ? [] : [[link.href, link.state] as const])),
+  NAV_ITEMS.flatMap((link) => (link.state === undefined ? [] : [[link.href, link.state] as const])),
 );
 
 // the mobile section that each state index owns an id for (inverse of the map above)
 export const NAV_ID_BY_STATE: Readonly<Record<number, string>> = Object.fromEntries(
-  NAV_LINKS.flatMap((link) =>
+  NAV_ITEMS.flatMap((link) =>
     link.state === undefined ? [] : [[link.state, link.href.slice(1)] as const],
   ),
 );

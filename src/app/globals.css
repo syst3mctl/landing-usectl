@@ -97,6 +97,12 @@
      Width and text shrink with it too, but only down to 104px / 12px so the label always fits and
      stays readable next to the nav. The right margin is one grid column (82), which puts the
      pill's right edge on column 21 (1739), where the design has it. */
+  /* EN / KA, immediately left of Start Now — on --sh like the rest of the row, with a floor so it
+     stays readable when a short window shrinks the scene */
+  .header-lang {
+    font-size: max(12px, calc(var(--sh) * 14));
+    margin-right: max(16px, calc(var(--sh) * 22));
+  }
   .header-cta {
     width: max(104px, calc(var(--sh) * 132));
     height: calc(var(--sh) * 48);
@@ -104,12 +110,40 @@
     line-height: 1;
     margin-right: calc(var(--sh) * 82);
   }
+  /* "დაიწყე ახლავე" is a much longer label than "Start Now": at 14 it measured 113px of text +
+     16 arrow + 4 gap = 133 inside the design's 132-wide pill, i.e. it touched both borders
+     (user, 2026-11-07: "არ ეტევა button-ში"). The pill keeps the Figma box; only the label
+     shrinks. Kept for 1024-1279 only — see the ≥1280 rule for the wider Georgian box. */
+  html[lang="ka"] .header-cta {
+    font-size: max(10px, calc(var(--sh) * 12));
+  }
 }
 @media (min-width: 1280px) {
   /* below 1280 the nav keeps its own tuned 15px / 1.5rem pair (see Header.tsx) */
   .header-nav {
     font-size: max(16px, calc(var(--sh) * 16));
     gap: max(2rem, calc(var(--sh) * 32));
+  }
+}
+
+/* The Georgian pill gets its own, BIGGER box instead of squeezing the label into the Figma 132:
+   shrinking the text to 12 fixed the overflow but read as a smaller button than the English one
+   (user, 2026-11-07: "უფრო განიერი და დიდი"). Measured at 1920 with BPG Banner Caps: label 120.5
+   at 15 + arrow 17.3 (1.15em) + gap 4 = 141.8, so 174 leaves ~16.1px of air each side — the same
+   optical padding "Start Now" has inside its 132. Height stays the scene's pill height, shared
+   with English, so the two languages' headers are the same shape.
+   The media query is the measured limit, not a guess. The pill is ~46px wider than the English one
+   wherever the floors hold (a 13px label needs ~123px of content), and the row's remaining slack
+   between the CENTRED nav and this right-hand group is: 352 at 2560×1440, 261 at 1920×1080, 155 at
+   1600×900, 102 at 1440×900, 52 at 1366×768, 37 at 1280×800, 46 at 760 tall — but −2 at 700 tall
+   and only 17-48 at 1024-1100 (and −10 at 1280×620, where ENGLISH already overlaps), because a
+   narrow or SHORT window shrinks --sh, i.e. the row's paddings, while the px floors hold the pill's
+   size. Hence the 1280 / 760 gate: below either, the Georgian label keeps the tight 12px box in the
+   ≥1024 block above. */
+@media (min-width: 1280px) and (min-height: 760px) {
+  html[lang="ka"] .header-cta {
+    width: max(150px, calc(var(--sh) * 174));
+    font-size: max(13px, calc(var(--sh) * 15));
   }
 }
 
@@ -136,11 +170,36 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-brand: var(--brand);
-  /* Space Grotesk everywhere by default: Geist Sans was only reached by a few stray glyphs (store
-     badges, pricing +/−), so its font file was a render-blocking preload for almost nothing */
+}
+
+/* The font stacks are a NON-inline @theme on purpose: `@theme inline` bakes the value straight
+   into every utility (`.font-heading { font-family: var(--font-space-grotesk) }`), which makes the
+   per-language override below a no-op. Without `inline` the utilities reference the theme variable
+   itself, so html[lang="ka"] can extend the stack.
+   Space Grotesk everywhere by default: Geist Sans was only reached by a few stray glyphs (store
+   badges, pricing +/−), so its font file was a render-blocking preload for almost nothing. */
+@theme {
   --font-sans: var(--font-space-grotesk);
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-space-grotesk);
+}
+
+/* Georgian (/ka). Space Grotesk and Geist Mono are both latin-subset — they carry NO Georgian
+   glyphs — so the Georgian face is APPENDED to each stack instead of replacing it: a font stack
+   resolves per GLYPH, so Latin runs (usectl, Kubernetes, vCPU, $15.10) keep rendering in Space
+   Grotesk / Geist Mono exactly as on `/`, and only Georgian letters come from BPG Banner Caps.
+   Unlayered on purpose: Tailwind's `@theme` vars live in a layer, so a plain rule outranks them
+   (same reason .header-row's rules are unlayered).
+   font-synthesis: none — BPG Banner Caps ships ONE weight (400), and the scene is full of
+   font-medium / font-semibold headings; without this the browser synthesises a fake bold by
+   smearing the outlines, which on this face reads as a different (blurrier) typeface than the
+   body copy right under it. Latin runs are unaffected: Space Grotesk has real weights, and
+   font-synthesis only ever applies where a real face is missing. */
+html[lang="ka"] {
+  --font-sans: var(--font-space-grotesk), var(--font-bpg-banner), sans-serif;
+  --font-heading: var(--font-space-grotesk), var(--font-bpg-banner), sans-serif;
+  --font-mono: var(--font-geist-mono), var(--font-bpg-banner), monospace;
+  font-synthesis: none;
 }
 
 body {
@@ -193,6 +252,37 @@ body {
 }
 .t6-blink {
   animation: t6-blink 1s steps(1) infinite;
+}
+
+/* The "Book a demo" popup's entrance (components/ui/BookDemoModal.tsx).
+   A CSS animation, deliberately, instead of the usual "mount at opacity 0, flip a state one frame
+   later" trick: that flip needs requestAnimationFrame, and rAF is frozen while the window isn't
+   visible — the popup then opened fully transparent (measured). The CLOSING fade is a transition
+   on the same Tailwind classes; these animations keep the default fill-mode (none), so as soon as
+   one ends the element is back on its class values and the transition can take over. */
+@keyframes modal-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes modal-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.modal-in {
+  animation: modal-in 200ms ease-out;
+}
+.modal-panel-in {
+  animation: modal-panel-in 220ms cubic-bezier(0.2, 0.7, 0.3, 1);
 }
 
 @media (prefers-reduced-motion: reduce) {

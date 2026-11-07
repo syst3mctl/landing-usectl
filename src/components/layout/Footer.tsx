@@ -2,15 +2,17 @@ import Image from "next/image";
 import Link from "next/link";
 import { s } from "@/lib/grid";
 import {
-  DOCS_URL,
+  CONTACT_EMAIL,
+  CONTACT_HREF,
+  footerNavLinks,
   PHONE_HREF,
   PHONE_NUMBER,
   SHOW_PHONE,
   SHOW_STORE_BADGES,
   SOCIAL_LINKS,
   SYSTEMCTL_URL,
-  type NavLink,
 } from "@/lib/nav";
+import { langPath, type Dict, type Lang } from "@/lib/i18n";
 import { SceneLight } from "./SceneLight";
 import { SubscribeForm } from "./SubscribeForm";
 
@@ -22,18 +24,11 @@ import { SubscribeForm } from "./SubscribeForm";
 // logo.svg itself, desaturated via CSS filter. "© 2026 SYSTEMCTL" is what the design says — NOT
 // usectl — kept verbatim on purpose.
 
-const NAV_LINKS: readonly NavLink[] = [
-  { label: "The Machine", href: "#the-machine" },
-  { label: "Agents", href: "#agents" },
-  { label: "Features", href: "#features" },
-  { label: "Pricing", href: "#pricing" },
-  { label: "Doc", href: DOCS_URL, external: true },
-];
-
 // A plain server component: its scroll-in fade-up was switched off (2026-09-29 — with the fullpage
 // footer glide it read as a second animation to wait out) and then removed with the gsap/client
 // code it needed. git history (pass 2 / pass 55) has it if it's ever wanted back.
-export function Footer() {
+export function Footer({ t, lang }: { t: Dict; lang: Lang }) {
+  const navLinks = footerNavLinks(t);
   return (
     // The base stays DARK (#1b1a1a, sampled as rgb(26,26,26) in the design's own footer-light.png)
     // — the footer's brightness is not a lighter fill, it's the mint glow below.
@@ -69,11 +64,11 @@ export function Footer() {
 
       {/* brand column */}
       <div className="absolute" style={{ left: s(187), top: s(76) }}>
-        <Link href="/" aria-label="usectl home" className="inline-block">
+        <Link href={langPath(lang)} aria-label={t.a11y.home} className="inline-block">
           <Image src="/logo/logo.svg" alt="usectl" width={151} height={25} style={{ width: s(172), height: "auto" }} />
         </Link>
         <p className="font-heading font-light text-white/60" style={{ marginTop: s(30), fontSize: s(16) }}>
-          37 Zhiuli Shartava st., Tbilisi 2209 Georgia
+          {t.footer.address}
         </p>
 
         {/* store badges (inline art — no official assets in the repo); hidden until the apps ship */}
@@ -130,10 +125,10 @@ export function Footer() {
       {/* navigation column */}
       <div className="absolute font-heading" style={{ left: s(707), top: s(76) }}>
         <h3 className="font-medium text-white/85" style={{ fontSize: s(16) }}>
-          Navigation
+          {t.footer.navigation}
         </h3>
         <ul style={{ marginTop: s(28) }}>
-          {NAV_LINKS.map((link) => (
+          {navLinks.map((link) => (
             <li key={link.href} style={{ marginBottom: s(14) }}>
               <Link
                 href={link.href}
@@ -151,15 +146,15 @@ export function Footer() {
       {/* contact column */}
       <div className="absolute font-heading" style={{ left: s(1058), top: s(76) }}>
         <h3 className="font-medium text-white/85" style={{ fontSize: s(16) }}>
-          Contact
+          {t.footer.contact}
         </h3>
         <p style={{ marginTop: s(28) }}>
           <a
-            href="mailto:hello@usectl.com"
+            href={CONTACT_HREF}
             className="font-light text-white/55 transition-colors hover:text-white"
             style={{ fontSize: s(15.5) }}
           >
-            hello@usectl.com
+            {CONTACT_EMAIL}
           </a>
         </p>
         {/* the phone line is behind SHOW_PHONE — hidden while the number is a placeholder */}
@@ -199,11 +194,11 @@ export function Footer() {
       {/* subscribe column */}
       <div className="absolute font-heading" style={{ left: s(1439), top: s(76) }}>
         <h3 className="font-medium text-white/85" style={{ fontSize: s(16) }}>
-          Subscribe
+          {t.footer.subscribe}
         </h3>
         {/* the field, its send icon, the consent box and the status line (client component — it
             posts to /api/subscribe and carries the repeat-send guards) */}
-        <SubscribeForm variant="desktop" />
+        <SubscribeForm variant="desktop" t={t.subscribe} sendLabel={t.a11y.subscribe} lang={lang} />
       </div>
 
       {/* copyright */}

@@ -3,17 +3,24 @@
 import Image from "next/image";
 import { useMemo, useRef, useState } from "react";
 import { s } from "@/lib/grid";
+import type { Dict, Lang } from "@/lib/i18n";
+import { WEB3FORMS_KEY } from "@/lib/nav";
 
 // The footer's subscribe box (desktop + phone share this one component — `variant` only picks the
 // scale variable, `--s` for the 1920 canvas or `--m` for the phone one, so the markup can't drift).
 //
 // Behaviour asked for (2026-10-21): the send icon only APPEARS once what's typed looks like an
-// address, Enter submits just like the icon, and the address is posted to /api/subscribe which
-// forwards it to our inbox.
+// address, Enter submits just like the icon, and the address lands in our inbox.
 //
-// Not sending it a hundred times is handled in three places here (the server has its own, stricter
-// limits — per-IP, per-email and a honeypot):
-//   · the button is disabled while a request is in flight;
+// WHERE IT GOES (changed 2026-11-07): the submission is posted DIRECTLY to Web3Forms from the
+// browser. It used to go to our own /api/subscribe, which then called Web3Forms server-side — and
+// that cannot work on their free plan ("Server side usage requires paid plan + server IP
+// whitelisting"), so it would have failed in production. The access key is public by design (see
+// WEB3FORMS_KEY in lib/nav.ts). /api/subscribe is kept in the repo for a future Resend switch.
+//
+// Not sending it a hundred times is handled here, client-side (Web3Forms does its own spam
+// filtering on top, and the `botcheck` honeypot below is theirs):
+//   · the button is dead while a request is in flight;
 //   · after a success the field locks and the form is done;
 //   · a localStorage ledger remembers which addresses this browser already sent (24h) and enforces
 //     a short cooldown between sends, so a reload can't be used to spam the endpoint either.
@@ -55,7 +62,17 @@ function writeLedger(email: string) {
 
 type Status = "idle" | "sending" | "done" | "error";
 
-export function SubscribeForm({ variant }: { variant: "desktop" | "mobile" }) {
+export function SubscribeForm({
+  variant,
+  t,
+  sendLabel,
+  lang,
+}: {
+  variant: "desktop" | "mobile";
+  t: Dict["subscribe"];
+  sendLabel: string;
+  lang: Lang;
+}) {
   const desktop = variant === "desktop";
   // the phone footer scales with --m, the desktop canvas with --s (= `s()` from lib/grid)
   const u = useMemo(() => (desktop ? s : (px: number) => `calc(var(--m) * ${px})`), [desktop]);
@@ -64,7 +81,7 @@ export function SubscribeForm({ variant }: { variant: "desktop" | "mobile" }) {
   const [consent, setConsent] = useState(false);
   const [status, setStatus] = useState<Status>("idle");
   const [message, setMessage] = useState("");
-  const company = useRef<HTMLInputElement>(null); // honeypot
+  const botcheck = useRef<HTMLInputElement>(null); // honeypot (Web3Forms' own field name)
 
   // The send icon reports how far along the address is (2026-11-05): nothing while the field is
   // empty, the brand arrow at 40% as soon as the visitor starts typing, full strength once the
@@ -86,7 +103,7 @@ export function SubscribeForm({ variant }: { variant: "desktop" | "mobile" }) {
 
     if (!consent) {
       setStatus("error");
-      setMessage("Please accept the terms and conditions first.");
+      setMessage(t.needConsent);
       return;
     }
 
@@ -95,43 +112,60 @@ export function SubscribeForm({ variant }: { variant: "desktop" | "mobile" }) {
     const now = Date.now();
     if (ledger.sent[value] !== undefined && now - ledger.sent[value]! < REMEMBER_MS) {
       setStatus("done");
-      setMessage("You're already on the list — we'll be in touch.");
+      setMessage(t.already);
       return;
     }
     if (now - ledger.last < COOLDOWN_MS) {
       setStatus("error");
-      setMessage("Just a moment — try again in a minute.");
+      setMessage(t.cooldown);
+      return;
+    }
+
+    // Honeypot: a real visitor never sees this field, so anything in it is a bot. Answered like a
+    // success and dropped — nothing is sent. (Web3Forms rejects a filled `botcheck` as well; this
+    // just saves the round trip.)
+    if ((botcheck.current?.value ?? "").trim() !== "") {
+      setStatus("done");
+      setMessage(t.thanks);
       return;
     }
 
     setStatus("sending");
     setMessage("");
     try {
-      const res = await fetch("/api/subscribe", {
+      const res = await fetch("https://api.web3forms.com/submit", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: value, consent, company: company.current?.value ?? "" }),
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({
+          access_key: WEB3FORMS_KEY,
+          email: value, // Web3Forms uses this as the reply-to address
+          subject: `usectl landing — new subscriber: ${value}`,
+          from_name: "usectl landing",
+          message: [
+            `Email: ${value}`,
+            `Terms accepted: ${consent ? "yes" : "no"}`,
+            `Source: usectl.com footer subscribe form (${lang})`,
+          ].join("\n"),
+          botcheck: "",
+        }),
       });
-      const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
-      if (!res.ok || !data.ok) {
+      // A success is ONLY a 2xx carrying `success: true`. Everything else — a network failure, a
+      // 4xx/5xx, or a 200 with `success: false` (a wrong key, the plan's monthly cap, their spam
+      // filter) — is an error here; the visitor must never be told it was sent when it wasn't.
+      const data = (await res.json().catch(() => ({}))) as { success?: boolean; message?: string };
+      if (!res.ok || data.success !== true) {
+        console.error("[subscribe] web3forms rejected the submission", res.status, data.message);
         setStatus("error");
-        setMessage(
-          data.error === "rate-limited"
-            ? "Too many tries — please come back later."
-            : data.error === "invalid-email"
-              ? "That address doesn't look right."
-              : data.error === "consent-required"
-                ? "Please accept the terms and conditions first."
-                : "Couldn't send it. Please try again.",
-        );
+        setMessage(t.failed);
         return;
       }
       writeLedger(value);
       setStatus("done");
-      setMessage("Thanks — we'll be in touch.");
-    } catch {
+      setMessage(t.thanks);
+    } catch (err) {
+      console.error("[subscribe] web3forms request failed", err);
       setStatus("error");
-      setMessage("Couldn't send it. Please try again.");
+      setMessage(t.failed);
     }
   }
 
@@ -147,7 +181,7 @@ export function SubscribeForm({ variant }: { variant: "desktop" | "mobile" }) {
           type="email"
           name="email"
           autoComplete="email"
-          placeholder="email"
+          placeholder={t.placeholder}
           value={email}
           disabled={status === "done"}
           onChange={(e) => {
@@ -172,7 +206,7 @@ export function SubscribeForm({ variant }: { variant: "desktop" | "mobile" }) {
             address. No box, no border (design board S10-Footer). */}
         <button
           type="submit"
-          aria-label="Subscribe"
+          aria-label={sendLabel}
           // deliberately NOT disabled / aria-disabled when the box is unticked: the click is what
           // produces the "accept the terms first" hint, and a disabled control fires no events
           // (and would read as dead to a screen reader with nothing to explain why)
@@ -206,11 +240,12 @@ export function SubscribeForm({ variant }: { variant: "desktop" | "mobile" }) {
           )}
         </button>
 
-        {/* honeypot — hidden from people, irresistible to bots */}
+        {/* honeypot — hidden from people, irresistible to bots. The name is Web3Forms' own
+            convention (`botcheck`), so their side drops it too, not just submit() above. */}
         <input
-          ref={company}
+          ref={botcheck}
           type="text"
-          name="company"
+          name="botcheck"
           tabIndex={-1}
           autoComplete="off"
           aria-hidden="true"
@@ -253,7 +288,7 @@ export function SubscribeForm({ variant }: { variant: "desktop" | "mobile" }) {
             <path d="M3 6.2 5.1 8.3 9 4.2" stroke="#1e1d1d" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </span>
-        I agree to the terms and conditions.
+        {t.consent}
       </label>
 
       {message ? (

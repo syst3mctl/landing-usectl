@@ -12,6 +12,7 @@
 import { ImageResponse } from "next/og";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { getDict, type Lang } from "@/lib/i18n";
 
 export const OG_SIZE = { width: 1200, height: 630 };
 
@@ -28,10 +29,13 @@ async function svgDataUrl(rel: string) {
   return `data:image/svg+xml;base64,${svg.toString("base64")}`;
 }
 
-export async function renderShareCard() {
-  const [medium, light, logo, hatch, server] = await Promise.all([
+export async function renderShareCard(lang: Lang = "en") {
+  const t = getDict(lang);
+  const georgian = lang === "ka";
+  const [medium, light, georgianFont, logo, hatch, server] = await Promise.all([
     readFile(join(process.cwd(), "src/app/_og/SpaceGrotesk-Medium.woff")),
     readFile(join(process.cwd(), "src/app/_og/SpaceGrotesk-Light.woff")),
+    readFile(join(process.cwd(), "src/app/_og/BPGBannerCaps.woff")),
     svgDataUrl("logo/logo.svg"),
     svgDataUrl("section-hero/hatch.svg"),
     svgDataUrl("section-hero/new-server.svg"),
@@ -49,7 +53,9 @@ export async function renderShareCard() {
           display: "flex",
           position: "relative",
           background: BG,
-          fontFamily: "Space Grotesk",
+          // the same per-glyph idea as the page: Latin stays Space Grotesk, Georgian letters fall
+          // through to BPG Banner Caps (satori resolves the list glyph by glyph)
+          fontFamily: georgian ? "Space Grotesk, BPG Banner Caps" : "Space Grotesk",
           color: "#ededed",
           overflow: "hidden",
         }}
@@ -128,35 +134,36 @@ export async function renderShareCard() {
             }}
           >
             <img src={hatch} width={40} height={18} alt="" style={{ marginRight: 12 }} />
-            Managed Kubernetes &amp; AI Agent Infrastructure
+            {t.hero.eyebrow}
           </div>
 
           <div
             style={{
               display: "flex",
               marginTop: 18,
-              fontSize: 57,
+              // Georgian is wider and the heading runs to three lines; at 50 the price row below
+              // ended 2px from the card's bottom edge, so it gets a step down
+              fontSize: georgian ? 44 : 57,
               fontWeight: 500,
               lineHeight: 1.16,
               letterSpacing: "-0.02em",
             }}
           >
-            Build your product. We&rsquo;ll handle the infrastructure.
+            {t.hero.heading}
           </div>
 
           <div
             style={{
               display: "flex",
               marginTop: 26,
-              fontSize: 23,
+              fontSize: georgian ? 20 : 23,
               fontWeight: 300,
               lineHeight: 1.35,
               color: "rgba(255,255,255,0.62)",
               maxWidth: 620,
             }}
           >
-            Apps, databases, workers and AI agents — from code to production, without a DevOps
-            team.
+            {t.seo.cardPitch}
           </div>
 
           <div style={{ display: "flex", alignItems: "center", marginTop: 40 }}>
@@ -173,7 +180,7 @@ export async function renderShareCard() {
                 fontWeight: 500,
               }}
             >
-              From $15 / month
+              {t.seo.cardPrice}
             </div>
             <div
               style={{
@@ -193,9 +200,19 @@ export async function renderShareCard() {
     ),
     {
       ...OG_SIZE,
+      // Satori needs real font FILES (no CSS, no network), and Space Grotesk has no Georgian
+      // glyphs — so the Georgian card is drawn in BPG Banner Caps (the same face /ka uses in the
+      // browser). It has a single weight, so the SAME file is registered as 500 and 300: the
+      // card's light rows would otherwise find no 300 face at all and satori would drop the text.
       fonts: [
-        { name: "Space Grotesk", data: medium, weight: 500, style: "normal" },
-        { name: "Space Grotesk", data: light, weight: 300, style: "normal" },
+        { name: "Space Grotesk", data: medium, weight: 500 as const, style: "normal" as const },
+        { name: "Space Grotesk", data: light, weight: 300 as const, style: "normal" as const },
+        ...(georgian
+          ? [
+              { name: "BPG Banner Caps", data: georgianFont, weight: 500 as const, style: "normal" as const },
+              { name: "BPG Banner Caps", data: georgianFont, weight: 300 as const, style: "normal" as const },
+            ]
+          : []),
       ],
     },
   );

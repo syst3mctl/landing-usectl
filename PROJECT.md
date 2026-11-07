@@ -1285,6 +1285,360 @@ hand-typed hash, the pre-paint hide script).
   from the sandbox). Once GA is live, check DebugView while scrolling: if every section becomes a
   page_view, either untick that option or keep it deliberately as a "how far do people get" metric.
 
+## Georgian is live at /ka — dictionary, routes, font, switcher (2026-11-07, branch `multi-languages`)
+
+Steps 1-3 of the multi-language plan, built in one pass on the CURRENT architecture (the agreed
+order: Georgian first, the per-section split afterwards). `/` is unchanged; `/ka` is the same page
+in Georgian. Both are **prerendered** — `next build` reports `○ /` and `○ /ka`, plus a share card
+each. Verified end to end in real Chromium against the production build; `tsc` / `eslint` /
+`next build` clean and `npm run dev` starts cleanly.
+
+**1. Every visible string now lives in `src/lib/i18n/`.**
+- `en.ts` is the source of truth AND the contract: `export type Dict = typeof en`, so a missing or
+  extra key in `ka.ts` is a TypeScript error, not a runtime blank.
+- `ka.ts` is a DRAFT from the team's `usectl-georgian-translation.md` with the editorial fixes
+  agreed on 2026-11-06 (one word for deploy — "გაშვება"; "ობიექტების საცავი", not the file's wrong
+  "ობიექტური"; "ფასი", not "გადასახადი" = tax; shorter eyebrows/headings so the fixed-width columns
+  hold). **The user supplies the approved copy later**, which is why the whole file is meant to be
+  replaced wholesale and nothing else in the repo contains Georgian.
+- `index.ts` — `LANGS` / `Lang`, `LANG_SEGMENT` (`en: ""`, `ka: "ka"`), `HTML_LANG`, `getDict`,
+  `langPath(lang, hash?)` and `fill()` for `{name}` placeholders. The dict crosses the
+  server→client boundary as a prop, so it must stay plain JSON — no functions in it.
+- Headings the design breaks over two lines are ARRAYS (one entry per line), rendered by a small
+  `Lines` component as `text<br/>text`. That is byte-identical to what was there, which matters
+  because `splitWords()` walks those text nodes — and it lets a translation break where its own
+  text wants to.
+- Geometry was separated from copy in the module constants: `CALLOUT_LABELS`, `PANEL_ITEMS`,
+  `PANEL4_ITEMS`, `PODS` and `PRICING_ROWS` keep their numbers and lose their text, which now comes
+  from the dictionary index-matched (`t.s2.callouts[i]`, `t.s5.podDescs[i]`, …).
+- `nav.ts` holds `NAV_ITEMS` (key + href + state) and builds labels per language through
+  `navLinks(t)` / `footerNavLinks(t)` — the header, the burger menu and BOTH footer columns now
+  come from one list instead of three hand-copied arrays.
+
+**What deliberately STAYS ENGLISH in every language** (user's call, and the code comments say so at
+each site): the terminal windows (title bar + typed rows — `git push origin main`,
+`Code push detected: commit-a7f3d`, `usectl agent attach …`), the pod/deploy card titles and
+statuses (`[ POD // API ]`, `RUNNING v1.4.2`, `DEPLOYING ... v2.1.0`, `BUILD: IN-PROGRESS`,
+`[ ✓ LIVE // v2.1.0 ]`, `HTTPS Active`, `POD // AI AGENT`), and the uppercase mono spec labels
+(`USECTL MANAGED INFRASTRUCTURE`, `MACHINE BOUNDARY`, `DEDICATED RESOURCES`, `ENVIRONMENT CONFIG`).
+Three reasons: it is a real CLI/dashboard mock, there is no good Georgian monospace face, and those
+are exactly the fixed-width windows that would wrap. Their state-4 DESCRIPTIONS are translated, so
+each row reads "01/ MACHINE BOUNDARY" + Georgian — flip-able in one line if the team disagrees.
+
+**2. Routing — two ROOT layouts, no dynamic segment.** This took three attempts, worth recording:
+- Next's own i18n guide (`node_modules/next/dist/docs/01-app/02-guides/internationalization.md`)
+  proposes `app/[lang]` + a proxy redirect. Rejected: it turns `/` into `/en` (the indexed URL) and
+  reintroduces dynamic rendering, which the CSP and the CDN caching in next.config.ts avoid on
+  purpose.
+- `app/[[...lang]]` (optional catch-all, `generateStaticParams` → `[]` and `["ka"]`) built fine
+  until the share-card files were added, then **`Optional catch-all must be the last part of the
+  URL in route "/[[...lang]]/opengraph-image"`** — an optional catch-all may not have ANY child
+  route, and `opengraph-image` / `twitter-image` are child routes. (`next dev` fails the same way
+  with a Turbopack panic.)
+- Final shape: **route groups with one root layout each** — `app/(en)/{layout,page,opengraph-image,
+  twitter-image}.tsx` → `/`, and `app/(ka)/layout.tsx` + `app/(ka)/ka/{page,opengraph-image,
+  twitter-image}.tsx` → `/ka`. Only a root layout can render `<html>`, and `<html lang>` has to
+  differ. The shared parts live in the private folder `app/_site/`: `shell.tsx` (the `<html>/<body>`
+  tree, the fonts, `buildMetadata(lang)`, the JSON-LD and the pre-paint restore script) and
+  `landing.tsx` (the page body). Each layout/page file is 5-10 lines, so the two languages can't
+  drift.
+- **Icons had to move.** With no `app/layout.tsx` there is no root segment for `app/icon.svg` /
+  `app/favicon.ico`, and the same file can't sit in both groups (two routes, one URL). They are now
+  `public/icon.svg` + `public/favicon.ico`, declared explicitly in `metadata.icons`. Verified in the
+  HTML of both pages.
+- Navigating between two root layouts is a FULL page load — which is what the language switch
+  wants anyway (the pre-paint restore script has to run).
+
+**3. Georgian font.** `Noto_Sans_Georgian` (next/font/google, `preload: false` — `/` never uses it).
+It is **appended** to the stacks under `html[lang="ka"]`, not substituted:
+`--font-heading: var(--font-space-grotesk), var(--font-noto-georgian), sans-serif`. A font stack
+resolves per GLYPH, so Latin runs (usectl, Kubernetes, vCPU, $15.10) still render in Space Grotesk
+and only Georgian letters come from Noto — numbers and prices look identical in both languages.
+- **Trap that cost a build**: the fonts were in `@theme inline`, and `inline` bakes the value
+  straight into every utility (`.font-heading { font-family: var(--font-space-grotesk) }`), so
+  overriding `--font-heading` did nothing — `/ka` silently rendered Georgian in the metric-adjusted
+  Arial fallback. The font vars are now a separate NON-inline `@theme`; the colours stay inline.
+  Measured after: `font-family` on `/ka` is the three-name stack and `document.fonts` has Noto
+  loaded, while `/` is unchanged.
+
+**4. Switcher** — `components/layout/LangSwitcher.tsx` ("EN / KA"), in the header next to Start Now
+(`.header-lang`, on `--sh` like the rest of the row) and as a row in the burger menu. It navigates
+with a real page load and **carries the current hash over**, which works for free because
+`SECTION_HASHES` is identical in both languages: measured, `/#pricing` → `/ka#pricing` lands on
+y 11439 → 11439 with the stage faded in, and back again.
+
+**5. SEO** — `seo.ts` now holds only what never translates (`SITE_NAME`, `SITE_URL`,
+`STARTING_PRICE_USD`); title/description/share-description/keywords/image-alt moved into each
+dictionary's `seo` block. `buildMetadata(lang)` emits per-language title + description, canonical
+(`/` · `/ka`), hreflang alternates (`en`, `ka`, `x-default` → `/`), `og:locale` en_US/ka_GE, and the
+JSON-LD `inLanguage`. `sitemap.ts` lists both URLs with their `xhtml:link` alternates.
+
+**6. The share card is bilingual.** satori needs real font FILES, so `_og/NotoSansGeorgian-{Regular,
+Medium}.woff` (OFL, copied out of @fontsource, which was then uninstalled — the Space Grotesk woffs
+live there the same way) sit next to the Space Grotesk pair. The Georgian card registers both
+families and sets `fontFamily: "Space Grotesk, Noto Sans Georgian"`, so satori falls back per glyph
+exactly like the browser. Its heading is 44 (vs 57) and the pitch 20 (vs 23): the Georgian heading
+runs to three lines, and at 50 the price pill ended 2px from the card's bottom edge.
+
+**7. Per-language geometry lives in ONE table**, `src/lib/i18n/typeScale.ts`, instead of
+`lang === "ka" ? …` scattered through nine states. Only one entry was actually needed so far:
+state 9's closing line is `whitespace-nowrap` with a hand-placed `<br/>`, so it cannot reflow —
+measured at 1920 the Georgian line was 1773px wide (139px past the content inset) and ran off the
+screen. `s9Heading` 60 → 52 for `ka`. Add an entry only when a measurement shows the English value
+breaking.
+
+**Verified** (production build, real Chromium, zero console errors anywhere):
+- `/` and `/ka` both 200 and static, `/nope` 404; the English page renders exactly as before.
+- All ten pages of the desktop scene walked on BOTH languages — every snap lands
+  (1000 / 2089 / 3859 / 5402 / 7990 / 10168 / 11439 / 12801 / 13601), every section's hash is
+  written, and a box-geometry probe reports **nothing outside the frame** in either language.
+- Phone 390×844 on `/ka`: all ten sections, `scrollWidth == 390` everywhere, every entrance
+  completes, burger menu in Georgian with the EN/KA row.
+- Both share cards render (`200 image/png 1200×630`) and were eyeballed.
+- `<html lang>`, title, canonical, hreflang, og:locale, the icon links and the sitemap all checked
+  in the served HTML.
+
+**Known, and intentionally left for the next round:** the Georgian HERO heading wraps to 3 lines
+where English takes 2 (it fits; buttons sit ~100px lower), and the state-2/5 headings take 3 lines
+in the narrow column. The mono panels and the phone's mono bullets render Georgian through Noto
+with the mono letter-spacing — readable, slightly loose. These are copy/layout judgement calls for
+the per-section pass, not bugs.
+
+**One deliberate English change**: the state-2 paragraph on DESKTOP was missing its final period
+(the phone build had it). Both now come from one dictionary entry, with the period.
+
+### Follow-ups the same day: the Georgian header pill, and the tab icon is the real mark
+
+- **`html[lang="ka"] .header-cta { font-size: max(10px, sh × 12) }`** (globals.css). "დაიწყე
+  ახლავე" measured 113px of text + 16 arrow + 4 gap = 133 inside the design's 132-wide pill, i.e.
+  it touched both borders. At 12 the content is 115 with ~9px of air each side (English: 87 in 132,
+  22px each side). The pill keeps its Figma box — only the label shrank, which is what the user
+  asked for; widening it is the other lever if 12 ever reads too small.
+- **`public/icon.svg` is now the wave + the asterisk** — the logo WITHOUT the wordmark (user:
+  "ისე როგორც logo გვაქვს: ~* … usectl არ ჩასვა"). It used to be the asterisk alone. All five
+  paths are copied VERBATIM out of `public/logo/logo.svg` (its path 10, the 2px-stroked wave, plus
+  paths 6-9, the asterisk bars) under ONE transform, so the mark can't drift from the logo. The
+  placement maths: the pair's combined VISUAL bbox is x 0 → 48.026 (the wave's stroke adds 1 on
+  each side of its 1 → 20.738 geometry — `getBBox()` ignores stroke) and y 0 → 24.278, hence
+  `translate(0.5 8.164) scale(31/48.026)` inside the 32 box.
+- **`public/favicon.ico` regenerated from that same SVG** (16/32/48 PNG-in-ICO). The pipeline, if
+  it ever has to be redone: Playwright renders `icon.svg` at each size with `omitBackground: true`,
+  then a 12-line Python script writes the ICONDIR + directory entries + the PNG blobs. No image
+  library needed.
+  - Known and accepted: the mark is 2:1 and thin, so the **16px** raster is mushy. 32 and 48 read
+    perfectly, Chrome/Firefox prefer `/icon.svg` anyway, and HiDPI tabs draw the 32px entry.
+- **The contact address is `info@usectl.com`** (was `hello@`, changed on the user's call
+  2026-11-07). It is now `CONTACT_EMAIL` / `CONTACT_HREF` in `src/lib/nav.ts` — the five places
+  that used to hardcode it (both footers, the burger menu's footer row, the JSON-LD `email`, and
+  `/api/subscribe`'s fallback destination when `SUBSCRIBE_TO` is unset) all read it from there, so
+  it can't drift again. `.env.example` updated too. Verified in the served HTML of both languages:
+  `info@usectl.com` is the only address on the page.
+
+## Georgian face swapped to BPG Banner Caps; the hero is one "Book a demo" (2026-11-07, `multi-languages`)
+
+Three asks in one round. `/` is untouched apart from the hero's button.
+
+**1. `/ka` is set in BPG Banner Caps instead of Noto Sans Georgian.** Self-hosted (it is not on
+Google Fonts) via `next/font/local` in `src/app/_site/shell.tsx` → `--font-bpg-banner`;
+`globals.css`'s `html[lang="ka"]` block appends it to the three stacks exactly where Noto used to
+sit, so the per-glyph split is unchanged (Latin runs — usectl, Kubernetes, vCPU, $15.10 — still
+render in Space Grotesk / Geist Mono). Noto is gone from the repo entirely.
+- Files: `src/app/_site/fonts/BPGBannerCaps.{woff2,woff}` + a copy of the `.woff` in `src/app/_og/`
+  for the share card. They are npm `bpg-banner-caps@1.0.0`'s `bpg-banner-caps-webfont.{woff2,woff}`
+  **byte for byte** — deliberately not subset or re-converted, see the licence note below.
+- **`font-synthesis: none` on `html[lang="ka"]`** — the face ships ONE weight (400) and the scene is
+  full of `font-medium` / `font-semibold` headings; without it the browser fakes a bold by smearing
+  the outlines, which reads as a second, blurrier typeface next to the body copy. Latin is
+  unaffected (Space Grotesk has real weights; synthesis only fires where a real face is missing).
+- **Share card** (`_og/card.tsx`): satori needs font FILES, so the Georgian card registers the SAME
+  unmodified `.woff` as both weight 500 and 300 — the light rows would otherwise find no 300 face
+  and satori would drop the text. Rendered and eyeballed: 200 `image/png` 1200×630, no tofu.
+- **`typeScale.ts` needed no new numbers.** BPG Banner Caps measures within ~1.5% of Noto at the
+  same size here (the state-9 Georgian line is 1559px wide at the existing `s9Heading: 52`, vs 1537
+  with Noto — still 75px inside the 99px content inset).
+- **LICENCE — must be settled before production.** The npm wrapper is MIT but **the font files are
+  CC BY-NC-ND 4.0**: *NonCommercial* (usectl.com is a commercial product site, so this is not
+  covered as-is — a licence from Besarion Gugushvili, or a different face, is needed),
+  *NoDerivatives* (don't subset/convert — hence the byte-identical files), *Attribution*. Written up
+  in `src/app/_site/fonts/NOTICE-BPGBannerCaps.md` and flagged to the user.
+
+**2. The hero has ONE button: "Book a demo" / "დაჯავშნე დემო".** "Start Building" + "See how it
+works" are gone from state 1 (`HeroSectionClient.tsx`) and from the phone hero (`HeroMobile.tsx`,
+new `BookDemoButton` — `Buttons` is shared with S09, so the hero needed its own component). State 9
+and the burger menu keep the original pair, and `hero.startBuilding` / `hero.seeHow` stay in both
+dictionaries for them. New key `hero.bookDemo`.
+- It is a `<button type="button">`; it had **no handler** until the popup below was built
+  (2026-11-07, same day). It still
+  rides the hero's blur-in as one block because `splitWords()`'s `whole` test is
+  `field.querySelector("a,button")`, i.e. a `<button>` behaves exactly like the old `<Link>`s
+  (measured: the row goes 0 → 1.00 opacity, and a nav-to-Pricing + logo click brings it back at
+  opacity 1).
+
+**3. The Georgian header pill is bigger: 174 wide / 15px** (`html[lang="ka"] .header-cta`), on
+`--sh` like everything else in the row, floors `max(150px, …)` / `max(13px, …)`. Measured at 1920
+with the new font: label 120.5 + arrow 17.3 (1.15em) + gap 4 = 141.8, so 174 leaves **16.1px of air
+each side** — the same optical padding "Start Now" has in its 132.
+- **It is gated `@media (min-width: 1280px) and (min-height: 760px)`, and that is a measured limit,
+  not a guess.** Wherever the floors hold, the pill is ~46px wider than the English one, and the
+  slack between the CENTRED nav and this right-hand group runs out: 352 at 2560×1440, 261 at 1920,
+  155 at 1600×900, 102 at 1440×900, 52 at 1366×768, 37 at 1280×800, 46 at 760 tall — but **−2** at
+  700 tall and only 8-48 at 1024-1100, because a narrow or SHORT window shrinks `--sh` (the row's
+  paddings) while the px floors hold the pill's size. Below either limit the Georgian label keeps
+  the old tight 12px box in the ≥1024 block.
+- Pre-existing and NOT touched: at 1280×620 the lang switcher already overlaps the nav by 10px in
+  English (20 in Georgian, whose nav labels are wider) — same cause, the short-window `--sh`.
+
+**Verified** on `next start` (production build), real Chromium, **zero console/page/HTTP errors
+anywhere**: both languages walked through all 10 desktop pages with PageDown at 1920×1080, 1440×900
+and 2560×1440 — every snap lands, every section's hash is written, and a visibility-aware box probe
+reports nothing off-screen or past the content inset in either language; the header measured at 12
+viewport sizes from 3440×1440 down to 1024×768 incl. the short ones (1920×800/760, 1280×620/699/
+759/760); phone 390×844 in both languages (one hero button, `scrollWidth == 390` at every scroll
+position, the server still ends at 831/844 i.e. on the first screen); both share cards. `tsc` /
+`eslint` / `next build` clean, `/` and `/ka` still prerendered.
+
+## "Book a demo" opens the booking popup (2026-11-07, `multi-languages`)
+
+The hero's single CTA now does something: it opens the team's Google Calendar appointment schedule
+in a modal over the page. Nothing else changed — the header's Start Now, state 9's pair and the
+burger menu still point at `SIGNUP_URL`.
+
+- **The two URLs are in `src/lib/nav.ts`**: `BOOKING_EMBED_URL` (the `…/schedules/…?gv=true` form —
+  the only one Google allows to be framed, and the one the CSP allows) and `BOOKING_URL` (the short
+  `calendar.app.google/…` link, for the "open in a new tab" row).
+- **`src/components/ui/BookDemoModal.tsx`** — the popup. Mounted **once**, in
+  `app/_site/landing.tsx`, NOT inside either hero: the button exists in both builds (pinned desktop
+  + stacked phone/reduce-motion, one of them `display:none`) and two modals in one DOM is how two of
+  everything happens. The buttons only ask for it, through a window event in **`src/lib/bookDemo.ts`**
+  (`openBookDemo()` / `OPEN_BOOK_DEMO_EVENT`).
+  - Blurred dark overlay; the window is the page's own style (`#1b1a1a`, white/10 border, radius,
+    `min(900px, 92vw) × min(780px, 88vh)` at ≥1024) with a title row + ✕ and a footer row linking
+    to `BOOKING_URL` in a new tab. **Below 1024 it is full screen** (no radius, no border).
+  - Closes on ✕, on Escape, and on a click on the overlay itself (`e.target === e.currentTarget`,
+    so a drag that ends outside doesn't count). Focus moves to ✕ on open and back to the button
+    that opened it on close; Tab is trapped inside the panel.
+  - **The iframe only exists while the popup is open** — closing unmounts the whole modal, so a
+    visit that never clicks the button loads nothing of Google's. Until its `load` fires, a
+    "Loading the calendar…" line covers it.
+  - New dictionary keys `bookDemo.{close,loading,newTab}` in both languages; the window's title is
+    the existing `hero.bookDemo`.
+- **The scene can't move behind it.** `isBookDemoOpen()` (the module flag in `lib/bookDemo.ts`, not
+  React state — the driver runs inside a GSAP context) makes `HeroSectionClient`'s wheel AND keydown
+  handlers return immediately, and the modal holds `<html>` at `overflow: hidden` on top of that, so
+  nothing scrolls natively either. Measured from Pricing (y 11439): four wheel pushes plus
+  ArrowDown / PageDown / End leave scrollY and the hash **unchanged**, and the first push after
+  closing steps normally to state 8 (12801).
+- **`next.config.ts`: `frame-src 'none'` → `frame-src https://calendar.google.com`.** Without it
+  the iframe is blocked and the popup is an empty window — that line and `BOOKING_EMBED_URL`
+  belong together.
+- **GA**: `window.gtag?.("event", "book_demo_open")` on open, optional-call because with
+  `NEXT_PUBLIC_GA_ID` unset there is no `gtag` at all.
+- **Two traps worth keeping:**
+  - The entrance is a **CSS animation** (`.modal-in` / `.modal-panel-in` in globals.css), not the
+    usual "mount at opacity 0, flip a state one frame later". That flip needs `requestAnimationFrame`
+    — and rAF is frozen while the window isn't visible, which is exactly the state a browser being
+    driven by a tool is in: the first test run showed the popup open at **opacity 0**. (Same reason
+    a hidden tab reports `frames: 0` and a `await new Promise(r => requestAnimationFrame(r))` loop
+    hangs the evaluate — worth remembering when a measurement script freezes.)
+  - Every `focus()` here passes **`preventScroll: true`**: focusing scrolls its element into view,
+    and behind an open popup that is a page the visitor never asked for (an 85px drift, measured).
+  - Testing note: Playwright's `locator.click()` scrolls the target into view first, so clicking the
+    hero button from a deep state moves the page by itself — the mid-scene checks dispatch
+    `usectl:book-demo` instead. A synthetic `new WheelEvent(...)` does NOT drive this scene at all
+    (it changes the state but the scroll tween doesn't run); use `page.mouse.wheel`.
+- **Verified** on `next start` (production build) in headless Chromium at 1920×1080, 1280×800 and
+  390×844, on `/` and `/ka`, plus a real Chrome window at 1920: opens from both builds, the calendar
+  really renders, overlay at opacity 1, `<html>` locked, ✕ focused (translated label), full screen
+  at 390, all three ways of closing work, scroll position and focus restored, the scene frozen
+  while open and stepping normally after, reduce-motion at 1920 (the stacked build) included.
+  **Zero CSP violations and zero page errors** (the one console line is Google's own
+  `requestStorageAccess` inside the iframe). No test booking was made. `tsc` / `eslint` /
+  `next build` clean, `/` and `/ka` still prerendered.
+
+## The Subscribe form posts to Web3Forms FROM THE BROWSER (2026-11-07, `multi-languages`)
+
+The footer's Subscribe box used to POST to our own `/api/subscribe`, which then called Web3Forms
+server-side. That could never have worked in production: **Web3Forms' free plan refuses server-side
+submissions** ("Server side usage requires paid plan + server IP whitelisting"). The form now talks
+to `https://api.web3forms.com/submit` directly from the page.
+
+- **`WEB3FORMS_KEY` lives in `src/lib/nav.ts`**, not in env. The key is PUBLIC by design — it is an
+  alias for a destination address (info@usectl.com), not a credential: it ends up in the shipped JS
+  either way, it grants no access to the account or to past submissions, and all it can do is send
+  mail to that one inbox.
+- **`SubscribeForm.tsx`** posts `access_key / email / subject / from_name / message / botcheck` as
+  JSON with `Accept: application/json`. The message carries the address, whether the terms box was
+  ticked, the source, and **the page's language** (`(en)` / `(ka)`) — hence the new `lang` prop,
+  passed by both footers (they already had it).
+  - **A success is ONLY `res.ok && json.success === true`.** Everything else — a network failure, a
+    4xx/5xx, or a 200 carrying `success: false` (wrong key, the plan's monthly cap, their spam
+    filter) — sets the error status and logs Web3Forms' own `message` with `console.error`. The
+    visitor is never told it was sent when it wasn't, which is the one thing a form like this must
+    not get wrong.
+  - The honeypot was renamed `company` → **`botcheck`**, Web3Forms' own field name, so their side
+    drops a filled one too. If it is filled, submit() returns the success line WITHOUT any fetch.
+  - Everything that was already there is unchanged: `EMAIL_RE`, the required consent box (with its
+    deliberately-not-`disabled` button, pass of 2026-10-21), the dead button while in flight, the
+    localStorage ledger (same address blocked for 24h, 60s cooldown between sends) and the locked
+    field after a success. **No UI, design or copy changed** — `t.rateLimited` / `t.invalid` are
+    simply no longer reachable (they stay in both dictionaries for a future server-side route).
+- **`next.config.ts`: `connect-src` += `https://api.web3forms.com`.** Without it the fetch is
+  blocked and the form can only ever fail — same rule as the OpenReplay line above: a new
+  third-party endpoint here always needs a CSP line, and the failure mode is silence.
+- **`src/app/api/subscribe/route.ts` is NOT deleted** — it carries a "not in use" header now. It is
+  the whole server-side path (per-IP + global rate limits, per-email dedupe, honeypot, the
+  IP-spoofing notes) ready for the day delivery moves to **Resend**, which MUST be server-side so
+  the API key never reaches the browser. `.env.example` says the same: nothing in it is needed for
+  the form to work today.
+
+**Verified** in a real Chromium against `npm run dev`, on `/` and `/ka`:
+- **One real submission** (`test+subscribe@usectl.com`, from the English desktop footer): POST to
+  `api.web3forms.com/submit` → **HTTP 200, `success: true`** — the UI only shows the thanks line on
+  that exact condition — field locked, brand-green "Thanks — we'll be in touch.", **zero** calls to
+  `/api/subscribe`, **zero CSP violations**. (The response body was not captured in that run; the
+  200 + the success-only code path is what proves it. A deliberately invalid key, which mails
+  nothing, returned the rejection shape `400 {success: false, message: "Invalid form_id/access_key
+  format…"}` — i.e. exactly what the error branch catches.)
+- Ledger: the same address on `/ka` afterwards → "უკვე ჩამოწერილი ხარ…" with **0 network calls**.
+- Consent gate on `/ka`: send with the box unticked → "ჯერ დაეთანხმე წესებსა და პირობებს.",
+  0 network calls.
+- Error path (stubbed `success:false`): red "Couldn't send it. Please try again.", field NOT
+  locked, ledger NOT written, and `console.error` carrying Web3Forms' message.
+- Honeypot (`botcheck` filled): success line, **0 fetches**, ledger not written.
+- Mobile variant (`variant="mobile"`): builds exactly the right request, with `(ka)` in the
+  message. Zero console errors anywhere besides the intentional one.
+- **Harness limitation, worth knowing**: the Chrome window would not resize (fullscreen — three
+  attempts, `innerWidth` stayed 1471 whatever was asked for), so the phone check was done by
+  forcing the stacked footer (`[data-footer-stacked]`) rather than at a 390 viewport, and the
+  "desktop" runs were at 1471 CSS px, not 1920. Nothing here is width-dependent, but a real 390
+  pass is still worth doing when the window can be resized. Also re-confirmed: with the tab in the
+  background `document.hidden` is true and CSS transitions freeze at `currentTime 0`, so the send
+  icon reads `opacity: 0` in a measurement even when the state is correct — check
+  `pointer-events` instead.
+
+`tsc` / `eslint` / `next build` clean; `/` and `/ka` still prerendered.
+
+## Georgian copy round: no dashes, new headings, hero paragraph width (2026-11-07, `multi-languages`)
+
+- **No dashes in Georgian copy** (user, with screenshots: the "—" in running text read as stray
+  hyphens). Every em dash in `ka.ts` became a comma/period/colon; the hero line is now "…მიგიყვანს
+  მართული ინფრასტრუქტურითა…". KEPT by the user's call: "ცალ-ცალკე" (grammatical), the hyphen
+  between a Latin word/number and a Georgian suffix (`usectl-ში`, `API-ების`, `$15-დან`,
+  `HTTPS-ით`), and `Micro-VM`. English copy untouched.
+- State 9's tail now carries its own leading separator (`en: " - we'll…"`, `ka: ", ინფრა…"`) —
+  the `{" "}` before `{t.s9.tail}` was removed in both scenes so Georgian can end the blue span
+  with a comma instead of " ,".
+- New copy: s4 heading "თითოეული პროექტი / საკუთარი სივრცით." (h2 is `nowrap` — line 1 measures
+  599 of the 600 column), s6 heading "ატვირთე კოდი. / გაშვებას ჩვენ ვუზრუნველყოფთ." (wraps inside
+  the 520 column into 3 lines, same count as before), s2 body "…თავიდან არ ამოგდის."
+- Hero paragraph on /ka may not run past the end of the heading's "ინფრასტრუქტურაზე ჩვენ" line:
+  `TYPE_SCALE.heroBodyMax` (en 950, ka 815; that line ends at 817 at 1920) → 4 lines, widest ~731.
+  Measured in Chromium with the shipped fonts; NOT yet eyeballed on the running site (next dev
+  can't start in the Linux sandbox — no arm64 SWC binary).
+- Nav "Machine" → **"სივრცეები"** on /ka (user's pick; header, burger menu, footers all read
+  `t.nav.machine`). 88px vs 66 at 16px → the centred nav grows ~11px per side, inside every slack
+  measured for the header row and inside the 1024–1279 mask's ±247 hole.
+
 ## Open items / TODO
 
 - **NEXT BIG STEP — split the desktop scene into per-section components (user's idea, agreed
@@ -1304,6 +1658,76 @@ hand-typed hash, the pre-paint hide script).
     migrate section by section, morph pairs last. Commit a stable point before starting.
   - Mobile (`HeroMobile`) is separate and not part of this.
 
+- **MULTI-LANGUAGE (EN / KA) — branch `multi-languages`. Steps 1-3 ARE BUILT (2026-11-07, see the
+  entry above). What is still open: (a) the approved Georgian copy from the user — drop it into
+  `src/lib/i18n/ka.ts`, nothing else holds Georgian; (b) the per-section Georgian layout pass
+  (step 4), whose numbers belong in `src/lib/i18n/typeScale.ts`; (c) the team's call on whether the
+  uppercase mono spec labels and the mono bullets should be Georgian too; (d) **a commercial
+  licence for BPG Banner Caps, or a different Georgian face** — the files shipped on 2026-11-07 are
+  CC BY-NC-ND 4.0 (NonCommercial), see the entry above and
+  `src/app/_site/fonts/NOTICE-BPGBannerCaps.md`.** The plan as originally
+  agreed, for context: Source text: `usectl-georgian-translation.md`
+  (repo root, untracked — the team's translation of every visible string; review notes below).
+  Proposed steps:
+  1. Move every visible string out of the components into two dictionaries (`en`, `ka`); components
+     read from them. Do this FIRST — it also makes the per-section split above easier.
+  2. Routes: `/` stays English, `/ka` Georgian — both statically generated (no proxy/middleware:
+     next.config.ts deliberately avoids nonces/dynamic rendering), `hreflang` alternates, per-language
+     metadata + OG card. Section hashes (`SECTION_HASHES`) are the same in both languages.
+  3. Georgian font: Space Grotesk and Geist Mono have NO Georgian glyphs (`subsets: ["latin"]`) —
+     pick a Georgian face that pairs with Space Grotesk (candidates: Noto Sans Georgian, FiraGO),
+     loaded on `/ka` only. Footer uses CSS `uppercase` → Georgian renders as Mtavruli; decide.
+  4. Per-section layout pass in Georgian (≈30–50% longer text, wider glyphs; the scene's headline
+     wraps and the fixed-width cards/callouts were tuned for English), desktop + mobile.
+  5. Switcher: EN / KA in the header, in the burger menu on phones; switching keeps the current
+     section (`/ka#pricing`).
+  - **DECIDED with the user 2026-11-06** (the plan discussion; no code written yet):
+    - **Order = Georgian FIRST, on today's architecture** (my recommendation, user: "რომელიც
+      სწორია"): steps 1→2→3, then step 4's layout pass on the CURRENT components, ship `/ka`, and
+      do the per-section split afterwards with both languages already known. Rationale: the split
+      is a big refactor and would block the Georgian launch for weeks; step 1 (the dictionary) is
+      needed either way and makes the split easier.
+    - **Path = `/ka`** (ISO 639-1 for Georgian; `/ge` is the COUNTRY code). No auto-redirect by
+      `Accept-Language` — the visitor chooses.
+    - **Routing = optional catch-all `app/[[...lang]]/page.tsx`** + `generateStaticParams()`
+      returning `[{lang: []}, {lang: ["ka"]}]` → `/` (unchanged, still the indexed English URL)
+      and `/ka`, BOTH prerendered, one root layout, `<html lang>` / metadata / JSON-LD derived
+      from the param, `notFound()` on anything else. Next 16's own i18n guide
+      (`node_modules/next/dist/docs/01-app/02-guides/internationalization.md`) proposes
+      `app/[lang]` + a **proxy redirect** — deliberately NOT used: it would turn `/` into `/en`
+      (losing the indexed URL) and bring back dynamic rendering, which the CSP/caching design
+      avoids on purpose. Fallback if the catch-all misbehaves: two root layouts via route groups
+      (`app/(en)/page.tsx` + `app/(ka)/ka/page.tsx`).
+    - **Font = Noto Sans Georgian** (Google Fonts, variable), loaded on `/ka` only.
+    - **Mono / terminal / status copy STAYS ENGLISH** (user's call): `git push origin main`,
+      `usectl // repository-pipeline`, `Code push detected: commit-a7f3d`, `BUILD: IN-PROGRESS`,
+      `POD // API`, `RUNNING` / `DEPLOYING` / `LIVE`, `HTTPS Active`, `Status: Synchronized with
+      env-prod-01`. Three reasons: it is a real CLI/dashboard mock, there is no good Georgian
+      monospace face, and those are exactly the fixed-width windows that would wrap. The
+      `uppercase` mono panel labels (`USECTL MANAGED INFRASTRUCTURE`, `01/ MACHINE BOUNDARY`)
+      belong to the same family — CSS `uppercase` would render Georgian as Mtavruli.
+    - **Copy source = `usectl-georgian-translation.md` for now**, with my review fixes applied as
+      a DRAFT; the user supplies the approved final copy later ("მე მოგცემ მაგას მერე") — so the
+      `ka` dictionary must stay a single file that can be replaced wholesale.
+  - Two things the discussion surfaced that the original steps missed:
+    - **`src/app/_og/card.tsx` is satori** — it needs an explicit font FILE, so the `/ka` link
+      preview needs a Noto Sans Georgian `.woff` in `_og/` or it renders tofu boxes.
+    - **Per-language geometry, not per-language `if`s**: every text column is fixed-width
+      (`width: s(520)`, `maxWidth: s(460)`, `fontSize: s(56)`…) and state 9 has a hand-placed
+      `<br/>` tuned to the English line break. Plan: ONE table of per-language type-scale
+      overrides (2-4 numbers per state, `{en, ka}`), so the Georgian pass lives in one file
+      instead of being scattered through the nine states.
+  - The switcher needs no new state logic: `SECTION_HASHES` is identical in both languages and the
+    reload-restore + pre-paint hide script already key off the hash, so `/ka#pricing` lands on
+    Pricing by itself.
+  - Open: who approves the final Georgian copy (the user will hand it over).
+  - Review notes on the translation file (given to the user 2026-11-06): too formal for a landing
+    page ("უზრუნველყოფს" repeated); pick ONE word for deploy ("გაშვება" > "განთავსება" on a landing);
+    fixes — "დაიწყე შექმნა" → "დაიწყე ახლავე"; "ობიექტური საცავი" is WRONG ("objective") →
+    "ობიექტების საცავი"/Object Storage; "ყოველთვიური გადასახადი" ("tax") → "თვიური ჯამი";
+    Monthly/Annual → "თვიური / წლიური"; shorter eyebrows/headlines; keep the mock terminal / pod
+    status strings (RUNNING, DEPLOYING, LIVE…) in English. Its phone-number note is outdated.
+
 - New design build-out from scratch (user is supplying new references: `public/navigation-bar/navigation-bar.png`, `Group 1574.png`).
 - `design/mobile/*.html` are the phone layout's source of truth (390-wide boards, inline styles).
   Reference material the build never imports, and **gitignored on the user's call** (2026-11-05) —
@@ -1315,3 +1739,19 @@ hand-typed hash, the pre-paint hide script).
 - Content still unanswered by the team: the footer credit really says **SYSTEMCTL** (verbatim from
   the design), and `+995 511 11 11 11` is a placeholder — now hidden behind `SHOW_PHONE`, flip it
   back to `true` once there is a real line.
+
+- **Subscribe form / Web3Forms** (see the entry above):
+  - **Check that the test mail actually arrived** at info@usectl.com — `test+subscribe@usectl.com`,
+    subject "usectl landing — new subscriber: …". Web3Forms answered 200 `success: true`, but only
+    the inbox proves delivery.
+  - **The free plan caps submissions per month (250)**; past the cap Web3Forms answers
+    `success: false` and the visitor sees "Couldn't send it." Worth watching once the site has
+    traffic, and worth a paid plan or the Resend route before it bites.
+  - **The browser-side path has no rate limit of its own** beyond the localStorage ledger, which a
+    determined caller simply skips — anyone can POST to Web3Forms with that public key regardless.
+    Their spam filtering is the only server-side protection now. If that turns out not to be
+    enough, the answer is the route that already exists: switch delivery to Resend via
+    `/api/subscribe` (set `RESEND_API_KEY` + `SUBSCRIBE_TO`, point the form's fetch back at it),
+    which restores the per-IP / global / per-email limits documented in that file.
+  - A real **390-wide phone pass** of the form is still outstanding (the test window could not be
+    resized — see the entry above).

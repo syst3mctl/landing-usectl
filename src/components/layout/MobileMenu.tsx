@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { SIGNUP_URL, SYSTEMCTL_URL } from "@/lib/nav";
+import { CONTACT_EMAIL, CONTACT_HREF, SIGNUP_URL, SYSTEMCTL_URL } from "@/lib/nav";
+import type { Dict, Lang } from "@/lib/i18n";
+import { LangSwitcher } from "@/components/layout/LangSwitcher";
 import { ButtonArrow } from "@/components/ui/icons";
 import { createPortal } from "react-dom";
 import gsap from "gsap";
@@ -27,7 +29,15 @@ export const CLOSE_MENU_EVENT = "usectl:close-menu";
 
 type NavLink = { label: string; href: string; external?: boolean };
 
-export function MobileMenu({ links }: { links: readonly NavLink[] }) {
+export function MobileMenu({
+  links,
+  t,
+  lang,
+}: {
+  links: readonly NavLink[];
+  t: Dict;
+  lang: Lang;
+}) {
   const [open, setOpen] = useState(false);
   // true only on the client (the portal needs document.body) — no setState-in-effect
   const mounted = useSyncExternalStore(
@@ -100,7 +110,7 @@ export function MobileMenu({ links }: { links: readonly NavLink[] }) {
           puts the ICON's right edge on the 20px grid inset. */}
       <button
         type="button"
-        aria-label={open ? "Close menu" : "Open menu"}
+        aria-label={open ? t.a11y.closeMenu : t.a11y.openMenu}
         aria-expanded={open}
         aria-controls="mobile-menu"
         onClick={() => setOpen((o) => !o)}
@@ -140,7 +150,7 @@ export function MobileMenu({ links }: { links: readonly NavLink[] }) {
             id="mobile-menu"
             role="dialog"
             aria-modal="true"
-            aria-label="Menu"
+            aria-label={t.a11y.menu}
             className="fixed inset-x-0 bottom-0 top-16 z-40 flex flex-col overflow-y-auto overflow-x-hidden overscroll-contain lg:hidden"
             style={{ visibility: "hidden", opacity: 0, background: "rgba(27,26,26,0.94)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)" }}
           >
@@ -162,7 +172,7 @@ export function MobileMenu({ links }: { links: readonly NavLink[] }) {
               />
             </div>
 
-            <nav aria-label="Mobile" className="relative mx-auto flex w-full max-w-[640px] flex-col px-5 pt-7 sm:px-8">
+            <nav aria-label={t.a11y.mobileNav} className="relative mx-auto flex w-full max-w-[640px] flex-col px-5 pt-7 sm:px-8">
               {links.map((l) => (
                 <Link
                   key={l.href}
@@ -183,14 +193,24 @@ export function MobileMenu({ links }: { links: readonly NavLink[] }) {
                 onClick={() => setOpen(false)}
                 className="mt-8 flex h-11 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-white/40 font-heading text-[14px] font-medium text-[#e6e6e6] transition-colors hover:border-brand hover:text-brand active:border-brand active:text-brand"
               >
-                Start Now <ButtonArrow size={16} opacity={0.8} />
+                {t.header.startNow} <ButtonArrow size={16} opacity={0.8} />
               </Link>
+
+              {/* EN / KA — the phone header is logo + burger only, so the switcher lives here */}
+              <div data-menu-row className="mt-7">
+                <LangSwitcher
+                  lang={lang}
+                  label={t.a11y.language}
+                  size="menu"
+                  onNavigate={() => setOpen(false)}
+                />
+              </div>
             </nav>
 
             <div className="relative mx-auto mt-auto w-full max-w-[640px] px-5 pb-8 pt-10 sm:px-8">
               <div data-menu-foot className="flex items-center justify-between font-heading text-[13px] text-white/45">
-                <a href="mailto:hello@usectl.com" className="transition-colors hover:text-white">
-                  hello@usectl.com
+                <a href={CONTACT_HREF} className="transition-colors hover:text-white">
+                  {CONTACT_EMAIL}
                 </a>
                 <span>
                   &copy; 2026{" "}

@@ -2,16 +2,19 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { Fragment, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ScrollToPlugin } from "gsap/ScrollToPlugin";
 import { useGSAP } from "@gsap/react";
 import { s, readScale, HEADER_HEIGHT_PX } from "@/lib/grid";
 import { SECTION_HASHES, SIGNUP_URL, STATE_BY_HASH, STATE_STORAGE_KEY } from "@/lib/nav";
+import { fill, type Dict, type Lang } from "@/lib/i18n";
+import { TYPE_SCALE } from "@/lib/i18n/typeScale";
 import { SceneLight } from "@/components/layout/SceneLight";
 import { ButtonArrow, ScrollDownArrow } from "@/components/ui/icons";
 import { pressRipple, RIPPLE_SOFT } from "@/lib/pressRipple";
+import { isBookDemoOpen, openBookDemo } from "@/lib/bookDemo";
 
 gsap.registerPlugin(ScrollTrigger, ScrollToPlugin, useGSAP);
 
@@ -75,10 +78,11 @@ const CALLOUT_LINES_PTS = [
 ] as const;
 const CALLOUT_LINES = CALLOUT_LINES_PTS.map(([x0, y0, x1, y1]) => calloutElbow(x0, y0, x1, y1));
 // label x = line end + 16 (arrowheads sit in between — "ტექსტი ოდნავ მარჯვნივ, ზედ არ დააჯდეს")
+// geometry only — the labels themselves come from the dictionary (t.s2.callouts), index-matched
 const CALLOUT_LABELS = [
-  { text: "Auto-scaling K8s Cluster", x: 1378, y: 330, ax: 1362, ay: 339 },
-  { text: "Isolated Micro-VM Kernel", x: 1324, y: 465, ax: 1308, ay: 474 },
-  { text: "Encrypted Postgres Storage", x: 1346, y: 597, ax: 1330, ay: 606 },
+  { x: 1378, y: 330, ax: 1362, ay: 339 },
+  { x: 1324, y: 465, ax: 1308, ay: 474 },
+  { x: 1346, y: 597, ax: 1330, ay: 606 },
 ] as const;
 
 // Idle "float" on the two exploded-server states (state 2 = index 1, state 5 = index 4), from the
@@ -144,25 +148,11 @@ const PANEL3_DY = -25;
 const PANEL_LINE_W = 6;
 const PANEL_LINE_GRADIENT =
   "linear-gradient(180deg, #11A32A 0%, #8FC6FF 32.9%, #8FEDF7 66.7%, #11A32A 100%)";
+// number + position only; title/desc come from the dictionary (t.s3.items), index-matched
 const PANEL_ITEMS = [
-  {
-    no: "01/",
-    title: "Application Services",
-    desc: "Automated deployment for APIs, web apps, and microservices.",
-    y: 417 + PANEL3_DY,
-  },
-  {
-    no: "02/",
-    title: "Application Storage",
-    desc: "High-availability managed databases and S3-compatible object storage.",
-    y: 519 + PANEL3_DY,
-  },
-  {
-    no: "03/",
-    title: "Background Jobs",
-    desc: "Isolated worker queues, scheduled CRONs, and async processing.",
-    y: 622 + PANEL3_DY,
-  },
+  { no: "01/", y: 417 + PANEL3_DY },
+  { no: "02/", y: 519 + PANEL3_DY },
+  { no: "03/", y: 622 + PANEL3_DY },
 ] as const;
 
 // State 4: the Machine (public/machine-section/, closed.svg + opened.svg — same 834×694 viewBox,
@@ -172,10 +162,13 @@ const PANEL_ITEMS = [
 const MACHINE = { w: 720, h: 599, left: 960 - 720 / 2 + 40, top: 300 };
 const PANEL4_X = 1362; // the gradient line; titles/items sit 24 to its right (was 1322)
 
+// The uppercase mono TITLES stay English in every language (a spec label, like `HTTPS Active` —
+// and CSS `uppercase` would render Georgian as Mtavruli); the descriptions come from the
+// dictionary (t.s4.itemDescs), index-matched.
 const PANEL4_ITEMS = [
-  { no: "01/", title: "MACHINE BOUNDARY", desc: "Zero cross-project interference", y: 404 },
-  { no: "02/", title: "DEDICATED RESOURCES", desc: "CPU, RAM, and Storage isolated per space", y: 486 },
-  { no: "03/", title: "ENVIRONMENT CONFIG", desc: "Independent secrets and access policies", y: 569 },
+  { no: "01/", title: "MACHINE BOUNDARY", y: 404 },
+  { no: "02/", title: "DEDICATED RESOURCES", y: 486 },
+  { no: "03/", title: "ENVIRONMENT CONFIG", y: 569 },
 ] as const;
 
 // State 5: the Pods view (public/section-5/server2.svg, 689×1007 — the COMPLETE 3-slab exploded
@@ -190,36 +183,18 @@ const PANEL4_ITEMS = [
 const SERVER5 = { w: 560, left: 690, top: 37, imgDy: 0 };
 const POD_LABEL_X = 1410;
 const POD_PROGRESS = 80; // the API pod's deploy percentage - the bar/number animate up to it
+// Titles and statuses are the dashboard mock's own and stay English in every language; the third
+// line of each card comes from the dictionary (t.s5.podDescs), index-matched.
 const PODS: {
   title: string;
   status: string;
   percent?: number;
   deploying: boolean;
-  desc: string;
   y: number;
 }[] = [
-  {
-    title: "[ POD // FRONTEND ]",
-    status: "RUNNING v1.4.2",
-    deploying: false,
-    desc: "Independent Deploy \u2022 1 vCPU / 2GB",
-    y: 206,
-  },
-  {
-    title: "[ POD // API ]",
-    status: "DEPLOYING v2.1.0",
-    percent: POD_PROGRESS,
-    deploying: true,
-    desc: "Zero Downtime \u2022 2 vCPU / 4GB",
-    y: 398,
-  },
-  {
-    title: "[ POD // WORKERS ]",
-    status: "RUNNING v1.4.2",
-    deploying: false,
-    desc: "Async Processing \u2022 1 vCPU / 1GB",
-    y: 563,
-  },
+  { title: "[ POD // FRONTEND ]", status: "RUNNING v1.4.2", deploying: false, y: 206 },
+  { title: "[ POD // API ]", status: "DEPLOYING v2.1.0", percent: POD_PROGRESS, deploying: true, y: 398 },
+  { title: "[ POD // WORKERS ]", status: "RUNNING v1.4.2", deploying: false, y: 563 },
 ];
 // rounded "right, up, right" elbow ending at the arrow tip (ex, ey) — same shape as
 // arrow-line.svg. Start point = each slab's right corner, PIXEL-MEASURED from server2.svg via
@@ -457,10 +432,11 @@ const connectorStroke = (l: { scale?: readonly [number, number] }, w: number) =>
 // scene — steppers and the Monthly/Annual switch drive real math from the unit prices in the
 // design's own row copy (the mock's flat "$5/mo" per row contradicts that copy, so rows show
 // actual subtotals; default total $15.10 vs the mock's "$15").
+// keys + maths; the row's label and its unit/max line come from the dictionary (t.s8.rows)
 const PRICING_ROWS = [
-  { key: "vcpu", label: "vCPU", sub: "1 vCPU — $10.00/mo - Max 16", price: 10, max: 16 },
-  { key: "memory", label: "Memory", sub: "1 GB — $5.00/mo - Max 64GB", price: 5, max: 64 },
-  { key: "storage", label: "Storage", sub: "1 GB — $0.10/mo - Max 1TB", price: 0.1, max: 1000 },
+  { key: "vcpu", price: 10, max: 16 },
+  { key: "memory", price: 5, max: 64 },
+  { key: "storage", price: 0.1, max: 1000 },
 ] as const;
 type PricingRowKey = (typeof PRICING_ROWS)[number]["key"];
 const fmtPrice = (n: number) => (Number.isInteger(n) ? `$${n}` : `$${n.toFixed(2)}`);
@@ -469,19 +445,42 @@ const fmtPrice = (n: number) => (Number.isInteger(n) ? `$${n}` : `$${n.toFixed(2
 // large mixed-color line ("Keep building" green, "what matters" steel blue), the two state-1
 // pill buttons, and a soft green glow hugging the right edge.
 
+// A heading the design breaks over two lines. The dictionary keeps one entry per line, so a
+// translation can break where ITS text wants to; the output is exactly what `Foo,<br/>bar.` was,
+// which matters because splitWords() walks the heading's text nodes.
+function Lines({ lines }: { lines: readonly string[] }) {
+  return (
+    <>
+      {lines.map((line, i) => (
+        <Fragment key={i}>
+          {i > 0 && <br />}
+          {line}
+        </Fragment>
+      ))}
+    </>
+  );
+}
+
 export function HeroSectionClient({
   serverSvg,
   agentSvg,
   podsSvg,
   rightBoardSvg,
   bottomBoardSvg,
+  t,
+  lang,
 }: {
   serverSvg: string;
   agentSvg: string;
   podsSvg: string;
   rightBoardSvg: string;
   bottomBoardSvg: string;
+  // the active language's copy (plain JSON — it crosses the server→client boundary as a prop)
+  t: Dict;
+  lang: Lang;
 }) {
+  // the handful of design sizes that need a different value per language (see lib/i18n/typeScale)
+  const type = TYPE_SCALE[lang];
   const sectionRef = useRef<HTMLElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   // a wheel/arrow push that arrived while a reload-restore was still landing (see `restoringPage`).
@@ -537,7 +536,7 @@ export function HeroSectionClient({
   const stepCount = (key: PricingRowKey, dir: 1 | -1, max: number) =>
     setCounts((c) => ({ ...c, [key]: Math.min(max, Math.max(1, c[key] + dir)) }));
   const priceFactor = annual ? 12 : 1;
-  const priceSuffix = annual ? "/yr" : "/mo";
+  const priceSuffix = annual ? t.s8.perYear : t.s8.perMonth;
   const priceTotal = (10 * counts.vcpu + 5 * counts.memory + 0.1 * counts.storage) * priceFactor;
 
   useGSAP(
@@ -2360,6 +2359,11 @@ export function HeroSectionClient({
       const hurryNow = () => Math.max(0.4, Math.pow(0.62, chain));
       const onWheel = (e: WheelEvent) => {
         if (!pinST) return;
+        // The "Book a demo" popup owns the screen while it is open: the scene must not move
+        // behind it. No preventDefault needed — the modal holds <html> at overflow:hidden, so
+        // nothing scrolls either; the gesture bookkeeping is simply not touched, so the push that
+        // arrives after closing reads as a fresh one.
+        if (isBookDemoOpen()) return;
         if (restoringPage) {
           // reload-restore still landing: hold the page still and only note the direction. The
           // gesture bookkeeping keeps running so the rest of this same swipe reads as its tail
@@ -2547,6 +2551,7 @@ export function HeroSectionClient({
       const onKeyDown = (e: KeyboardEvent) => {
         if (!pinST || e.metaKey || e.ctrlKey || e.altKey) return;
         if (typingIn(e.target)) return; // the footer's email field etc.
+        if (isBookDemoOpen()) return; // the booking popup owns the keyboard (Esc/Tab are its own)
         if (restoringPage) {
           // same as the wheel: remember the step, play it once the restore has landed
           const d = PAGE_KEYS[e.key];
@@ -2881,7 +2886,7 @@ export function HeroSectionClient({
             aria-hidden="true"
             style={{ width: s(36), height: "auto" }}
           />
-          Managed Kubernetes &amp; AI Agent Infrastructure
+          {t.hero.eyebrow}
         </p>
 
         {/* marginTop -10 → 10: the eyebrow sat almost glued to the heading, while every other
@@ -2891,34 +2896,32 @@ export function HeroSectionClient({
           className="font-heading font-medium tracking-[-0.02em] text-foreground"
           style={{ fontSize: s(64), lineHeight: 1.26, marginTop: s(10), maxWidth: s(1100) }}
         >
-          Build your product. We&rsquo;ll handle the infrastructure.
+          {t.hero.heading}
         </h1>
 
         <p
           className="font-heading font-light text-white/65"
-          style={{ fontSize: s(21.3), lineHeight: 1.3, marginTop: s(17), maxWidth: s(950) }}
+          style={{ fontSize: s(21.3), lineHeight: 1.3, marginTop: s(17), maxWidth: s(type.heroBodyMax) }}
         >
-          Deploy your apps, databases, workers, and AI agents without building a DevOps team.
-          usectl takes you from code to production with managed infrastructure and predictable
-          pricing.
+          {t.hero.body}
         </p>
 
-        {/* gap 30 → 14 (team, 2026-09-29: "button ები ერთმანეთს დაშორება შეამცირე") */}
-        <div className="flex items-center" style={{ gap: s(14), marginTop: s(34) }}>
-          <Link
-            href={SIGNUP_URL}
+        {/* ONE CTA here now (user, 2026-11-07): "Start Building" + "See how it works" were replaced
+            by "Book a demo". State 9 and the burger menu keep the original pair.
+            It opens the booking popup (components/ui/BookDemoModal.tsx, mounted once in
+            app/_site/landing.tsx) — while that popup is open the wheel/keyboard driver below
+            ignores every event, so the scene can't move behind it. It still rides the hero's
+            blur-in as one block: splitWords() leaves any field containing an a/button alone (see
+            the `whole` check), so a <button> behaves exactly like the old <Link>s. */}
+        <div className="flex items-center" style={{ marginTop: s(34) }}>
+          <button
+            type="button"
+            onClick={openBookDemo}
             className="flex items-center justify-center rounded-full border border-white/25 font-heading font-semibold text-foreground transition-colors hover:border-brand hover:text-brand"
-            style={{ height: s(48), paddingLeft: s(32), paddingRight: s(32), fontSize: s(16) }}
-          >
-            Start Building
-          </Link>
-          <Link
-            href={SIGNUP_URL}
-            className="flex items-center justify-center rounded-full border border-white/25 font-heading font-normal text-white/90 transition-colors hover:border-brand hover:text-brand"
             style={{ height: s(48), paddingLeft: s(32), paddingRight: s(26), fontSize: s(16), gap: s(4) }}
           >
-            See how it works <ButtonArrow size={s(24)} />
-          </Link>
+            {t.hero.bookDemo} <ButtonArrow size={s(24)} />
+          </button>
         </div>
       </div>
 
@@ -2938,22 +2941,21 @@ export function HeroSectionClient({
             aria-hidden="true"
             style={{ width: s(36), height: "auto" }}
           />
-          Infrastructure Freedom
+          {t.s2.eyebrow}
         </p>
 
         <h2
           className="font-heading font-medium tracking-[-0.02em] text-foreground"
           style={{ fontSize: s(56), lineHeight: 1.15, marginTop: s(10), maxWidth: s(460) }}
         >
-          You came here to build.
+          {t.s2.heading}
         </h2>
 
         <p
           className="font-heading font-light text-white/60"
           style={{ fontSize: s(18), lineHeight: 1.45, marginTop: s(18), maxWidth: s(440) }}
         >
-          Your next feature. Your first customer. The idea you can&rsquo;t stop thinking about.
-          usectl handles the infrastructure, giving you more time to move your product forward
+          {t.s2.body}
         </p>
       </div>
 
@@ -2972,24 +2974,21 @@ export function HeroSectionClient({
             aria-hidden="true"
             style={{ width: s(36), height: "auto" }}
           />
-          Infrastructure Freedom
+          {t.s3.eyebrow}
         </p>
 
         <h2
           className="font-heading font-medium tracking-[-0.02em] text-foreground"
           style={{ fontSize: s(56), lineHeight: 1.15, marginTop: s(10) }}
         >
-          Your Stacks,
-          <br />
-          in one place.
+          <Lines lines={t.s3.heading} />
         </h2>
 
         <p
           className="font-heading font-light text-white/60"
           style={{ fontSize: s(18), lineHeight: 1.45, marginTop: s(18), maxWidth: s(440) }}
         >
-          Run your apps, databases, storage, and background jobs together. Everything stays
-          connected and organized while usectl manages the infrastructure underneath.
+          {t.s3.body}
         </p>
       </div>
 
@@ -3111,9 +3110,9 @@ export function HeroSectionClient({
             visibility: "hidden",
           }}
         >
-          0 Hours spent on DevOps configuration.
+          {t.s2.boxTop}
           <br />
-          100% Focus on Product Logic
+          {t.s2.boxBottom}
         </div>
 
         <svg
@@ -3126,9 +3125,9 @@ export function HeroSectionClient({
           {CALLOUT_LINES.map((d) => (
             <path key={d} data-callout-line d={d} stroke="white" strokeOpacity="0.17" strokeWidth="1" />
           ))}
-          {CALLOUT_LABELS.map((label) => (
+          {CALLOUT_LABELS.map((label, i) => (
             <path
-              key={`${label.text}-arrow`}
+              key={`callout-arrow-${i}`}
               data-callout-arrow
               d={`M ${label.ax} ${label.ay - 4.33} L ${label.ax + 7.5} ${label.ay} L ${label.ax} ${label.ay + 4.33} Z`}
               fill="white"
@@ -3138,14 +3137,14 @@ export function HeroSectionClient({
           ))}
         </svg>
 
-        {CALLOUT_LABELS.map((label) => (
+        {CALLOUT_LABELS.map((label, i) => (
           <p
-            key={label.text}
+            key={`callout-${i}`}
             data-callout-label
             className="absolute font-heading font-light text-white/75"
             style={{ left: s(label.x), top: s(label.y), fontSize: s(17), opacity: 0, visibility: "hidden" }}
           >
-            {label.text}
+            {t.s2.callouts[i]}
           </p>
         ))}
       </div>
@@ -3172,7 +3171,7 @@ export function HeroSectionClient({
         >
           USECTL MANAGED INFRASTRUCTURE
         </p>
-        {PANEL_ITEMS.map((item) => (
+        {PANEL_ITEMS.map((item, i) => (
           <div
             key={item.no}
             data-panel-item
@@ -3180,10 +3179,10 @@ export function HeroSectionClient({
             style={{ left: s(1346), top: s(item.y), width: s(400), opacity: 0, visibility: "hidden" }}
           >
             <p className="text-white/90" style={{ fontSize: s(15) }}>
-              <span className="text-brand">{item.no}</span> {item.title}
+              <span className="text-brand">{item.no}</span> {t.s3.items[i]!.title}
             </p>
             <p className="text-white/45" style={{ fontSize: s(13.5), lineHeight: 1.5, marginTop: s(8), maxWidth: s(390) }}>
-              {item.desc}
+              {t.s3.items[i]!.desc}
             </p>
           </div>
         ))}
@@ -3204,24 +3203,23 @@ export function HeroSectionClient({
             aria-hidden="true"
             style={{ width: s(36), height: "auto" }}
           />
-          Isolated Spaces
+          {t.s4.eyebrow}
         </p>
 
         <h2
           className="font-heading font-medium tracking-[-0.02em] text-foreground"
-          style={{ fontSize: s(56), lineHeight: 1.15, marginTop: s(10) }}
+          style={{ fontSize: s(56), lineHeight: 1.15, marginTop: s(10), whiteSpace: "nowrap" }}
         >
-          Give every project
-          <br />
-          its own space.
+          {/* nowrap: the lines already break by hand, and "თითოეული პროექტი" measures 599 of the
+              column's 600 at 1920, so a 1px font-metric difference must not split it again */}
+          <Lines lines={t.s4.heading} />
         </h2>
 
         <p
           className="font-heading font-light text-white/60"
           style={{ fontSize: s(18), lineHeight: 1.45, marginTop: s(18), maxWidth: s(560) }}
         >
-          Keep your app and the services it depends on together, with their own resources and
-          access settings. In usectl, we call this project space a Machine.
+          {t.s4.body}
         </p>
       </div>
 
@@ -3260,7 +3258,7 @@ export function HeroSectionClient({
         >
           USECTL MANAGED INFRASTRUCTURE
         </p>
-        {PANEL4_ITEMS.map((item) => (
+        {PANEL4_ITEMS.map((item, i) => (
           <div
             key={item.no}
             data-panel-item
@@ -3271,7 +3269,7 @@ export function HeroSectionClient({
               <span className="text-brand">{item.no}</span> {item.title}
             </p>
             <p className="text-white/45" style={{ fontSize: s(13.5), lineHeight: 1.5, marginTop: s(8) }}>
-              {item.desc}
+              {t.s4.itemDescs[i]}
             </p>
           </div>
         ))}
@@ -3292,25 +3290,21 @@ export function HeroSectionClient({
             aria-hidden="true"
             style={{ width: s(36), height: "auto" }}
           />
-          Isolated Spaces
+          {t.s5.eyebrow}
         </p>
 
         <h2
           className="font-heading font-medium tracking-[-0.02em] text-foreground"
           style={{ fontSize: s(56), lineHeight: 1.15, marginTop: s(10) }}
         >
-          Run each part
-          <br />
-          independently.
+          <Lines lines={t.s5.heading} />
         </h2>
 
         <p
           className="font-heading font-light text-white/60"
           style={{ fontSize: s(18), lineHeight: 1.45, marginTop: s(18), maxWidth: s(450) }}
         >
-          Your frontend, API, and workers can each have their own resources and deploy separately
-          while staying connected inside the same project. In usectl, each running workload is a
-          Pod.
+          {t.s5.body}
         </p>
       </div>
 
@@ -3365,7 +3359,7 @@ export function HeroSectionClient({
           ))}
         </svg>
 
-        {PODS.map((pod) => (
+        {PODS.map((pod, i) => (
           <div
             key={pod.title}
             data-pod-item
@@ -3410,7 +3404,7 @@ export function HeroSectionClient({
               </div>
             )}
             <p className="text-white/45" style={{ fontSize: s(13), marginTop: s(10) }}>
-              {pod.desc}
+              {t.s5.podDescs[i]}
             </p>
           </div>
         ))}
@@ -3431,24 +3425,21 @@ export function HeroSectionClient({
             aria-hidden="true"
             style={{ width: s(36), height: "auto" }}
           />
-          Continuous Deployment
+          {t.s6.eyebrow}
         </p>
 
         <h2
           className="font-heading font-medium tracking-[-0.02em] text-foreground"
           style={{ fontSize: s(56), lineHeight: 1.15, marginTop: s(10) }}
         >
-          Push your code.
-          <br />
-          We&rsquo;ll put it live.
+          <Lines lines={t.s6.heading} />
         </h2>
 
         <p
           className="font-heading font-light text-white/60"
           style={{ fontSize: s(18), lineHeight: 1.45, marginTop: s(18), maxWidth: s(480) }}
         >
-          Connect your repository and push your next update. usectl builds it, deploys it, and
-          serves it over HTTPS while the rest of your project keeps running.
+          {t.s6.body}
         </p>
       </div>
 
@@ -3754,24 +3745,21 @@ export function HeroSectionClient({
             aria-hidden="true"
             style={{ width: s(36), height: "auto" }}
           />
-          AI Infrastructure
+          {t.s7.eyebrow}
         </p>
 
         <h2
           className="font-heading font-medium tracking-[-0.02em] text-foreground"
           style={{ fontSize: s(56), lineHeight: 1.15, marginTop: s(10) }}
         >
-          Give your agent
-          <br />
-          a place to work.
+          <Lines lines={t.s7.heading} />
         </h2>
 
         <p
           className="font-heading font-light text-white/60"
           style={{ fontSize: s(18), lineHeight: 1.45, marginTop: s(18), maxWidth: s(460) }}
         >
-          Run AI agents alongside the apps, APIs, databases, and tools they use. Your coding
-          assistant can also deploy updates and inspect logs through the usectl CLI.
+          {t.s7.body}
         </p>
       </div>
 
@@ -4032,14 +4020,14 @@ export function HeroSectionClient({
             className="inline-block bg-clip-text text-transparent"
             style={{ backgroundImage: "linear-gradient(90deg, #27a138 15%, #567f93 95%)" }}
           >
-            Know your hosting bill
+            {t.s8.heading[0]}
           </span>
           <br />
           <span
             className="inline-block bg-clip-text text-transparent"
             style={{ backgroundImage: "linear-gradient(90deg, #567f93 5%, #27a138 80%)" }}
           >
-            before you launch.
+            {t.s8.heading[1]}
           </span>
         </h2>
 
@@ -4056,9 +4044,7 @@ export function HeroSectionClient({
             visibility: "hidden",
           }}
         >
-          Choose the CPU, memory, and storage your project needs and see the monthly price before
-          you deploy. Need more capacity later? You&rsquo;ll see the new price before making the
-          change.
+          {t.s8.body}
         </p>
 
         {/* CTA — bordered box with brighter blueprint corner brackets */}
@@ -4083,13 +4069,13 @@ export function HeroSectionClient({
                 />
               ),
             )}
-            Start now from $15 / month
+            {t.s8.cta}
           </a>
           <p
             className="text-center font-heading font-light text-white/40"
             style={{ marginTop: s(20), fontSize: s(13.5) }}
           >
-            Not a surprise.
+            {t.s8.ctaNote}
           </p>
         </div>
 
@@ -4120,14 +4106,14 @@ export function HeroSectionClient({
             className="absolute left-0 flex w-full items-center justify-center font-heading"
             style={{ top: s(44), gap: s(12), fontSize: s(15) }}
           >
-            <span className={annual ? "text-white/50" : "text-white/90"}>Monthly</span>
+            <span className={annual ? "text-white/50" : "text-white/90"}>{t.s8.monthly}</span>
             {/* exact design box: 49×27 track, r4; 22×23 knob in #11A32A, r4, inset 2px —
                 travel = 49 − 2 − 22 − 2 = 23 */}
             <button
               type="button"
               role="switch"
               aria-checked={annual}
-              aria-label="Bill annually"
+              aria-label={t.a11y.billAnnually}
               onClick={() => setAnnual((a) => !a)}
               className="relative"
               style={{
@@ -4150,25 +4136,25 @@ export function HeroSectionClient({
                 }}
               />
             </button>
-            <span className={annual ? "text-white/90" : "text-white/50"}>Annual</span>
+            <span className={annual ? "text-white/90" : "text-white/50"}>{t.s8.annual}</span>
           </div>
 
           {/* resource rows */}
           <div className="absolute" style={{ left: s(34), right: s(36), top: s(140) }}>
-            {PRICING_ROWS.map((row) => (
+            {PRICING_ROWS.map((row, i) => (
               <div key={row.key} className="flex items-center justify-between" style={{ height: s(82) }}>
                 <div>
                   <p className="font-heading text-white/90" style={{ fontSize: s(17) }}>
-                    {row.label}
+                    {t.s8.rows[i]!.label}
                   </p>
                   <p className="font-heading font-light text-white/45" style={{ fontSize: s(13.5), marginTop: s(5) }}>
-                    {row.sub}
+                    {t.s8.rows[i]!.unit} - {t.s8.rows[i]!.max}
                   </p>
                 </div>
                 <div className="flex items-center" style={{ gap: s(10) }}>
                   <button
                     type="button"
-                    aria-label={`Decrease ${row.label}`}
+                    aria-label={fill(t.a11y.decrease, { name: t.s8.rows[i]!.label })}
                     onClick={() => stepCount(row.key, -1, row.max)}
                     disabled={counts[row.key] <= 1}
                     onPointerDown={pressRipple}
@@ -4182,7 +4168,7 @@ export function HeroSectionClient({
                   </span>
                   <button
                     type="button"
-                    aria-label={`Increase ${row.label}`}
+                    aria-label={fill(t.a11y.increase, { name: t.s8.rows[i]!.label })}
                     onClick={() => stepCount(row.key, 1, row.max)}
                     disabled={counts[row.key] >= row.max}
                     onPointerDown={pressRipple}
@@ -4218,7 +4204,7 @@ export function HeroSectionClient({
             }}
           >
             <span className="font-heading text-white/80" style={{ fontSize: s(18) }}>
-              Your {annual ? "annual" : "monthly"} price
+              {annual ? t.s8.totalAnnual : t.s8.totalMonthly}
             </span>
             <span className="font-heading font-medium text-brand" style={{ fontSize: s(26) }}>
               {fmtPrice(priceTotal)}
@@ -4230,7 +4216,7 @@ export function HeroSectionClient({
             className="absolute left-0 w-full text-center font-heading font-light text-white/35"
             style={{ top: s(524), fontSize: s(13.5) }}
           >
-            The first month is free. You don&rsquo;t need to link a card.
+            {t.s8.freeNote}
           </p>
         </div>
       </div>
@@ -4255,21 +4241,21 @@ export function HeroSectionClient({
           className="absolute font-heading font-light text-white/50"
           style={{ left: s(187), top: s(300), fontSize: s(52), lineHeight: 1.2 }}
         >
-          What will you build next?
+          {t.s9.kicker}
         </p>
         <h2
           className="absolute whitespace-nowrap font-heading font-light text-white/85"
-          style={{ left: s(187), top: s(390), fontSize: s(60), lineHeight: 1.4 }}
+          style={{ left: s(187), top: s(390), fontSize: s(type.s9Heading), lineHeight: 1.4 }}
         >
-          Give your next product a place to run.{" "}
+          {t.s9.lead}{" "}
           <span className="font-medium" style={{ color: "#27a138" }}>
-            Keep building
+            {t.s9.green}
           </span>
           <br />
           <span className="font-medium" style={{ color: "#6b8fa8" }}>
-            what matters
-          </span>{" "}
-          - we&rsquo;ll handle the infrastructure behind
+            {t.s9.blue}
+          </span>
+          {t.s9.tail}
         </h2>
         {/* buttons 618 → 606 and gap 30 → 22 → 14 (team feedback 2026-09-29: "ოდნავ ასაწევია
             ზემოთ… დაშორება ოდნავ შესამცირებელია", then again: "დაშორება შეამცირე") */}
@@ -4279,14 +4265,14 @@ export function HeroSectionClient({
             className="flex items-center justify-center rounded-full border border-white/25 font-heading font-semibold text-foreground transition-colors hover:border-brand hover:text-brand"
             style={{ height: s(48), paddingLeft: s(32), paddingRight: s(32), fontSize: s(16) }}
           >
-            Start Building
+            {t.hero.startBuilding}
           </Link>
           <Link
             href={SIGNUP_URL}
             className="flex items-center justify-center rounded-full border border-white/25 font-heading font-normal text-white/90 transition-colors hover:border-brand hover:text-brand"
             style={{ height: s(48), paddingLeft: s(32), paddingRight: s(26), fontSize: s(16), gap: s(4) }}
           >
-            See how it works <ButtonArrow size={s(24)} />
+            {t.hero.seeHow} <ButtonArrow size={s(24)} />
           </Link>
         </div>
       </div>
@@ -4308,7 +4294,7 @@ export function HeroSectionClient({
     <button
       ref={scrollDownRef}
       type="button"
-      aria-label="Scroll to next section"
+      aria-label={t.a11y.scrollDown}
       onPointerDown={(e) => pressRipple(e, RIPPLE_SOFT)}
       className="absolute left-1/2 isolate flex -translate-x-1/2 items-center justify-center overflow-hidden rounded-full border font-heading font-medium text-white/60 transition-[color,border-color,opacity] duration-300 ease-out hover:border-brand hover:text-brand"
       style={{
@@ -4321,7 +4307,7 @@ export function HeroSectionClient({
         borderColor: "rgba(255,255,255,0.18)",
       }}
     >
-      Scroll Down <ScrollDownArrow size={s(12)} />
+      {t.a11y.scrollDownLabel} <ScrollDownArrow size={s(12)} />
     </button>
     </section>
     {/* SSR scroll reserve for the pin — a SIBLING of the section (the section's height is now a

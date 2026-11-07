@@ -39,15 +39,22 @@ const isDev = process.env.NODE_ENV === "development";
 //     (`new Worker(URL.createObjectURL(new Blob([...])))`, verified in the package). Without
 //     BOTH, `default-src 'self'` blocks it — and since the component swallows its own start-up
 //     errors, the recording would simply never happen, with nothing in the console to say so.
+//   · api.web3forms.com — the footer's Subscribe box posts there straight from the BROWSER
+//     (src/components/layout/SubscribeForm.tsx). It has to be the browser: Web3Forms' free plan
+//     refuses server-side submissions, so the old route through /api/subscribe could not deliver.
+//     Without this line the fetch is blocked by connect-src and the form can only ever fail.
 const csp = [
   `default-src 'self'`,
   `script-src 'self' 'unsafe-inline' https://www.googletagmanager.com${isDev ? " 'unsafe-eval'" : ""}`,
   `style-src 'self' 'unsafe-inline'`,
   `img-src 'self' blob: data: https://www.googletagmanager.com https://www.google-analytics.com`,
   `font-src 'self' data:`,
-  `connect-src 'self' https://www.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://analytics.usectl.com`,
+  `connect-src 'self' https://www.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://analytics.usectl.com https://api.web3forms.com`,
   `worker-src 'self' blob:`,
-  `frame-src 'none'`,
+  // the hero's "Book a demo" popup frames the team's Google Calendar appointment schedule
+  // (BOOKING_EMBED_URL in src/lib/nav.ts). Without this the iframe is simply blocked and the
+  // popup shows an empty window — so this line and that URL belong together.
+  `frame-src https://calendar.google.com`,
   `object-src 'none'`,
   `base-uri 'self'`,
   `form-action 'self'`,
