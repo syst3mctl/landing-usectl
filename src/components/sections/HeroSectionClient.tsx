@@ -2901,7 +2901,7 @@ export function HeroSectionClient({
 
         <p
           className="font-heading font-light text-white/65"
-          style={{ fontSize: s(21.3), lineHeight: 1.3, marginTop: s(17), maxWidth: s(950) }}
+          style={{ fontSize: s(21.3), lineHeight: 1.3, marginTop: s(17), maxWidth: s(type.heroBodyMax) }}
         >
           {t.hero.body}
         </p>
@@ -3208,8 +3208,10 @@ export function HeroSectionClient({
 
         <h2
           className="font-heading font-medium tracking-[-0.02em] text-foreground"
-          style={{ fontSize: s(56), lineHeight: 1.15, marginTop: s(10) }}
+          style={{ fontSize: s(56), lineHeight: 1.15, marginTop: s(10), whiteSpace: "nowrap" }}
         >
+          {/* nowrap: the lines already break by hand, and "თითოეული პროექტი" measures 599 of the
+              column's 600 at 1920, so a 1px font-metric difference must not split it again */}
           <Lines lines={t.s4.heading} />
         </h2>
 
@@ -4252,7 +4254,7 @@ export function HeroSectionClient({
           <br />
           <span className="font-medium" style={{ color: "#6b8fa8" }}>
             {t.s9.blue}
-          </span>{" "}
+          </span>
           {t.s9.tail}
         </h2>
         {/* buttons 618 → 606 and gap 30 → 22 → 14 (team feedback 2026-09-29: "ოდნავ ასაწევია

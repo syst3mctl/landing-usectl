@@ -163,7 +163,7 @@ export const en = {
     lead: "Give your next product a place to run.",
     green: "Keep building",
     blue: "what matters",
-    tail: "- we’ll handle the infrastructure behind",
+    tail: " - we’ll handle the infrastructure behind",
   },
 
   footer: {

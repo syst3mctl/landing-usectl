@@ -944,7 +944,7 @@ export function HeroMobile({ t }: { t: Dict }) {
           </span>{" "}
           <span className="font-medium" style={{ color: "#6b8fa8" }}>
             {t.s9.blue}
-          </span>{" "}
+          </span>
           {t.s9.tail}
         </h2>
         <div className="relative">

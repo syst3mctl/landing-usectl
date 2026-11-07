@@ -1618,6 +1618,27 @@ to `https://api.web3forms.com/submit` directly from the page.
 
 `tsc` / `eslint` / `next build` clean; `/` and `/ka` still prerendered.
 
+## Georgian copy round: no dashes, new headings, hero paragraph width (2026-11-07, `multi-languages`)
+
+- **No dashes in Georgian copy** (user, with screenshots: the "—" in running text read as stray
+  hyphens). Every em dash in `ka.ts` became a comma/period/colon; the hero line is now "…მიგიყვანს
+  მართული ინფრასტრუქტურითა…". KEPT by the user's call: "ცალ-ცალკე" (grammatical), the hyphen
+  between a Latin word/number and a Georgian suffix (`usectl-ში`, `API-ების`, `$15-დან`,
+  `HTTPS-ით`), and `Micro-VM`. English copy untouched.
+- State 9's tail now carries its own leading separator (`en: " - we'll…"`, `ka: ", ინფრა…"`) —
+  the `{" "}` before `{t.s9.tail}` was removed in both scenes so Georgian can end the blue span
+  with a comma instead of " ,".
+- New copy: s4 heading "თითოეული პროექტი / საკუთარი სივრცით." (h2 is `nowrap` — line 1 measures
+  599 of the 600 column), s6 heading "ატვირთე კოდი. / გაშვებას ჩვენ ვუზრუნველყოფთ." (wraps inside
+  the 520 column into 3 lines, same count as before), s2 body "…თავიდან არ ამოგდის."
+- Hero paragraph on /ka may not run past the end of the heading's "ინფრასტრუქტურაზე ჩვენ" line:
+  `TYPE_SCALE.heroBodyMax` (en 950, ka 815; that line ends at 817 at 1920) → 4 lines, widest ~731.
+  Measured in Chromium with the shipped fonts; NOT yet eyeballed on the running site (next dev
+  can't start in the Linux sandbox — no arm64 SWC binary).
+- Nav "Machine" → **"სივრცეები"** on /ka (user's pick; header, burger menu, footers all read
+  `t.nav.machine`). 88px vs 66 at 16px → the centred nav grows ~11px per side, inside every slack
+  measured for the header row and inside the 1024–1279 mask's ±247 hole.
+
 ## Open items / TODO
 
 - **NEXT BIG STEP — split the desktop scene into per-section components (user's idea, agreed
