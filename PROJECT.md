@@ -1639,6 +1639,138 @@ to `https://api.web3forms.com/submit` directly from the page.
   `t.nav.machine`). 88px vs 66 at 16px → the centred nav grows ~11px per side, inside every slack
   measured for the header row and inside the 1024–1279 mask's ±247 hole.
 
+## Meta Pixel + the first consent layer this site has ever had (2026-11-07, branch `fb-trefik`)
+
+Built from `META-PIXEL-PLAN.md` (in the repo), step by step. NOT deployed, NOT merged into
+`master`, and nothing was touched in Meta Events Manager. The task: SignupClick + PageView on the
+landing page, with attribution that survives the hop to manager.usectl.com — where
+`CompleteRegistration` belongs and where this repo must never emit it.
+
+**The dataset is `2506256846565789`**, from `NEXT_PUBLIC_META_PIXEL_ID` (public, but in env so the
+landing page and the manager can be pointed at one dataset per environment; `NEXT_PUBLIC_*` is
+inlined at BUILD time, so it must be set in the host env before the build — unset ⇒ no Pixel at
+all). `.env.local` holds it locally; `.env.example` documents it.
+
+### Consent first — `src/lib/consent.ts` + `CookieBanner`
+
+The page had no banner and no privacy policy, while loading GA4 and OpenReplay on every visit.
+Now ONE `usectl_consent` cookie (`v1:granted` / `v1:denied`, 180 days, `Domain=.usectl.com` in
+production so manager.usectl.com reads the same answer, host-only on localhost/previews) gates all
+three: Meta Pixel, GA4, OpenReplay. Before an answer, **nothing optional loads**.
+
+- The value is stored **verbatim, not percent-encoded** — the manager has to compare it, and
+  `v1%3Agranted` is an easy way for the other side to get that wrong. `usectl_attr`'s JSON encodes
+  itself (`{`, `}`, `"` are not legal cookie-octets).
+- `useConsent()` is `useSyncExternalStore` with a `null` server snapshot (= undecided = load
+  nothing), so a prerendered page cannot mismatch on hydration. Note for later: this repo's eslint
+  rejects the state+effect version (`react-hooks/set-state-in-effect`), which is what pushed both
+  this hook and the banner's open/closed state onto derived values.
+- `CookieBanner` renders nothing on the server and nothing until it knows the answer — it can't be
+  an LCP candidate or move the hero. Accept and Reject are the SAME pill, size and weight.
+  `PRIVACY_URL` is the one place to add a privacy policy link when that page exists.
+- "Cookie settings" in BOTH footers reopens it (withdrawal). It is a `<button>` on purpose: the
+  desktop scene's capture-phase handler treats any anchor with a hash href as in-page navigation.
+- GA4 moved behind `<Analytics>` (gtag.js requested only after consent; a withdrawal sets
+  `ga-disable-<ID>`, since gtag cannot be unloaded). `SessionReplay` waits for consent and calls
+  `tracker.stop()` when the effect is torn down by a withdrawal.
+- EN + KA copy in the dictionaries (`cookies.*`), no dashes in the Georgian.
+
+### The Pixel — `src/lib/metaPixel.ts` + `src/components/MetaPixel.tsx`
+
+Meta's base snippet is deliberately not used: it fires init + PageView before any consent, its
+`<noscript>` image cannot be gated at all, and it hardcodes the id. Only the `fbq` stub is kept
+(rewritten), so calls made before fbevents.js lands are queued. Module-level flags make init
+idempotent — a second `init` doubles every event.
+
+**Two findings that only a real browser produced, both worth remembering:**
+
+1. **`fbq.disablePushState = true` is mandatory on this page.** fbevents.js patches
+   `history.pushState`/`replaceState` and re-fires `PageView` on each one (`setupSPANavigation`,
+   visible in the shipped source). This page rewrites the hash on every one of its nine sections
+   (`SECTION_HASHES`), so a visitor who merely scrolled down sent **nine** PageViews — measured as
+   `dl=…/#build`, `dl=…/#features`, … `fbq('set','autoConfig',false,<id>)` does NOT cover it
+   (that is set as well, so Meta also stops auto-collecting button clicks and page metadata).
+2. **Meta's BotBlocking plugin drops every event in an automated browser.** fbevents.js loads,
+   `fbq` counts the event, and nothing is ever sent — no request, no console message. Pinned down
+   by serving Meta's own unmodified snippet with a FAKE pixel id from the same page: the fake id's
+   PageView went out, the real one's did not. The whole verification therefore runs **headed**,
+   with `--disable-blink-features=AutomationControlled` and `navigator.webdriver` masked. Anyone
+   re-running these tests headless will see zero events and think the code is broken.
+
+Events: one `PageView` per real pathname change, sent on idle after hydration (so it cannot touch
+LCP), and `SignupClick` (custom) from ONE delegated capture-phase `click` + `auxclick` listener.
+It never calls preventDefault, never rewrites an href and never delays a navigation, so it
+coexists with SessionReplay's `?lsid=` rewrite and the scene's hash navigation. `CompleteRegistration`
+and `Lead` are never emitted here — `grep` the repo, they appear only in comments.
+
+The eight links that point at `SIGNUP_URL` carry `data-cta`, typed by `CtaPlacement` in
+`src/lib/nav.ts` so a typo is a compile error instead of a mislabelled event in Events Manager:
+`header`, `mobile-menu`, `pricing(-mobile)`, `closing-start(-mobile)`, `closing-see-how(-mobile)`.
+The phone's copies need their own names because BOTH builds are in the DOM at once. The plan's
+`hero-*` names were corrected to `closing-*`: that pair now lives in state 9, since the hero's
+single button is "Book a demo" — not a signup, so it gets no Meta event.
+
+### Attribution — `src/lib/attribution.ts`
+
+After consent, the landing URL's `utm_*` go into `usectl_attr` (JSON, `.usectl.com`, 90 days, last
+non-empty touch wins, plus the `ts` of that touch) for the manager to attach to the account it
+creates. Captured on mount but written only on consent: by the time the banner is answered the
+address bar has usually been rewritten by the scene. **Nothing is appended to the manager links** —
+a query string carrying `utm_*`/`fbclid`/`_fbp` would leak the campaign into referrers, the
+manager's logs and any URL a visitor copies, and the cookie already crosses both hosts. `_fbp` /
+`_fbc` are the Pixel's own cookies on `.usectl.com`; we never read or copy them.
+
+### CSP (`next.config.ts`) — the plan's list was incomplete
+
+`script-src` += connect.facebook.net, `img-src`/`connect-src` += www.facebook.com, as planned. Two
+more came out of measuring: **`form-action` and `frame-src` for www.facebook.com** (fbevents falls
+back to POSTing a form inside a hidden iframe; without them that event is silently lost) and
+**connect.facebook.net in `img-src`** (it reports its own failures by loading an image from
+`/log/error`, which otherwise fills the console on every event).
+
+**Deliberately NOT allowed:** this dataset has **Open Bridge (CAPI Gateway)** enabled and tells the
+browser to POST every event to `https://1c-e0e78bd7d7fd408d87142c500d5b8890.ecs.us-west-1.on.aws/events`
+(fallback `https://vwdb33u4tj1q.cloud.run/events`). Until that gateway is confirmed to be usectl's
+own, an unidentified third party does not get visitor event data. Nothing is lost in the meantime:
+the beacon to `facebook.com/tr` carries every event (verified). Decision pending from the owner —
+either add the hosts or switch Open Bridge off in Events Manager.
+
+### Verified (production build on `next start`, real Chromium, headed)
+
+42 checks, all green: nothing optional before a choice; Reject stays silent across a reload; after
+Accept exactly ONE `facebook.com/tr ev=PageView` per page load with our id, **zero** while
+scrolling through the nine sections, one more on EN → KA; one `ev=SignupClick` per CTA with the
+right placement for all eight (desktop 1920 and phone 390); never CompleteRegistration/Lead; the
+links still go to manager.usectl.com/login; `usectl_consent` / `usectl_attr` / `_fbp` / `_fbc` all
+correct (`_fbc` derived from a test `fbclid`); the footer link reopens the banner and a withdrawal
+deletes `usectl_attr` + `_fbp` and sends nothing further. A separate run with
+`NEXT_PUBLIC_GA_ID=G-TEST123456` proves the GA gate: no googletagmanager before a choice or after
+Reject, gtag.js + a real `page_view` after Accept, `ga-disable-*` on withdrawal. Zero console
+errors and zero CSP violations throughout. `tsc` / `eslint` / `next build` clean, `/` and `/ka`
+still prerendered.
+
+**No test event reached Meta**: every request to www.facebook.com was fulfilled locally with a 1×1
+gif, so the URL could be asserted without writing to the team's dataset.
+
+Lighthouse on `/`, median of 3, baseline = the pre-work commit built in a git worktree: mobile
+85 → 100 (LCP 1225 → 1214ms, TBT 583 → 61ms), desktop 90 → 89 (LCP 1052 → 1168ms), transfer
++9-10KB. The machine is noisy (the baseline's three mobile runs scored 66/85/100), so read this as
+"no regression", not as an improvement.
+
+### Still open
+
+- **Meta Events Manager → Test Events was NOT verified** — it needs a Test Event Code from the
+  owner, which was not provided, and the plan forbade touching Events Manager. Manual steps:
+  Events Manager → the dataset → Test Events → copy the code, open
+  `https://usectl.com/?fbclid=TEST` in a normal browser window, accept cookies, and watch PageView
+  appear; then click a "Start Now" and watch SignupClick. (To send the code with the events the
+  Pixel has to be initialised as `fbq('init', ID, {}, {test_event_code: '...'})`; it is not wired
+  up — ask before adding it, it must never ship to production.)
+- The Open Bridge decision above.
+- No privacy policy page exists, so the banner links to none (`PRIVACY_URL` in CookieBanner).
+- `META-PIXEL-HANDOFF.md` is the other half of this work: it tells the manager team which dataset,
+  which cookies to read, which events are theirs, and the two traps above.
+
 ## Open items / TODO
 
 - **NEXT BIG STEP — split the desktop scene into per-section components (user's idea, agreed
@@ -1732,9 +1864,14 @@ to `https://api.web3forms.com/submit` directly from the page.
 - `design/mobile/*.html` are the phone layout's source of truth (390-wide boards, inline styles).
   Reference material the build never imports, and **gitignored on the user's call** (2026-11-05) —
   so they live only on their machine. Ask for them again if a fresh clone needs the layout.
+- **Meta Pixel / consent (branch `fb-trefik`, 2026-11-07)**: needs `NEXT_PUBLIC_META_PIXEL_ID`
+  in the host env BEFORE the build; the Open Bridge CSP decision; a Test Event Code if the owner
+  wants Test Events verified; a privacy policy page for the banner's link; and the manager side
+  (`META-PIXEL-HANDOFF.md`). Not deployed, not merged.
 - **GA4 is in the repo and committed** (`layout.tsx` + `@next/third-parties`), but it only emits
   anything when **`NEXT_PUBLIC_GA_ID`** is set in the host's environment (production AND preview) —
-  until then the live site carries no analytics. Same for `GOOGLE_SITE_VERIFICATION`, and the
+  until then the live site carries no analytics. Since 2026-11-07 it also waits for the cookie
+  banner, so a visitor who declines produces no GA traffic even with the id set. Same for `GOOGLE_SITE_VERIFICATION`, and the
   sitemap (`https://usectl.com/sitemap.xml`) still has to be submitted in Search Console.
 - Content still unanswered by the team: the footer credit really says **SYSTEMCTL** (verbatim from
   the design), and `+995 511 11 11 11` is a placeholder — now hidden behind `SHOW_PHONE`, flip it

@@ -15,6 +15,7 @@ import {
 import { langPath, type Dict, type Lang } from "@/lib/i18n";
 import { SceneLight } from "./SceneLight";
 import { SubscribeForm } from "./SubscribeForm";
+import { CookieSettingsButton } from "./CookieSettingsButton";
 
 // Footer (built 2026-09-28 against Desktop/new-version/footer/ — one 1708-wide screenshot,
 // design px = ref × 1.124). A REAL section after the pinned hero: its opaque background is what
@@ -216,6 +217,16 @@ export function Footer({ t, lang }: { t: Dict; lang: Lang }) {
         >
           SYSTEMCTL
         </a>
+        {/* how a choice is taken back — reopens the cookie banner (a <button>, deliberately: the
+            scene hijacks anchors with a hash href) */}
+        <span aria-hidden="true" className="text-white/20" style={{ marginInline: s(10) }}>
+          ·
+        </span>
+        <CookieSettingsButton
+          label={t.cookies.settings}
+          className="transition-colors hover:text-white"
+          style={{ letterSpacing: "0.05em" }}
+        />
       </p>
     </footer>
   );
