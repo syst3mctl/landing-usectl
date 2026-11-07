@@ -18,16 +18,12 @@ import type { Dict } from "@/lib/i18n";
 // Accept and Reject are deliberately the same pill, the same size and the same weight: a "reject"
 // that is harder to find than "accept" is not a choice.
 
-// TODO: no privacy policy page exists on usectl.com yet. When one does, put its URL here and the
-// banner renders the link by itself (t.privacy is already translated in both dictionaries).
-const PRIVACY_URL: string | null = null;
-
 const PILL =
   "flex items-center justify-center whitespace-nowrap rounded-full border border-white/25 " +
   "font-heading text-[13.5px] font-medium text-foreground transition-colors duration-300 " +
   "ease-out hover:border-brand hover:text-brand";
 
-export function CookieBanner({ t }: { t: Dict["cookies"] }) {
+export function CookieBanner({ t, privacyHref }: { t: Dict["cookies"]; privacyHref: string }) {
   // `null` = unanswered (or answered under an older CONSENT_VERSION) ⇒ ask. Answering flips this
   // by itself, so the banner needs no "did I close it" state of its own; `reopened` only covers
   // the footers' link, which asks again after a choice has already been made.
@@ -60,17 +56,13 @@ export function CookieBanner({ t }: { t: Dict["cookies"] }) {
         <p className="font-heading text-[13.5px] font-light leading-[1.55] text-white/65">
           <span className="font-medium text-white/90">{t.title}. </span>
           {t.body}
-          {PRIVACY_URL ? (
-            <>
-              {" "}
-              <a
-                href={PRIVACY_URL}
-                className="text-white/80 underline decoration-white/25 underline-offset-2 transition-colors hover:text-brand"
-              >
-                {t.privacy}
-              </a>
-            </>
-          ) : null}
+          {" "}
+          <a
+            href={privacyHref}
+            className="text-white/80 underline decoration-white/25 underline-offset-2 transition-colors hover:text-brand"
+          >
+            {t.privacy}
+          </a>
         </p>
         <div className="flex shrink-0 items-center gap-3 max-sm:w-full">
           <button type="button" onClick={() => answer(false)} className={`${PILL} h-10 flex-1 px-5 sm:flex-none`}>

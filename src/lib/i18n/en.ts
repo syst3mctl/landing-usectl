@@ -176,7 +176,11 @@ export const en = {
   // the footer's subscribe box (both footers share one component)
   subscribe: {
     placeholder: "email",
-    consent: "I agree to the terms and conditions.",
+    // the checkbox label; the middle part links to the Terms of Use (opens in a new tab, so a
+    // typed address is not lost)
+    consentBefore: "I agree to the ",
+    consentLink: "terms and conditions",
+    consentAfter: ".",
     needConsent: "Please accept the terms and conditions first.",
     already: "You’re already on the list — we’ll be in touch.",
     cooldown: "Just a moment — try again in a minute.",
@@ -197,9 +201,20 @@ export const en = {
     reject: "Reject",
     // the footers' withdrawal link, and the banner's aria-label
     settings: "Cookie settings",
-    // TODO: there is no privacy policy page yet. When one exists, add its URL to CookieBanner's
-    // PRIVACY_URL and this becomes the link's label.
+    // the banner's link to /privacy
     privacy: "Privacy policy",
+  },
+
+  // the /privacy and /terms pages (app/_site/legal.tsx) and the footers' links to them. The texts
+  // themselves are in content/legal/*.md.
+  legal: {
+    privacy: "Privacy Policy",
+    terms: "Terms of Use",
+    privacyDescription:
+      "How UseCTL collects, uses and protects personal data, and which cookies usectl.com uses.",
+    termsDescription:
+      "The terms for using UseCTL: accounts, the free trial, billing, acceptable use and liability.",
+    backHome: "Back to UseCTL",
   },
 
   // screen-reader / assistive copy. `{name}` is filled in with the row's label — see fill().

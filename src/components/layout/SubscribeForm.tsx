@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useMemo, useRef, useState } from "react";
 import { s } from "@/lib/grid";
-import type { Dict, Lang } from "@/lib/i18n";
+import { legalPath, type Dict, type Lang } from "@/lib/i18n";
 import { WEB3FORMS_KEY } from "@/lib/nav";
 
 // The footer's subscribe box (desktop + phone share this one component — `variant` only picks the
@@ -288,7 +288,19 @@ export function SubscribeForm({
             <path d="M3 6.2 5.1 8.3 9 4.2" stroke="#1e1d1d" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </span>
-        {t.consent}
+        <span>
+          {t.consentBefore}
+          {/* new tab on purpose: the address typed above must survive a look at the terms */}
+          <a
+            href={legalPath(lang, "terms")}
+            target="_blank"
+            rel="noopener"
+            className="underline decoration-white/25 underline-offset-2 transition-colors hover:text-brand"
+          >
+            {t.consentLink}
+          </a>
+          {t.consentAfter}
+        </span>
       </label>
 
       {message ? (
