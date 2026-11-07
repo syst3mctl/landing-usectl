@@ -42,6 +42,30 @@ export const getDict = (lang: Lang): Dict => DICTS[lang];
  */
 export const langPath = (lang: Lang, hash = "") => `/${LANG_SEGMENT[lang]}${hash}`;
 
+/** The two legal pages. Their texts live in content/legal/ (rendered by app/_site/legal.tsx). */
+export const LEGAL_DOCS = ["privacy", "terms"] as const;
+export type LegalDoc = (typeof LEGAL_DOCS)[number];
+
+/** Where a legal page lives in a language: "/privacy" · "/ka/privacy" · "/terms" · "/ka/terms". */
+export const legalPath = (lang: Lang, doc: LegalDoc) =>
+  `${LANG_SEGMENT[lang] ? `/${LANG_SEGMENT[lang]}` : ""}/${doc}`;
+
+/**
+ * The SAME page in another language, for the EN / KA switcher: "/" ⇄ "/ka", "/privacy" ⇄
+ * "/ka/privacy". Without it the switcher always went to the other language's HOME, which was fine
+ * while the site had one page.
+ */
+export const switchLangPath = (pathname: string, to: Lang) => {
+  let rest = pathname;
+  for (const l of LANGS) {
+    const seg = LANG_SEGMENT[l];
+    if (seg && (rest === `/${seg}` || rest.startsWith(`/${seg}/`))) rest = rest.slice(seg.length + 1);
+  }
+  rest = rest.replace(/\/$/, "");
+  const seg = LANG_SEGMENT[to];
+  return seg ? `/${seg}${rest}` : rest || "/";
+};
+
 /** True for any path that IS a language home ("/" or "/ka") — used by the "logo goes home" handlers. */
 export const isHomePath = (pathname: string) =>
   LANGS.some((l) => pathname === langPath(l) || pathname === `${langPath(l)}/`);

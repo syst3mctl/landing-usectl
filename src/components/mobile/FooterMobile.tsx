@@ -18,7 +18,7 @@ import {
   SOCIAL_LINKS,
   SYSTEMCTL_URL,
 } from "@/lib/nav";
-import { langPath, type Dict, type Lang } from "@/lib/i18n";
+import { langPath, legalPath, type Dict, type Lang } from "@/lib/i18n";
 import { SubscribeForm } from "@/components/layout/SubscribeForm";
 import { CookieSettingsButton } from "@/components/layout/CookieSettingsButton";
 
@@ -233,9 +233,19 @@ export function FooterMobile({ t, lang }: { t: Dict; lang: Lang }) {
         <span>usectl.com</span>
       </div>
 
-      {/* "Cookie settings" — the withdrawal link, on its own row: the Georgian label is long and
-          would wrap inside the row above on a 360px phone */}
-      <div data-mf-reveal className="relative font-heading text-white/40" style={{ marginTop: m(10), fontSize: m(12) }}>
+      {/* the legal pages + "Cookie settings" (the withdrawal link), on their own row: the Georgian
+          labels are long and would not fit inside the row above on a 360px phone, so it wraps */}
+      <div
+        data-mf-reveal
+        className="relative flex flex-wrap items-center font-heading text-white/40"
+        style={{ marginTop: m(10), fontSize: m(12), columnGap: m(14), rowGap: m(6) }}
+      >
+        <a href={legalPath(lang, "privacy")} className="active:text-white/70">
+          {t.legal.privacy}
+        </a>
+        <a href={legalPath(lang, "terms")} className="active:text-white/70">
+          {t.legal.terms}
+        </a>
         <CookieSettingsButton label={t.cookies.settings} className="active:text-white/70" />
       </div>
     </footer>

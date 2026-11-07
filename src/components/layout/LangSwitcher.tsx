@@ -1,6 +1,7 @@
 "use client";
 
-import { LANGS, LANG_COOKIE, LANG_LABEL, langPath, type Lang } from "@/lib/i18n";
+import { usePathname } from "next/navigation";
+import { LANGS, LANG_COOKIE, LANG_LABEL, switchLangPath, type Lang } from "@/lib/i18n";
 
 // EN / KA. Lives in the header on ≥1024 and in the burger menu below that.
 //
@@ -25,6 +26,8 @@ export function LangSwitcher({
   onNavigate?: () => void;
 }) {
   const menu = size === "menu";
+  // the same page in the other language ("/privacy" ⇄ "/ka/privacy"), not always its home
+  const pathname = usePathname() ?? "/";
   return (
     <div
       className={`flex items-center font-heading ${menu ? "gap-2 text-[14px]" : "gap-1.5"} ${className ?? ""}`}
@@ -46,13 +49,13 @@ export function LangSwitcher({
               </span>
             ) : (
               <a
-                href={langPath(l)}
+                href={switchLangPath(pathname, l)}
                 onClick={(e) => {
                   e.preventDefault();
                   onNavigate?.();
                   // remembered for a year, so the country redirect in src/proxy.ts never overrides it
                   document.cookie = `${LANG_COOKIE}=${l}; path=/; max-age=31536000; samesite=lax; secure`;
-                  window.location.assign(langPath(l) + window.location.hash);
+                  window.location.assign(switchLangPath(window.location.pathname, l) + window.location.hash);
                 }}
                 className="text-white/45 transition-colors duration-300 ease-out hover:text-brand"
               >

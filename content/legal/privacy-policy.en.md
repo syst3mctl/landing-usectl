@@ -14,7 +14,7 @@ The Service is operated by **[[LEGAL ENTITY NAME]]**, identification code **[[ID
 
 For personal data about our own users, such as account, billing and website data, we are the **controller**.
 
-Contact for privacy questions: **hello@usectl.com**
+Contact for privacy questions: **info@usectl.com**
 
 ## 2. Two kinds of data
 
@@ -31,7 +31,9 @@ This policy separates two kinds of data:
 - **Sign-in through third parties:** if you sign in with GitHub, Google or Apple, we receive the basic profile those providers share, such as your name, email address, avatar and account ID.
 - **Team data:** the email addresses of people you invite to a project or Machine.
 - **Billing data:** billing name, email, country and tax details. Payments are handled by Stripe. **We never receive or store your full card number.** We keep your subscription status, plan, invoices and payment history.
-- **Communications:** messages you send us by email, support requests, founding-member requests, and newsletter sign-ups.
+- **Communications:** messages you send us by email, support requests and founding-member requests.
+- **Newsletter sign-ups:** the email address you enter in the website footer. The form is delivered to our inbox through Web3Forms.
+- **Demo bookings:** when you book a demo from usectl.com, the booking is made in Google Calendar. We receive your name, email address, the time you choose and anything you write in the booking form.
 
 ### 3.2 Data from your connected services
 
@@ -43,7 +45,8 @@ This policy separates two kinds of data:
 - **Technical and log data:** IP address, browser and device type, operating system, request time, pages and API endpoints used, CLI version, and error reports.
 - **Service activity:** builds, deploys, resource usage (CPU, memory, storage, network) and AI token usage, which we need for billing and limits.
 - **Mobile app:** device push-notification token and app version, used to send you notifications.
-- **Website analytics:** on usectl.com we may use analytics and session-replay tools to understand how visitors use the site. See section 11 on cookies.
+- **Website analytics and ad measurement:** on usectl.com, **only if you accept cookies**, we use Google Analytics, session replay (OpenReplay, running on our own infrastructure) and the Meta Pixel. We also remember the campaign (UTM) parameters of the link you arrived through. See section 11.
+- **Country detection:** our network provider (Cloudflare) tells our website which country a visit comes from, so we can show the Georgian or English version. We do not store this.
 
 ## 4. How we use your data
 
@@ -55,11 +58,13 @@ This policy separates two kinds of data:
 | Send service emails and notifications (for example: deploy failed, trial ending, payment failed) | Email, push token | Performing our contract |
 | Keep the Service secure, detect abuse, and investigate incidents | Technical, log and activity data | Our legitimate interest in a safe and reliable Service |
 | Provide support | Communications, account data | Performing our contract |
-| Improve the Service and the website | Usage and analytics data (aggregated where possible) | Our legitimate interest; your consent where the law requires it |
+| Improve the Service | Usage data (aggregated where possible) | Our legitimate interest |
+| Understand how visitors use usectl.com (Google Analytics, session replay) | Website analytics data, cookie identifiers | Your consent |
+| Measure our advertising on Meta (Facebook, Instagram) and see which campaigns lead to sign-ups | Meta Pixel events (page views and clicks on sign-up buttons), cookie identifiers, campaign (UTM) parameters, IP address and browser data | Your consent |
 | Send product news and offers | Email | Your consent. You can unsubscribe at any time. |
 | Comply with the law and respond to lawful requests | Any relevant data | Legal obligation |
 
-**We do not sell your personal data**, and we do not use it for third-party advertising.
+**We do not sell your personal data.** We do not use your account data or Customer Content for advertising. On usectl.com, and only with your consent, the Meta Pixel measures our own ad campaigns (see section 11).
 
 ## 5. AI features
 
@@ -78,11 +83,13 @@ We share personal data only with service providers that help us run the Service,
 |---|---|---|
 | Hetzner Online GmbH | Servers, storage and off-site backups | Germany and Finland (EU) |
 | Stripe | Payment processing, subscriptions and invoices | EU / USA |
-| Google | Sending email (Google Workspace), Google sign-in | EU / USA |
+| Google | Sending email (Google Workspace), Google sign-in, website analytics (Google Analytics, only with your consent), demo bookings (Google Calendar) | EU / USA |
+| Meta Platforms Ireland Ltd. and Meta Platforms, Inc. | Meta Pixel on usectl.com: measuring our ad campaigns (only with your consent) | EU (Ireland) / USA |
+| Web3Forms | Delivering newsletter sign-ups from the website footer to our inbox | [[CONFIRM]] |
 | GitHub | Repository access, GitHub sign-in | USA |
 | Apple | Sign in with Apple, push notifications on iOS | USA |
-| Cloudflare | TLS and routing for custom domains | Global |
-| Website analytics provider(s) | Website usage and session analytics | [[CONFIRM]] |
+| Cloudflare | TLS and routing for custom domains; detecting the visitor's country on usectl.com | Global |
+| OpenReplay (self-hosted) | Session replay on usectl.com (only with your consent). It runs on our own infrastructure, so recordings are not sent to an outside company. | Our servers (see section 7) |
 
 We may also disclose data:
 
@@ -105,6 +112,7 @@ When data leaves the EU or Georgia, we rely on the safeguards the law provides, 
   - When you delete a project, Machine or your account, the related Customer Content is deleted from live systems. Copies in backups are removed as the backups rotate out.
 - **Logs and technical data:** for a limited period, generally up to **90 days**, unless we need them longer to investigate a security incident or abuse.
 - **Marketing consent:** until you withdraw it.
+- **Website cookies:** see the table in section 11. Your cookie choice itself is kept for 6 months.
 
 ## 9. How we protect data
 
@@ -129,18 +137,34 @@ Under Georgia's Law on Personal Data Protection and, where it applies, the EU Ge
 - **restrict** or **object to** certain processing, including direct marketing;
 - **data portability**, meaning you can receive your data in a common machine-readable format;
 - **withdraw consent** at any time, without affecting processing done before you withdrew it;
-- **complain** to a supervisory authority. In Georgia this is the **Personal Data Protection Service of Georgia** (pdps.ge). In the EU, it is the data protection authority of your country.
+- **complain** to a supervisory authority. In Georgia this is the **State Audit Office of Georgia** (sao.ge), which supervises personal data protection since 2 March 2026. In the EU, it is the data protection authority of your country.
 
-You can edit most account data in the dashboard. For anything else, email **hello@usectl.com**. We will reply within the time the law sets, generally within one month, and we may ask you to confirm your identity first.
+You can edit most account data in the dashboard. For anything else, email **info@usectl.com**. We will reply within the time the law sets, generally within one month, and we may ask you to confirm your identity first.
 
 If your request concerns personal data inside an application that someone deploys on usectl, please contact the owner of that application. They are the controller. We will help them respond.
 
 ## 11. Cookies and similar technologies
 
-- **Essential cookies and local storage** keep you signed in and keep the Service secure. The Service cannot work without them.
-- **Analytics cookies and session replay** on usectl.com help us understand how visitors use the site. Where the law requires consent, we set them only after you agree. You can change your choice or block cookies in your browser at any time.
+When you first visit usectl.com, a banner asks whether you accept optional cookies. **Nothing optional loads until you choose.** Accepting and rejecting are equally easy, and the website works the same either way.
 
-We do not use cookies for third-party advertising.
+- We remember your choice, whichever it is, for **6 months**, and then ask again.
+- You can change your choice at any time with the **"Cookie settings"** link at the bottom of every page. If you withdraw consent, the optional tools stop and we delete our campaign cookie and the Meta cookies.
+- Your choice applies to usectl.com and its subdomains, including manager.usectl.com.
+- You can also block or delete cookies in your browser settings.
+
+| Name | Set by | What it does | Kind | Lifetime |
+|---|---|---|---|---|
+| `usectl_consent` | usectl | Remembers your cookie choice | Essential | 6 months |
+| `lang` | usectl | Remembers the language you picked (English or Georgian) | Essential | 1 year |
+| Sign-in cookies and local storage on manager.usectl.com | usectl | Keep you signed in and keep the Service secure | Essential | As long as needed |
+| `usectl_attr` | usectl | Remembers the campaign (UTM) parameters of the link you arrived through, so we can tell which campaigns lead to sign-ups | Optional, only after consent | 90 days |
+| `_ga`, `_ga_*` | Google Analytics | Counts visits and shows how the website is used | Optional, only after consent | Up to 2 years |
+| OpenReplay identifiers (browser storage) | usectl (self-hosted OpenReplay) | Session replay: records clicks, scrolling and the structure of the page. What you type is never recorded, and email addresses are masked. | Optional, only after consent | Until deleted in your browser |
+| `_fbp`, `_fbc` | Meta Pixel | Measures our ad campaigns on Facebook and Instagram, and links a click on one of our ads to the visit that follows | Optional, only after consent | 90 days |
+
+**About the Meta Pixel.** If you accept, the Pixel sends Meta two kinds of events: a page view, and a click on a sign-up button. Each event includes the cookie identifiers above, your IP address, browser details and the page address. We never send your name, email address or account data through the Pixel. Meta processes this data under its own Privacy Policy (facebook.com/privacy/policy) and may also use it to deliver and improve ads.
+
+We do not show third-party ads on our website, and we do not sell the data these cookies collect.
 
 ## 12. Children
 
@@ -154,4 +178,4 @@ We may update this policy. For significant changes, we will notify you by email 
 
 **[[LEGAL ENTITY NAME]]**
 37 Zhiuli Shartava St., Tbilisi 2209, Georgia
-Email: **hello@usectl.com**
+Email: **info@usectl.com**

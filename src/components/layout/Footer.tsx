@@ -12,7 +12,7 @@ import {
   SOCIAL_LINKS,
   SYSTEMCTL_URL,
 } from "@/lib/nav";
-import { langPath, type Dict, type Lang } from "@/lib/i18n";
+import { langPath, legalPath, type Dict, type Lang } from "@/lib/i18n";
 import { SceneLight } from "./SceneLight";
 import { SubscribeForm } from "./SubscribeForm";
 import { CookieSettingsButton } from "./CookieSettingsButton";
@@ -216,6 +216,19 @@ export function Footer({ t, lang }: { t: Dict; lang: Lang }) {
           className="text-brand transition-opacity hover:opacity-70"
         >
           SYSTEMCTL
+        </a>
+        {/* the legal pages (app/_site/legal.tsx) — path hrefs, so the scene's hash handler ignores them */}
+        <span aria-hidden="true" className="text-white/20" style={{ marginInline: s(10) }}>
+          ·
+        </span>
+        <a href={legalPath(lang, "privacy")} className="transition-colors hover:text-white">
+          {t.legal.privacy}
+        </a>
+        <span aria-hidden="true" className="text-white/20" style={{ marginInline: s(10) }}>
+          ·
+        </span>
+        <a href={legalPath(lang, "terms")} className="transition-colors hover:text-white">
+          {t.legal.terms}
         </a>
         {/* how a choice is taken back — reopens the cookie banner (a <button>, deliberately: the
             scene hijacks anchors with a hash href) */}
