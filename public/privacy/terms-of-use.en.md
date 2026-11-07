@@ -8,7 +8,7 @@ They cover your use of usectl.com and of the usectl dashboard, API, CLI, mobile 
 
 By creating an account or using the Service, you accept these Terms. If you accept them on behalf of a company or another organisation, you confirm that you have authority to bind it, and "you" means that organisation.
 
-Our [Privacy Policy](./privacy-policy.en.md) explains how we handle personal data. A Georgian version of these Terms is available. If the two versions differ, the English version applies, unless the law of your country requires otherwise.
+Our [Privacy Policy](/privacy) explains how we handle personal data. A Georgian version of these Terms is available. If the two versions differ, the English version applies, unless the law of your country requires otherwise.
 
 ---
 
@@ -29,7 +29,7 @@ We are improving the Service all the time. We may add, change or remove features
 - You must be at least **18 years old** and able to enter into a binding contract.
 - Give us accurate information and keep it up to date.
 - Keep your password, API tokens and CLI credentials secure. You are responsible for everything that happens under your account, including what the team members you invite do.
-- Tell us at **hello@usectl.com** straight away if you suspect someone has accessed your account without permission.
+- Tell us at **info@usectl.com** straight away if you suspect someone has accessed your account without permission.
 - One person or organisation may not open several accounts to get around trial or plan limits.
 
 ## 3. Free trial
@@ -114,7 +114,7 @@ You must not use the Service to:
 
 If we reasonably believe you have broken these rules, we may remove the content concerned, stop the workloads concerned, or suspend your account. Where possible and appropriate, we will tell you first.
 
-To report abuse, email **hello@usectl.com**.
+To report abuse, email **info@usectl.com**.
 
 ## 7. AI features
 
@@ -206,4 +206,4 @@ We may update these Terms. For significant changes, we will notify you by email 
 
 **[[LEGAL ENTITY NAME]]**
 37 Zhiuli Shartava St., Tbilisi 2209, Georgia
-Email: **hello@usectl.com**
+Email: **info@usectl.com**
