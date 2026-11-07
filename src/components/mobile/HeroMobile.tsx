@@ -10,6 +10,7 @@ import { mountMachine } from "./machineUnfold";
 import { processAgentSvg } from "@/lib/agentSvg";
 import { ButtonArrow } from "@/components/ui/icons";
 import { pressRipple } from "@/lib/pressRipple";
+import { openBookDemo } from "@/lib/bookDemo";
 import { SECTION_HASHES } from "@/lib/nav";
 import { fill, type Dict } from "@/lib/i18n";
 import { CLOSE_MENU_EVENT } from "@/components/layout/MobileMenu";
@@ -117,12 +118,14 @@ function Para({ children }: { children: ReactNode }) {
 
 // The hero's single CTA (user, 2026-11-07) — "Start Building" + "See how it works" were replaced
 // by "Book a demo" here only; `Buttons` below still serves S09 with the original pair.
-// No href/handler yet: the booking flow comes later.
+// It opens the booking popup (components/ui/BookDemoModal.tsx, mounted once in
+// app/_site/landing.tsx — full screen below 1024).
 function BookDemoButton({ t }: { t: Dict }) {
   return (
     <div data-m-copy className="flex" style={{ marginTop: m(24) }}>
       <button
         type="button"
+        onClick={openBookDemo}
         className={`${PILL} shrink-0 whitespace-nowrap font-semibold`}
         style={{ height: m(44), paddingLeft: m(20), paddingRight: m(16), fontSize: m(14), gap: m(4) }}
       >

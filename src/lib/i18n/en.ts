@@ -45,6 +45,13 @@ export const en = {
     seeHow: "See how it works",
   },
 
+  // the "Book a demo" popup (components/ui/BookDemoModal.tsx). Its title is hero.bookDemo.
+  bookDemo: {
+    close: "Close",
+    loading: "Loading the calendar…",
+    newTab: "Open in a new tab",
+  },
+
   // state 2 — Infrastructure Freedom
   s2: {
     eyebrow: "Infrastructure Freedom",

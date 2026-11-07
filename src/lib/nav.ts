@@ -13,6 +13,13 @@ export type NavLink = { label: string; href: string; state?: number; external?: 
 export const DOCS_URL = "https://docs.usectl.com/#introduction";
 export const SIGNUP_URL = "https://manager.usectl.com/login";
 export const X_URL = "https://x.com/usectlcloud";
+// The "Book a demo" booking page (Google Calendar appointment schedule). Two forms of the SAME
+// schedule: the `?gv=true` one is the only one that may be framed (it is what Google's own embed
+// snippet uses, and it is the host the CSP's frame-src allows — see next.config.ts), the short
+// calendar.app.google link is for opening it in a real tab.
+export const BOOKING_EMBED_URL =
+  "https://calendar.google.com/calendar/appointments/schedules/AcZssZ2fTKLczlgS8sWqwsR3TIw11IyRBcOEjP3RSStvzzRJ0X2dVkzxyy9eNIJY9ytmVvrCRZUqVCbe?gv=true";
+export const BOOKING_URL = "https://calendar.app.google/DfuCX39z6aacyU7Z8";
 export const INSTAGRAM_URL = "https://www.instagram.com/usectl.dev/";
 export const FACEBOOK_URL = "https://www.facebook.com/profile.php?id=61596061747860";
 // the company behind usectl — the "© 2026 SYSTEMCTL" credit in both footers and the burger menu

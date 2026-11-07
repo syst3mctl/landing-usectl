@@ -14,6 +14,7 @@ import { TYPE_SCALE } from "@/lib/i18n/typeScale";
 import { SceneLight } from "@/components/layout/SceneLight";
 import { ButtonArrow, ScrollDownArrow } from "@/components/ui/icons";
 import { pressRipple, RIPPLE_SOFT } from "@/lib/pressRipple";
+import { isBookDemoOpen, openBookDemo } from "@/lib/bookDemo";
 
 gsap.registerPlugin(ScrollTrigger, ScrollToPlugin, useGSAP);
 
@@ -2358,6 +2359,11 @@ export function HeroSectionClient({
       const hurryNow = () => Math.max(0.4, Math.pow(0.62, chain));
       const onWheel = (e: WheelEvent) => {
         if (!pinST) return;
+        // The "Book a demo" popup owns the screen while it is open: the scene must not move
+        // behind it. No preventDefault needed — the modal holds <html> at overflow:hidden, so
+        // nothing scrolls either; the gesture bookkeeping is simply not touched, so the push that
+        // arrives after closing reads as a fresh one.
+        if (isBookDemoOpen()) return;
         if (restoringPage) {
           // reload-restore still landing: hold the page still and only note the direction. The
           // gesture bookkeeping keeps running so the rest of this same swipe reads as its tail
@@ -2545,6 +2551,7 @@ export function HeroSectionClient({
       const onKeyDown = (e: KeyboardEvent) => {
         if (!pinST || e.metaKey || e.ctrlKey || e.altKey) return;
         if (typingIn(e.target)) return; // the footer's email field etc.
+        if (isBookDemoOpen()) return; // the booking popup owns the keyboard (Esc/Tab are its own)
         if (restoringPage) {
           // same as the wheel: remember the step, play it once the restore has landed
           const d = PAGE_KEYS[e.key];
@@ -2901,12 +2908,15 @@ export function HeroSectionClient({
 
         {/* ONE CTA here now (user, 2026-11-07): "Start Building" + "See how it works" were replaced
             by "Book a demo". State 9 and the burger menu keep the original pair.
-            Deliberately a <button> with no handler — the booking flow comes later. It still rides
-            the hero's blur-in as one block: splitWords() leaves any field containing an a/button
-            alone (see the `whole` check), so a <button> behaves exactly like the old <Link>s. */}
+            It opens the booking popup (components/ui/BookDemoModal.tsx, mounted once in
+            app/_site/landing.tsx) — while that popup is open the wheel/keyboard driver below
+            ignores every event, so the scene can't move behind it. It still rides the hero's
+            blur-in as one block: splitWords() leaves any field containing an a/button alone (see
+            the `whole` check), so a <button> behaves exactly like the old <Link>s. */}
         <div className="flex items-center" style={{ marginTop: s(34) }}>
           <button
             type="button"
+            onClick={openBookDemo}
             className="flex items-center justify-center rounded-full border border-white/25 font-heading font-semibold text-foreground transition-colors hover:border-brand hover:text-brand"
             style={{ height: s(48), paddingLeft: s(32), paddingRight: s(26), fontSize: s(16), gap: s(4) }}
           >

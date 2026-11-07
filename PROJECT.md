@@ -1467,7 +1467,8 @@ works" are gone from state 1 (`HeroSectionClient.tsx`) and from the phone hero (
 new `BookDemoButton` — `Buttons` is shared with S09, so the hero needed its own component). State 9
 and the burger menu keep the original pair, and `hero.startBuilding` / `hero.seeHow` stay in both
 dictionaries for them. New key `hero.bookDemo`.
-- It is a `<button type="button">` with **no handler** — the booking flow comes later. It still
+- It is a `<button type="button">`; it had **no handler** until the popup below was built
+  (2026-11-07, same day). It still
   rides the hero's blur-in as one block because `splitWords()`'s `whole` test is
   `field.querySelector("a,button")`, i.e. a `<button>` behaves exactly like the old `<Link>`s
   (measured: the row goes 0 → 1.00 opacity, and a nav-to-Pricing + logo click brings it back at
@@ -1495,6 +1496,64 @@ viewport sizes from 3440×1440 down to 1024×768 incl. the short ones (1920×800
 759/760); phone 390×844 in both languages (one hero button, `scrollWidth == 390` at every scroll
 position, the server still ends at 831/844 i.e. on the first screen); both share cards. `tsc` /
 `eslint` / `next build` clean, `/` and `/ka` still prerendered.
+
+## "Book a demo" opens the booking popup (2026-11-07, `multi-languages`)
+
+The hero's single CTA now does something: it opens the team's Google Calendar appointment schedule
+in a modal over the page. Nothing else changed — the header's Start Now, state 9's pair and the
+burger menu still point at `SIGNUP_URL`.
+
+- **The two URLs are in `src/lib/nav.ts`**: `BOOKING_EMBED_URL` (the `…/schedules/…?gv=true` form —
+  the only one Google allows to be framed, and the one the CSP allows) and `BOOKING_URL` (the short
+  `calendar.app.google/…` link, for the "open in a new tab" row).
+- **`src/components/ui/BookDemoModal.tsx`** — the popup. Mounted **once**, in
+  `app/_site/landing.tsx`, NOT inside either hero: the button exists in both builds (pinned desktop
+  + stacked phone/reduce-motion, one of them `display:none`) and two modals in one DOM is how two of
+  everything happens. The buttons only ask for it, through a window event in **`src/lib/bookDemo.ts`**
+  (`openBookDemo()` / `OPEN_BOOK_DEMO_EVENT`).
+  - Blurred dark overlay; the window is the page's own style (`#1b1a1a`, white/10 border, radius,
+    `min(900px, 92vw) × min(780px, 88vh)` at ≥1024) with a title row + ✕ and a footer row linking
+    to `BOOKING_URL` in a new tab. **Below 1024 it is full screen** (no radius, no border).
+  - Closes on ✕, on Escape, and on a click on the overlay itself (`e.target === e.currentTarget`,
+    so a drag that ends outside doesn't count). Focus moves to ✕ on open and back to the button
+    that opened it on close; Tab is trapped inside the panel.
+  - **The iframe only exists while the popup is open** — closing unmounts the whole modal, so a
+    visit that never clicks the button loads nothing of Google's. Until its `load` fires, a
+    "Loading the calendar…" line covers it.
+  - New dictionary keys `bookDemo.{close,loading,newTab}` in both languages; the window's title is
+    the existing `hero.bookDemo`.
+- **The scene can't move behind it.** `isBookDemoOpen()` (the module flag in `lib/bookDemo.ts`, not
+  React state — the driver runs inside a GSAP context) makes `HeroSectionClient`'s wheel AND keydown
+  handlers return immediately, and the modal holds `<html>` at `overflow: hidden` on top of that, so
+  nothing scrolls natively either. Measured from Pricing (y 11439): four wheel pushes plus
+  ArrowDown / PageDown / End leave scrollY and the hash **unchanged**, and the first push after
+  closing steps normally to state 8 (12801).
+- **`next.config.ts`: `frame-src 'none'` → `frame-src https://calendar.google.com`.** Without it
+  the iframe is blocked and the popup is an empty window — that line and `BOOKING_EMBED_URL`
+  belong together.
+- **GA**: `window.gtag?.("event", "book_demo_open")` on open, optional-call because with
+  `NEXT_PUBLIC_GA_ID` unset there is no `gtag` at all.
+- **Two traps worth keeping:**
+  - The entrance is a **CSS animation** (`.modal-in` / `.modal-panel-in` in globals.css), not the
+    usual "mount at opacity 0, flip a state one frame later". That flip needs `requestAnimationFrame`
+    — and rAF is frozen while the window isn't visible, which is exactly the state a browser being
+    driven by a tool is in: the first test run showed the popup open at **opacity 0**. (Same reason
+    a hidden tab reports `frames: 0` and a `await new Promise(r => requestAnimationFrame(r))` loop
+    hangs the evaluate — worth remembering when a measurement script freezes.)
+  - Every `focus()` here passes **`preventScroll: true`**: focusing scrolls its element into view,
+    and behind an open popup that is a page the visitor never asked for (an 85px drift, measured).
+  - Testing note: Playwright's `locator.click()` scrolls the target into view first, so clicking the
+    hero button from a deep state moves the page by itself — the mid-scene checks dispatch
+    `usectl:book-demo` instead. A synthetic `new WheelEvent(...)` does NOT drive this scene at all
+    (it changes the state but the scroll tween doesn't run); use `page.mouse.wheel`.
+- **Verified** on `next start` (production build) in headless Chromium at 1920×1080, 1280×800 and
+  390×844, on `/` and `/ka`, plus a real Chrome window at 1920: opens from both builds, the calendar
+  really renders, overlay at opacity 1, `<html>` locked, ✕ focused (translated label), full screen
+  at 390, all three ways of closing work, scroll position and focus restored, the scene frozen
+  while open and stepping normally after, reduce-motion at 1920 (the stacked build) included.
+  **Zero CSP violations and zero page errors** (the one console line is Google's own
+  `requestStorageAccess` inside the iframe). No test booking was made. `tsc` / `eslint` /
+  `next build` clean, `/` and `/ka` still prerendered.
 
 ## Open items / TODO
 

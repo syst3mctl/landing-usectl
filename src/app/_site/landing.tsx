@@ -1,6 +1,7 @@
 import { HeroSection } from "@/components/sections/HeroSection";
 import { Footer } from "@/components/layout/Footer";
 import { FooterMobile } from "@/components/mobile/FooterMobile";
+import { BookDemoModal } from "@/components/ui/BookDemoModal";
 import { getDict, type Lang } from "@/lib/i18n";
 
 // The page body, shared by both languages' page.tsx (app/(en)/page.tsx → `/`,
@@ -17,6 +18,10 @@ export function Landing({ lang }: { lang: Lang }) {
         <Footer t={t} lang={lang} />
       </div>
       <FooterMobile t={t} lang={lang} />
+      {/* The hero's "Book a demo" popup, mounted ONCE here: the button exists in both builds
+          (pinned desktop + stacked phone/reduce-motion, one of them display:none) and they ask
+          for it through a window event — see lib/bookDemo.ts. */}
+      <BookDemoModal t={t} />
     </main>
   );
 }

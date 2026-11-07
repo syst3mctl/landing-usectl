@@ -47,7 +47,10 @@ const csp = [
   `font-src 'self' data:`,
   `connect-src 'self' https://www.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://analytics.usectl.com`,
   `worker-src 'self' blob:`,
-  `frame-src 'none'`,
+  // the hero's "Book a demo" popup frames the team's Google Calendar appointment schedule
+  // (BOOKING_EMBED_URL in src/lib/nav.ts). Without this the iframe is simply blocked and the
+  // popup shows an empty window — so this line and that URL belong together.
+  `frame-src https://calendar.google.com`,
   `object-src 'none'`,
   `base-uri 'self'`,
   `form-action 'self'`,

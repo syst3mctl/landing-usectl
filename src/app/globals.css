@@ -254,6 +254,37 @@ body {
   animation: t6-blink 1s steps(1) infinite;
 }
 
+/* The "Book a demo" popup's entrance (components/ui/BookDemoModal.tsx).
+   A CSS animation, deliberately, instead of the usual "mount at opacity 0, flip a state one frame
+   later" trick: that flip needs requestAnimationFrame, and rAF is frozen while the window isn't
+   visible — the popup then opened fully transparent (measured). The CLOSING fade is a transition
+   on the same Tailwind classes; these animations keep the default fill-mode (none), so as soon as
+   one ends the element is back on its class values and the transition can take over. */
+@keyframes modal-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes modal-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.modal-in {
+  animation: modal-in 200ms ease-out;
+}
+.modal-panel-in {
+  animation: modal-panel-in 220ms cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
