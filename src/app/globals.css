@@ -504,3 +504,85 @@ html[data-restoring] [data-hero-stage] {
 .legal th, .legal td { text-align: left; vertical-align: top; padding: 0.6rem 0.75rem; border-bottom: 1px solid rgb(255 255 255 / 0.1); }
 .legal th { font-weight: 500; color: rgb(255 255 255 / 0.9); border-bottom-color: rgb(255 255 255 / 0.2); }
 .legal .legal-todo { background: rgb(255 196 0 / 0.18); color: #ffd666; padding: 0 0.2em; border-radius: 3px; }
+
+/* /pricing (components/pricing/PricingPageClient.tsx): the entrance's start state, so nothing
+   flashes in finished before GSAP takes over after hydration. Reduced motion skips the entrance,
+   and <noscript> in app/_site/pricing.tsx would be the no-JS fallback. */
+[data-pr-reveal] {
+  visibility: hidden;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-pr-reveal] {
+    visibility: visible;
+  }
+}
+
+/* /pricing: one flow layout for every width. Lengths are written as r(desktop, phone) in
+   PricingPageClient.tsx = calc(var(--k) * (D * var(--pd) + P * var(--pp))): on ≥1024 --k is the
+   1920 canvas scale (--s) and D applies; below, --k is the 390 phone scale (as --m) and P applies. */
+.pr-page {
+  --k: min(calc(100vw / 390), 1.3px);
+  --pd: 0;
+  --pp: 1;
+}
+@media (min-width: 1024px) {
+  .pr-page {
+    --k: var(--s);
+    --pd: 1;
+    --pp: 0;
+  }
+}
+/* FAQ answer: grid 0fr → 1fr is the height animation (no measuring) */
+.pr-faq-body {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 420ms cubic-bezier(0.32, 0.72, 0, 1), margin-top 420ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+/* open: the answer tucks up under its question (on the grid itself, so nothing gets clipped) */
+.pr-faq-body[data-open] {
+  grid-template-rows: 1fr;
+  margin-top: var(--pr-faq-pull, 0px);
+}
+.pr-faq-body > div {
+  overflow: hidden;
+  min-height: 0;
+}
+/* the answer: out fast and quietly; in a beat later, rising out of a light blur */
+.pr-faq-text {
+  opacity: 0;
+  transform: translateY(-6px);
+  filter: blur(3px);
+  transition: opacity 160ms ease, transform 200ms ease, filter 160ms ease;
+}
+.pr-faq-body[data-open] .pr-faq-text {
+  opacity: 1;
+  transform: none;
+  filter: none;
+  transition: opacity 380ms ease 120ms, transform 480ms cubic-bezier(0.2, 0.8, 0.2, 1) 120ms, filter 380ms ease 120ms;
+}
+
+/* /pricing calculator: once the pill has grown (data-show), its contents rise in one after another
+   (--d = order); on close they all drop out at once, quickly, before the box shrinks back */
+.pr-st {
+  opacity: 0;
+  transform: translateY(10px);
+  filter: blur(6px);
+  transition: opacity 160ms ease, transform 160ms ease, filter 160ms ease;
+}
+[data-show] .pr-st {
+  opacity: 1;
+  transform: none;
+  filter: none;
+  transition: opacity 450ms ease, transform 600ms cubic-bezier(0.2, 0.8, 0.2, 1), filter 450ms ease;
+  transition-delay: calc(var(--d, 0) * 45ms);
+}
+/* the total re-mounts on every change and does a small pop */
+@keyframes pr-pop {
+  0% { transform: translateY(4px); opacity: 0.4; }
+  60% { transform: translateY(-1px); opacity: 1; }
+  100% { transform: none; }
+}
+.pr-pop {
+  display: inline-block;
+  animation: pr-pop 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}

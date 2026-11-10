@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ColumnLines } from "@/components/layout/BackgroundLines";
 import { MobileMenu } from "@/components/layout/MobileMenu";
+import { NavItemLink } from "@/components/layout/NavItemLink";
 import { ButtonArrow } from "@/components/ui/icons";
 import { INSET_VW, HEADER_HIDE_WIDE, HEADER_HIDE_NARROW, LINE_COLOR, LINE_THICKNESS_PX } from "@/lib/grid";
 import { ctaAttr, navLinks, SIGNUP_URL } from "@/lib/nav";
@@ -10,7 +11,7 @@ import type { Dict, Lang } from "@/lib/i18n";
 import { langPath } from "@/lib/i18n";
 
 export function Header({ t, lang }: { t: Dict; lang: Lang }) {
-  const links = navLinks(t);
+  const links = navLinks(t, lang);
   return (
     <header className="sticky top-0 z-50 w-full overflow-x-clip border-b border-white/10 bg-background/60 backdrop-blur-md">
       {/* Rendered here (a child of <header>, above its own bg-background/60 + backdrop-blur-md
@@ -53,13 +54,14 @@ export function Header({ t, lang }: { t: Dict; lang: Lang }) {
             {links.map((link) => (
               <li key={link.href}>
                 {/* hover: the label warms to the brand green — colour only, no underline rule */}
-                <Link
+                {/* NavItemLink: green while you are on the page it points at (/pricing) */}
+                <NavItemLink
                   href={link.href}
                   {...(link.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                   className="inline-block py-1 transition-colors duration-300 ease-out hover:text-brand"
                 >
                   {link.label}
-                </Link>
+                </NavItemLink>
               </li>
             ))}
           </ul>

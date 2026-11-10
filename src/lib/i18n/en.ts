@@ -132,10 +132,11 @@ export const en = {
       "assistant can also deploy updates and inspect logs through the usectl CLI.",
   },
 
-  // state 8 — Pricing. `unit` / `max` are composed at the render site, because the desktop panel
+  // Pricing — the /pricing page (app/_site/pricing.tsx; it was state 8 of the scene until
+  // 2026-11-10). `unit` / `max` are composed at the render site, because the desktop panel
   // joins them with " - " and the phone card with " · " (design boards).
   s8: {
-    eyebrow: "Pricing", // phone only — the desktop state has no eyebrow
+    eyebrow: "Pricing",
     heading: ["Know your hosting bill", "before you launch."],
     body:
       "Choose the CPU, memory, and storage your project needs and see the monthly price before " +
@@ -154,6 +155,111 @@ export const en = {
     totalMonthly: "Your monthly price",
     totalAnnual: "Your annual price",
     freeNote: "The first month is free. You don’t need to link a card.",
+  },
+
+  // the /pricing page (app/_site/pricing.tsx, components/pricing/PricingPageClient.tsx; the
+  // team's design of 2026-11-10). The calculator drawer behind the "Pricing Calculation" tab reuses
+  // s8 above.
+  pricingPage: {
+    title: "Pricing",
+    description:
+      "One flat monthly price for the CPU, memory and storage you choose. No traffic fees, no per-seat charges. 30 days free, no credit card.",
+    eyebrow: "Pricing",
+    // one gradient runs across the whole line; the two parts wrap separately on a phone
+    heading: ["Pick your resources.", "That’s your price."],
+    body: "One flat monthly price for the CPU, memory and storage you choose. No usage meter, no traffic fees, no per-seat charges.",
+    startFree: "Start Free",
+    popular: "Most Popular",
+    perMonth: "/month",
+    perYear: "/year",
+    machine: {
+      name: "Machine",
+      tagline: "Everything you need to run a product in production.",
+      detail: "1 vCPU and 1 GB RAM. Add more as you grow: $10 per vCPU, $5 per GB RAM, $0.10 per GB storage",
+      features: ["Resources", "Deploy", "Databases and services", "Network", "Observability", "Team and access"],
+      cta: "Start 30 day free trial",
+    },
+    enterprise: {
+      name: "Enterprise",
+      tagline: "For companies running serious production workloads.",
+      price: "Custom",
+      lead: "Everything in Machine, plus:",
+      features: [
+        "Resources beyond the self-serve limits",
+        "Dedicated nodes for your workloads",
+        "Hands-on migration from your current provider",
+        "Priority support with a named contact",
+        "An uptime commitment (SLA)",
+        "Annual contracts and invoice billing",
+        "Architecture and security review with our engineers",
+      ],
+      cta: "Talk to sales",
+    },
+    trialNote: "30 days free. Any Machine up to 2 vCPU and 4 GB RAM. No credit card.",
+    calcTab: "Pricing Calculation",
+    calcClose: "Close the pricing calculator",
+    invoice: {
+      heading: "The price on this page is the price on your invoice.",
+      items: [
+        "No traffic fees. A viral launch doesn’t come with a bigger bill. Traffic and bandwidth are not metered.",
+        "No per-seat fees. Invite your whole team to a Machine. People are free.",
+        "No usage meter. Autoscaling grows into the headroom you already pay for. You only pay more when you choose more resources.",
+      ],
+    },
+    // Only the first answer is the design's own text. Answers 2-10 are DRAFTS written from what
+    // the rest of the page promises — the team has to confirm them (trial end, failed payments,
+    // cancelling and yearly billing especially) before this ships.
+    faq: {
+      heading: "Frequently Asked Questions",
+      items: [
+        {
+          q: "Is there a free plan?",
+          a: "There’s a 30-day free trial on any Machine up to 2 vCPU and 4 GB RAM, with no credit card. There’s no permanent free plan.",
+        },
+        {
+          q: "What happens when the trial ends?",
+          a: "We remind you before the 30 days are up. To keep your Machine running, add a payment method; billing starts that day at the price shown on this page.",
+        },
+        {
+          q: "What if my traffic spikes?",
+          a: "Your bill doesn’t change. Traffic and bandwidth are not metered, and autoscaling grows into the headroom your Machine already has.",
+        },
+        {
+          q: "Can I change resources later?",
+          a: "Yes. Add or remove vCPU, memory and storage whenever you need to. You see the new monthly price before you confirm the change.",
+        },
+        {
+          q: "Do teammates cost extra?",
+          a: "No. There are no per-seat fees: invite your whole team to a Machine at no extra cost.",
+        },
+        {
+          q: "Are databases included?",
+          a: "Yes. Databases and services run on your Machine’s resources, so they are covered by the same flat monthly price.",
+        },
+        {
+          q: "What happens if a payment fails?",
+          a: "We email you and retry the payment, so you have time to update your card. Your Machine keeps running while it’s sorted out.",
+        },
+        {
+          q: "Can I cancel at any time?",
+          a: "Yes. There is no long-term contract on the Machine plan. Cancel from your dashboard and you won’t be charged for the next period.",
+        },
+        {
+          q: "How does yearly billing work?",
+          a: "Choose Annual and you pay for twelve months up front. Enterprise plans can also be billed annually by invoice.",
+        },
+        {
+          q: "What currency do you charge in?",
+          a: "All prices are in US dollars (USD).",
+        },
+      ],
+    },
+    final: {
+      heading: "Start free. Pay when it’s live",
+      body: "30 days free on any Machine up to 2 vCPU and 4 GB RAM. No credit card.",
+      start: "Start Free",
+      sales: "Talk to sales",
+    },
   },
 
   // state 9 — closing CTA. The line is one sentence in four pieces: lead, the green span, the blue

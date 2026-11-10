@@ -42,6 +42,9 @@ export const getDict = (lang: Lang): Dict => DICTS[lang];
  */
 export const langPath = (lang: Lang, hash = "") => `/${LANG_SEGMENT[lang]}${hash}`;
 
+/** The Pricing page (its own route since 2026-11-10): "/pricing" · "/ka/pricing". */
+export const pricingPath = (lang: Lang) => `${LANG_SEGMENT[lang] ? `/${LANG_SEGMENT[lang]}` : ""}/pricing`;
+
 /** The two legal pages. Their texts live in content/legal/ (rendered by app/_site/legal.tsx). */
 export const LEGAL_DOCS = ["privacy", "terms"] as const;
 export type LegalDoc = (typeof LEGAL_DOCS)[number];

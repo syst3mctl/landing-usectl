@@ -29,7 +29,7 @@ import { CookieSettingsButton } from "./CookieSettingsButton";
 // footer glide it read as a second animation to wait out) and then removed with the gsap/client
 // code it needed. git history (pass 2 / pass 55) has it if it's ever wanted back.
 export function Footer({ t, lang }: { t: Dict; lang: Lang }) {
-  const navLinks = footerNavLinks(t);
+  const navLinks = footerNavLinks(t, lang);
   return (
     // The base stays DARK (#1b1a1a, sampled as rgb(26,26,26) in the design's own footer-light.png)
     // — the footer's brightness is not a lighter fill, it's the mint glow below.

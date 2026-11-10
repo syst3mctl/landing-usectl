@@ -2,14 +2,14 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Fragment, useRef, useState } from "react";
+import { Fragment, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ScrollToPlugin } from "gsap/ScrollToPlugin";
 import { useGSAP } from "@gsap/react";
 import { s, readScale, HEADER_HEIGHT_PX } from "@/lib/grid";
 import { ctaAttr, SECTION_HASHES, SIGNUP_URL, STATE_BY_HASH, STATE_STORAGE_KEY } from "@/lib/nav";
-import { fill, type Dict, type Lang } from "@/lib/i18n";
+import type { Dict, Lang } from "@/lib/i18n";
 import { TYPE_SCALE } from "@/lib/i18n/typeScale";
 import { SceneLight } from "@/components/layout/SceneLight";
 import { ButtonArrow, ScrollDownArrow } from "@/components/ui/icons";
@@ -34,7 +34,11 @@ gsap.registerPlugin(ScrollTrigger, ScrollToPlugin, useGSAP);
 
 // How much scroll the pinned scene consumes. Shared with the SSR-reserve spacer below so the
 // server-rendered page height already matches what GSAP's pin-spacer will later occupy.
-const PIN_SCROLL_DISTANCE = 12800;
+// 11600 since Pricing left the scene (2026-11-10): the timeline got 1.35 units shorter, and this
+// keeps the scroll per timeline unit what it was (12800 / 14.1 ≈ 11600 / 12.75).
+const PIN_SCROLL_DISTANCE = 11600;
+// where the closing CTA's entrance starts (state 7's exits run 11.45 → 11.8)
+const FINAL9_AT = 11.8;
 
 // State 1 server placement (design px), and where state 2 moves/scales it to.
 // top 125 (was 85): lowered a bit per user request; the state-2 glide auto-compensates
@@ -321,17 +325,6 @@ function DeployFrame6() {
 // so it turns green with the label on hover). The file's 4px inner padding is why the button's
 // gap/right padding are 4/26 instead of 8/32.
 
-// Pricing +/− buttons (team, 2026-09-29: a nice hover colour, and a visible trace when pressed).
-// Hover: the border and glyph go brand green with a faint green wash and a soft outer glow, the
-// same green family as the scene light behind the panel. Press: an MUI-style ripple — a circle
-// spawned under the pointer that grows past the button's edge and fades — shared now, see
-// src/lib/pressRipple.ts and `.press-ripple` in globals.css — plus a tiny press-in scale.
-// Disabled buttons keep their dimmed look.
-const STEP_BTN_CLASS =
-  "relative flex items-center justify-center overflow-hidden rounded-md border border-white/20 text-white/70 " +
-  "transition-[color,border-color,background-color,box-shadow,transform] duration-200 " +
-  "enabled:hover:border-[#35c957] enabled:hover:bg-[rgba(17,163,42,0.1)] enabled:hover:text-[#7cf09a] " +
-  "enabled:hover:shadow-[0_0_12px_rgba(53,201,87,0.25)] enabled:active:scale-[0.92] disabled:opacity-40";
 // State 9's scene light scale (see the SceneLight in the closing-CTA block)
 const LIGHT9_K = 0.6;
 
@@ -426,21 +419,6 @@ const BADGE7_LINE_D =
 const connectorStroke = (l: { scale?: readonly [number, number] }, w: number) =>
   l.scale ? w / ((l.scale[0] + l.scale[1]) / 2) : w;
 
-// State 8: the pricing calculator (built against Desktop/new-version/section-8/ — first as a
-// standalone scrolled section, then folded INTO the pin on user feedback: "ახალ გვერდზე არ უნდა
-// ჩადიოდე, იმავე კონტენტში უნდა ჩნდებოდეს"). The widget is LIVE React state inside the pinned
-// scene — steppers and the Monthly/Annual switch drive real math from the unit prices in the
-// design's own row copy (the mock's flat "$5/mo" per row contradicts that copy, so rows show
-// actual subtotals; default total $15.10 vs the mock's "$15").
-// keys + maths; the row's label and its unit/max line come from the dictionary (t.s8.rows)
-const PRICING_ROWS = [
-  { key: "vcpu", price: 10, max: 16 },
-  { key: "memory", price: 5, max: 64 },
-  { key: "storage", price: 0.1, max: 1000 },
-] as const;
-type PricingRowKey = (typeof PRICING_ROWS)[number]["key"];
-const fmtPrice = (n: number) => (Number.isInteger(n) ? `$${n}` : `$${n.toFixed(2)}`);
-
 // State 9: the closing CTA (Desktop/new-version/section-9/) — "What will you build next?" over a
 // large mixed-color line ("Keep building" green, "what matters" steel blue), the two state-1
 // pill buttons, and a soft green glow hugging the right edge.
@@ -523,21 +501,10 @@ export function HeroSectionClient({
   const badgeLine7Ref = useRef<SVGPathElement>(null);
   const terminal7Ref = useRef<HTMLDivElement>(null);
   const connectors7Ref = useRef<SVGSVGElement>(null);
-  const pricing8Ref = useRef<HTMLDivElement>(null);
   const final9Ref = useRef<HTMLDivElement>(null);
   const rulerFillRef = useRef<HTMLDivElement>(null);
   const scrollDownRef = useRef<HTMLButtonElement>(null);
   const ssrReserveRef = useRef<HTMLDivElement>(null);
-
-  // state 8's live calculator (React state co-existing with the scrubbed GSAP scene: GSAP only
-  // touches the [data-pricing-reveal] wrappers, whose style props never change across renders)
-  const [counts, setCounts] = useState<Record<PricingRowKey, number>>({ vcpu: 1, memory: 1, storage: 1 });
-  const [annual, setAnnual] = useState(false);
-  const stepCount = (key: PricingRowKey, dir: 1 | -1, max: number) =>
-    setCounts((c) => ({ ...c, [key]: Math.min(max, Math.max(1, c[key] + dir)) }));
-  const priceFactor = annual ? 12 : 1;
-  const priceSuffix = annual ? t.s8.perYear : t.s8.perMonth;
-  const priceTotal = (10 * counts.vcpu + 5 * counts.memory + 0.1 * counts.storage) * priceFactor;
 
   useGSAP(
     () => {
@@ -579,7 +546,6 @@ export function HeroSectionClient({
       const badgeLine7 = badgeLine7Ref.current;
       const terminal7 = terminal7Ref.current;
       const connectors7 = connectors7Ref.current;
-      const pricing8 = pricing8Ref.current;
       const final9 = final9Ref.current;
       const rulerFill = rulerFillRef.current;
       if (
@@ -589,7 +555,7 @@ export function HeroSectionClient({
         !fifthText || !server5 || !pods ||
         !sixthText || !board6 || !terminal6 || !pushLine6 || !node6 || !pipe6Wrap || !pipe6Canvas || !badge6 || !deploy6 ||
         !seventhText || !agent7 || !bottom7 || !badge7 || !badgeLine7 ||
-        !terminal7 || !connectors7 || !pricing8 || !final9 || !rulerFill
+        !terminal7 || !connectors7 || !final9 || !rulerFill
       ) {
         return;
       }
@@ -741,11 +707,6 @@ export function HeroSectionClient({
           blurField(child as HTMLElement, at, i, true, endBy),
         );
       };
-      // a single element that carries its own hidden state (the pricing headline/paragraph)
-      const blurItemIn = (el: HTMLElement, at: number, rank: number) => {
-        tl.set(el, { autoAlpha: 1 }, at);
-        blurField(el, at, rank, false);
-      };
       const lines = Array.from(callouts.querySelectorAll<SVGPathElement>("[data-callout-line]"));
       const labels = Array.from(callouts.querySelectorAll<HTMLElement>("[data-callout-label]"));
       const calloutArrows = Array.from(callouts.querySelectorAll<SVGPathElement>("[data-callout-arrow]"));
@@ -764,8 +725,6 @@ export function HeroSectionClient({
       const connectorLines = Array.from(connectors7.querySelectorAll<SVGPathElement>("[data-connector-line]"));
       const connectorArrows = Array.from(connectors7.querySelectorAll<SVGPathElement>("[data-connector-arrow]"));
       const board6Glow = board6.querySelector<HTMLElement>("[data-board-glow]");
-      const pricingItems = Array.from(pricing8.querySelectorAll<HTMLElement>("[data-pricing-reveal]"));
-      const pricingGlow = pricing8.querySelector<HTMLElement>("[data-pricing-glow]");
       const bottomImg = bottomPiece.querySelector("img");
       const bottomGlow = bottomPiece.querySelector<HTMLElement>("[data-bottom-glow]");
 
@@ -1801,40 +1760,23 @@ export function HeroSectionClient({
       );
       tl.to({}, { duration: 0.3 }); // hold at the settled state 7
 
-      // ---- state 7 → state 8 -------------------------------------------------------------
+      // ---- state 7 → state 8 (closing CTA) ----------------------------------------------
+      // Pricing used to sit between these two (11.75 → 12.9); it moved to its own page
+      // (/pricing, app/_site/pricing.tsx — 2026-11-10). State 7's exits are untouched, and the
+      // closing CTA's entrance keeps its own shape (same blur-stagger, same 0.55 span), it just
+      // starts where the pricing entrance used to — so the 7 → 8 crossing reads exactly like
+      // every other crossing: the old page leaves, the next one rises in right behind it.
       tl.to(seventhText, { y: () => -40 * k(), autoAlpha: 0, ease: "power2.in", duration: 0.25 }, 11.45);
       tl.to([badge7, badgeLine7, terminal7, connectors7], { autoAlpha: 0, ease: "power1.in", duration: 0.2 }, 11.45);
       tl.to(agent7, { y: () => 50 * k(), autoAlpha: 0, ease: "power2.in", duration: 0.3 }, 11.5);
       tl.to(bottom7, { y: () => 40 * k(), autoAlpha: 0, ease: "power2.in", duration: 0.3 }, 11.5);
       tl.to(board6, { autoAlpha: 0, ease: "power1.in", duration: 0.25 }, 11.5);
-
-      // the scene light comes up first and does NOT ride the item stagger (it is background,
-      // and keeping it out of pricingItems also keeps the last item inside the 12.6 snap)
-      if (pricingGlow) {
-        tl.fromTo(pricingGlow, { autoAlpha: 0 }, { autoAlpha: 1, ease: "power2.out", duration: 0.5 }, 11.75);
-      }
-      pricingItems.forEach((item, i) => {
-        const at = 11.85 + i * 0.1;
-        // 0 = headline, 1 = paragraph: same blur stagger as every other left column
-        if (i < 2) blurItemIn(item, at, i === 0 ? 1 : 2);
-        else
-          tl.fromTo(
-            item,
-            { y: () => 50 * k(), autoAlpha: 0 },
-            { y: 0, autoAlpha: 1, ease: "power2.out", duration: 0.4 },
-            at,
-          );
-      });
-      tl.to({}, { duration: 0.3 }); // hold at the settled state 8
-
-      // ---- state 8 → state 9 -------------------------------------------------------------
-      tl.to(pricing8, { autoAlpha: 0, ease: "power1.in", duration: 0.25 }, 12.9);
-      blurTextIn(final9, 13.2, 13.75);
-      tl.to({}, { duration: 0.35 }); // hold at the settled state 9 before the pin releases
+      blurTextIn(final9, FINAL9_AT, FINAL9_AT + 0.55);
+      tl.to({}, { duration: 0.35 }); // hold at the settled closing CTA before the pin releases
 
       // one timeline position per SETTLED state (mid-hold times — see each state's hold above);
       // these are the fullpage "pages" the wheel driver steps between
-      const SNAP_TIMES = [0, 1.1, 2.3, 4.25, 5.95, 8.8, 11.2, 12.6, tl.totalDuration()];
+      const SNAP_TIMES = [0, 1.1, 2.3, 4.25, 5.95, 8.8, 11.2, tl.totalDuration()];
 
       // --- fullpage transition engine ------------------------------------------------------
       // The pin only holds the stage in place; state changes play the timeline TIME-BASED via
@@ -1956,8 +1898,7 @@ export function HeroSectionClient({
         3: 2.8, // pods stack rise + callout wiring
         4: 3.2, // deploy board + terminal/push-line/cards pipeline (densest segment)
         5: 2.7, // board morph into the AI composition
-        6: 2.0, // pricing reveal
-        7: 2.0, // closing CTA
+        6: 2.0, // closing CTA (pricing used to be here — now its own page, /pricing)
       };
       const goToState = (i: number, hurry = 1) => {
         if (!pinST) return;
@@ -2047,7 +1988,7 @@ export function HeroSectionClient({
       // the page arrives animating instead of already finished (user: "the machine… svg უკვე
       // ანიმირებულია, დასრულებული ანიმაციით შემოდის"). State 0's load-in isn't on the timeline —
       // it is replayed directly (playHeroText / playServerIntro).
-      const ENTER_TIMES = [0, 0.05, 1.28, 2.6, 4.8, 6.45, 9.05, 11.75, 13.2];
+      const ENTER_TIMES = [0, 0.05, 1.28, 2.6, 4.8, 6.45, 9.05, FINAL9_AT];
       const jumpToState = (i: number) => {
         if (!pinST) return;
         const target = Math.min(Math.max(0, Math.round(i)), LAST);
@@ -2751,7 +2692,7 @@ export function HeroSectionClient({
       // Why a piecewise map instead of one straight ramp: the crossings are not equally long in
       // timeline units, so a linear fill over totalDuration() parked at arbitrary positions.
       const RULER_PNG_H = 913;
-      const RULER_TICKS = [0, 93, 184, 275, 366, 457, 549, 640, 731];
+      const RULER_TICKS = [0, 93, 184, 275, 366, 457, 549, 640];
       // A settled flight can park a hair off its snap time (measured: up to 1% of a crossing,
       // which left the tick a fraction of a pixel short of full) — the first/last 2% of every
       // crossing therefore snaps, so a state at rest is ALWAYS exactly on its tick.
@@ -3980,244 +3921,6 @@ export function HeroSectionClient({
               className="inline-block align-middle"
               style={{ width: s(6.5), height: s(13), marginLeft: s(2), background: "#11a32a" }}
             />
-          </p>
-        </div>
-      </div>
-
-      {/* state 8 — the pricing calculator (interactive: NO pointer-events-none on purpose;
-          the hidden visibility of each block keeps it inert until the state arrives) */}
-      {/* pointer-events-none on the full-stage wrapper, auto on its reveal children: the wrapper
-          itself is always "visible" (only the children are hidden), so without this it sat on
-          top of state 1 and swallowed every hover / click on the hero buttons. Hidden children
-          (visibility: hidden) still ignore the pointer until state 8 shows them. */}
-      <div
-        ref={pricing8Ref}
-        className="pointer-events-none absolute inset-0 [&>[data-pricing-reveal]]:pointer-events-auto"
-      >
-        {/* The scene light that the calculator panel sits ON (user: "რეალურად მაგის უკან უნდა
-            იყოს განათება") — a page-level light, NOT the panel's own background. Its SHAPE is the
-            team's own export, public/pricing/pricing-background-light.svg (950×901: two blurred
-            blobs, #B6F1C0 → #11A32A and #11A32A → #8FC6FF, stdDeviation 100), which replaced the
-            hand-fitted mint ellipse on 2026-09-29. Placed flush with the page's right edge (drawn
-            inline by SceneLight, so the blur is never clipped by the file's frame) with the
-            blobs' centre (~500, 495 in the file) on the old light's centre (≈1470, 545). */}
-        <div
-          data-pricing-glow
-          aria-hidden="true"
-          className="pointer-events-none absolute"
-          style={{ left: s(1920 - 950), top: s(50), width: s(950), height: s(901), opacity: 0, visibility: "hidden" }}
-        >
-          <SceneLight variant="pricing" style={{ inset: 0, width: "100%", height: "100%" }} />
-        </div>
-
-        {/* headline — per-line gradient text */}
-        <h2
-          data-pricing-reveal
-          className="absolute font-heading font-medium tracking-[-0.02em]"
-          style={{ left: s(187), top: s(150), fontSize: s(72), lineHeight: 1.2, opacity: 0, visibility: "hidden" }}
-        >
-          <span
-            className="inline-block bg-clip-text text-transparent"
-            style={{ backgroundImage: "linear-gradient(90deg, #27a138 15%, #567f93 95%)" }}
-          >
-            {t.s8.heading[0]}
-          </span>
-          <br />
-          <span
-            className="inline-block bg-clip-text text-transparent"
-            style={{ backgroundImage: "linear-gradient(90deg, #567f93 5%, #27a138 80%)" }}
-          >
-            {t.s8.heading[1]}
-          </span>
-        </h2>
-
-        <p
-          data-pricing-reveal
-          className="absolute font-heading font-light text-white/70"
-          style={{
-            left: s(187),
-            top: s(380),
-            fontSize: s(21),
-            lineHeight: 1.45,
-            maxWidth: s(830),
-            opacity: 0,
-            visibility: "hidden",
-          }}
-        >
-          {t.s8.body}
-        </p>
-
-        {/* CTA — bordered box with brighter blueprint corner brackets */}
-        <div
-          data-pricing-reveal
-          className="absolute"
-          style={{ left: s(187), top: s(533), opacity: 0, visibility: "hidden" }}
-        >
-          <a
-            href={SIGNUP_URL}
-            {...ctaAttr("pricing")}
-            className="relative flex items-center justify-center border border-white/20 font-heading text-brand transition-colors hover:bg-white/5"
-            style={{ width: s(345), height: s(60), fontSize: s(17) }}
-          >
-            {(["-top-px -left-px border-t border-l", "-top-px -right-px border-t border-r",
-               "-bottom-px -left-px border-b border-l", "-bottom-px -right-px border-b border-r"] as const).map(
-              (pos) => (
-                <span
-                  key={pos}
-                  aria-hidden="true"
-                  className={`absolute ${pos} border-white/60`}
-                  style={{ width: s(12), height: s(12) }}
-                />
-              ),
-            )}
-            {t.s8.cta}
-          </a>
-          <p
-            className="text-center font-heading font-light text-white/40"
-            style={{ marginTop: s(20), fontSize: s(13.5) }}
-          >
-            {t.s8.ctaNote}
-          </p>
-        </div>
-
-        {/* the calculator panel */}
-        <div
-          data-pricing-reveal
-          className="absolute"
-          style={{
-            left: s(1250),
-            // up 40 ("ფასები ოდნავ მაღლა"), then back down 5 ("კალკულატორის card პანელი ჩაწიე")
-            top: s(218),
-            width: s(492),
-            height: s(567),
-            borderRadius: s(16),
-            border: "1px solid rgba(255,255,255,0.09)",
-            // Glass, no tint — the colour comes from the scene light BEHIND it (above). The veil
-            // is NOT flat: scanning the design's R channel across the panel at design y300 gives
-            // +7 over the page at the left edge fading to +2 at the right (and +3 by y760), i.e.
-            // a diagonal white gradient ~0.035 → 0.004. A flat 0.015 made the surface disappear.
-            background:
-              "linear-gradient(115deg, rgba(255,255,255,0.032) 0%, rgba(255,255,255,0.013) 50%, rgba(255,255,255,0.005) 100%)",
-            opacity: 0,
-            visibility: "hidden",
-          }}
-        >
-          {/* Monthly / Annual toggle */}
-          <div
-            className="absolute left-0 flex w-full items-center justify-center font-heading"
-            style={{ top: s(44), gap: s(12), fontSize: s(15) }}
-          >
-            <span className={annual ? "text-white/50" : "text-white/90"}>{t.s8.monthly}</span>
-            {/* exact design box: 49×27 track, r4; 22×23 knob in #11A32A, r4, inset 2px —
-                travel = 49 − 2 − 22 − 2 = 23 */}
-            <button
-              type="button"
-              role="switch"
-              aria-checked={annual}
-              aria-label={t.a11y.billAnnually}
-              onClick={() => setAnnual((a) => !a)}
-              className="relative"
-              style={{
-                width: s(49),
-                height: s(27),
-                borderRadius: s(4),
-                background: "rgba(255,255,255,0.15)",
-              }}
-            >
-              <span
-                className="absolute transition-transform duration-200"
-                style={{
-                  top: s(2),
-                  left: s(2),
-                  width: s(22),
-                  height: s(23),
-                  borderRadius: s(4),
-                  background: "#11A32A",
-                  transform: annual ? `translateX(${s(23)})` : "translateX(0)",
-                }}
-              />
-            </button>
-            <span className={annual ? "text-white/90" : "text-white/50"}>{t.s8.annual}</span>
-          </div>
-
-          {/* resource rows */}
-          <div className="absolute" style={{ left: s(34), right: s(36), top: s(140) }}>
-            {PRICING_ROWS.map((row, i) => (
-              <div key={row.key} className="flex items-center justify-between" style={{ height: s(82) }}>
-                <div>
-                  <p className="font-heading text-white/90" style={{ fontSize: s(17) }}>
-                    {t.s8.rows[i]!.label}
-                  </p>
-                  <p className="font-heading font-light text-white/45" style={{ fontSize: s(13.5), marginTop: s(5) }}>
-                    {t.s8.rows[i]!.unit} - {t.s8.rows[i]!.max}
-                  </p>
-                </div>
-                <div className="flex items-center" style={{ gap: s(10) }}>
-                  <button
-                    type="button"
-                    aria-label={fill(t.a11y.decrease, { name: t.s8.rows[i]!.label })}
-                    onClick={() => stepCount(row.key, -1, row.max)}
-                    disabled={counts[row.key] <= 1}
-                    onPointerDown={pressRipple}
-                    className={STEP_BTN_CLASS}
-                    style={{ width: s(26), height: s(26), fontSize: s(15) }}
-                  >
-                    &minus;
-                  </button>
-                  <span className="text-center font-heading text-white/90" style={{ width: s(34), fontSize: s(16) }}>
-                    {counts[row.key]}
-                  </span>
-                  <button
-                    type="button"
-                    aria-label={fill(t.a11y.increase, { name: t.s8.rows[i]!.label })}
-                    onClick={() => stepCount(row.key, 1, row.max)}
-                    disabled={counts[row.key] >= row.max}
-                    onPointerDown={pressRipple}
-                    className={STEP_BTN_CLASS}
-                    style={{ width: s(26), height: s(26), fontSize: s(15) }}
-                  >
-                    +
-                  </button>
-                  <span
-                    className="text-right font-heading font-light text-white/70"
-                    style={{ minWidth: s(74), marginLeft: s(14), fontSize: s(15) }}
-                  >
-                    {fmtPrice(row.price * counts[row.key] * priceFactor)}
-                    {priceSuffix}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* total */}
-          <div
-            className="absolute flex items-center justify-between"
-            style={{
-              left: s(41),
-              right: s(45),
-              top: s(423),
-              height: s(60),
-              paddingLeft: s(24),
-              paddingRight: s(24),
-              borderRadius: s(8),
-              border: "1px dashed rgba(255,255,255,0.25)",
-            }}
-          >
-            <span className="font-heading text-white/80" style={{ fontSize: s(18) }}>
-              {annual ? t.s8.totalAnnual : t.s8.totalMonthly}
-            </span>
-            <span className="font-heading font-medium text-brand" style={{ fontSize: s(26) }}>
-              {fmtPrice(priceTotal)}
-            </span>
-          </div>
-
-          {/* design's "free.You" typo corrected */}
-          <p
-            className="absolute left-0 w-full text-center font-heading font-light text-white/35"
-            style={{ top: s(524), fontSize: s(13.5) }}
-          >
-            {t.s8.freeNote}
           </p>
         </div>
       </div>

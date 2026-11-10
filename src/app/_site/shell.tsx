@@ -14,11 +14,12 @@ import {
   FACEBOOK_URL,
   INSTAGRAM_URL,
   SIGNUP_URL,
+  LEGACY_PRICING_HASH,
   STATE_BY_HASH,
   STATE_STORAGE_KEY,
   X_URL,
 } from "@/lib/nav";
-import { getDict, HTML_LANG, LANGS, langPath, legalPath, type Lang } from "@/lib/i18n";
+import { getDict, HTML_LANG, LANGS, langPath, legalPath, pricingPath, type Lang } from "@/lib/i18n";
 import { SITE_NAME, SITE_URL, STARTING_PRICE_USD } from "@/lib/seo";
 import "../globals.css";
 
@@ -198,12 +199,15 @@ const jsonLdFor = (lang: Lang) => {
 };
 
 // Runs before first paint (inline, so it can't wait for hydration). If the desktop scene is about
-// to reopen on a later page — a reload mid-journey, or a /#pricing deep link — it hides the stage
+// to reopen on a later page — a reload mid-journey, or a /#agents deep link — it hides the stage
 // (html[data-restoring], globals.css) so the server-rendered hero doesn't flash for the second it
 // takes HeroSectionClient to hydrate and land there; that component fades the stage back in. Same
 // guards as the scene itself (<1024 and reduced-motion get the stacked build, which never hides).
 // The 4s timeout is a safety net only: the page can never stay hidden if JS fails.
-const RESTORE_HIDE_SCRIPT = `(function(){try{
+// First line: Pricing was a page of the scene (/#pricing) until 2026-11-10 and is its own route
+// now — an old shared link or bookmark is sent there before anything paints, on every screen size.
+const restoreHideScript = (lang: Lang) => `(function(){try{
+if(location.hash===${JSON.stringify(LEGACY_PRICING_HASH)}){location.replace(${JSON.stringify(pricingPath(lang))});return;}
 if(matchMedia("(max-width: 1023px)").matches||matchMedia("(prefers-reduced-motion: reduce)").matches)return;
 var s=${JSON.stringify(STATE_BY_HASH)}[location.hash];
 if(s===undefined)s=Number(sessionStorage.getItem(${JSON.stringify(STATE_STORAGE_KEY)}))||0;
@@ -221,7 +225,7 @@ export function SiteShell({ lang, children }: { lang: Lang; children: ReactNode 
       className={`${geistMono.variable} ${spaceGrotesk.variable} ${bpgBanner.variable} h-full antialiased`}
     >
       <head>
-        <script dangerouslySetInnerHTML={{ __html: RESTORE_HIDE_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: restoreHideScript(lang) }} />
       </head>
       <body className="relative min-h-full flex flex-col bg-background text-foreground">
         <script
