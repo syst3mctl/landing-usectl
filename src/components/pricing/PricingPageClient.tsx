@@ -217,7 +217,7 @@ export function PricingPageClient({ t }: { t: Dict }) {
           {p.body}
         </p>
         <div data-pr-reveal style={{ marginTop: r(22, 22) }}>
-          <SignupLink placement="pricing-hero" className={PILL} style={{ width: r(132, 120), height: r(44, 42), paddingInline: r(22), borderRadius: r(40), fontSize: r(15, 14), letterSpacing: LS }}>
+          <SignupLink placement="pricing-hero" className={PILL} style={{ minWidth: r(132, 120), height: r(44, 42), paddingInline: r(22), borderRadius: r(40), fontSize: r(15, 14), letterSpacing: LS }}>
             {p.startFree}
           </SignupLink>
         </div>
