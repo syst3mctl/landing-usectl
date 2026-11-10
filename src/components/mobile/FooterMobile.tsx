@@ -30,7 +30,7 @@ gsap.registerPlugin(ScrollTrigger, useGSAP);
 
 export function FooterMobile({ t, lang }: { t: Dict; lang: Lang }) {
   const ref = useRef<HTMLElement>(null);
-  const navLinks = footerNavLinks(t);
+  const navLinks = footerNavLinks(t, lang);
 
   useGSAP(
     () => {

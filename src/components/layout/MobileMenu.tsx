@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { NavItemLink } from "@/components/layout/NavItemLink";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { CONTACT_EMAIL, CONTACT_HREF, ctaAttr, SIGNUP_URL, SYSTEMCTL_URL } from "@/lib/nav";
 import type { Dict, Lang } from "@/lib/i18n";
@@ -174,16 +175,17 @@ export function MobileMenu({
 
             <nav aria-label={t.a11y.mobileNav} className="relative mx-auto flex w-full max-w-[640px] flex-col px-5 pt-7 sm:px-8">
               {links.map((l) => (
-                <Link
+                <NavItemLink
                   key={l.href}
                   data-menu-row
                   href={l.href}
                   {...(l.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                   onClick={() => setOpen(false)}
+                  activeClassName="!text-brand"
                   className="py-3 font-heading text-[24px] leading-none text-white/[0.72] transition-colors hover:text-white active:text-white sm:text-[28px]"
                 >
                   {l.label}
-                </Link>
+                </NavItemLink>
               ))}
 
               {/* the only button in the menu: our pill, not Vercel's white fill (the user's call) */}

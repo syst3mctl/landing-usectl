@@ -2,17 +2,16 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Fragment, useRef, useState, type ReactNode } from "react";
+import { Fragment, useRef, type ReactNode } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import { mountMachine } from "./machineUnfold";
 import { processAgentSvg } from "@/lib/agentSvg";
 import { ButtonArrow } from "@/components/ui/icons";
-import { pressRipple } from "@/lib/pressRipple";
 import { openBookDemo } from "@/lib/bookDemo";
 import { SECTION_HASHES } from "@/lib/nav";
-import { fill, type Dict } from "@/lib/i18n";
+import type { Dict } from "@/lib/i18n";
 import { CLOSE_MENU_EVENT } from "@/components/layout/MobileMenu";
 import { ctaAttr, SIGNUP_URL } from "@/lib/nav";
 
@@ -27,27 +26,11 @@ gsap.registerPlugin(ScrollTrigger, useGSAP);
 
 export const m = (px: number) => `calc(var(--m) * ${px})`;
 
-// keys + maths; label and the unit/max line come from the dictionary (t.s8.rows), index-matched
-const PRICING_ROWS = [
-  { key: "vcpu", price: 10, max: 16 },
-  { key: "memory", price: 5, max: 64 },
-  { key: "storage", price: 0.1, max: 1000 },
-] as const;
-type RowKey = (typeof PRICING_ROWS)[number]["key"];
-const fmtPrice = (n: number) => (Number.isInteger(n) ? `$${n}` : `$${n.toFixed(2)}`);
-
 // the desktop pills (HeroSectionClient): white/25 outline, brand green border + label on hover —
 // and on press, since phones have no hover
 const PILL =
   "flex items-center justify-center rounded-full border border-white/25 font-heading text-foreground transition-colors " +
   "hover:border-brand hover:text-brand active:border-brand active:text-brand";
-
-// pricing +/− — same classes and the shared press ripple (src/lib/pressRipple.ts) as the desktop panel
-const STEP_BTN_CLASS =
-  "relative flex items-center justify-center overflow-hidden rounded-md border border-white/20 text-white/70 " +
-  "transition-[color,border-color,background-color,box-shadow,transform] duration-200 " +
-  "enabled:hover:border-[#35c957] enabled:hover:bg-[rgba(17,163,42,0.1)] enabled:hover:text-[#7cf09a] " +
-  "enabled:hover:shadow-[0_0_12px_rgba(53,201,87,0.25)] enabled:active:scale-[0.92] disabled:opacity-40";
 
 const GRADIENT_BORDER = (deg: number) =>
   `linear-gradient(#1e1d1d, #1e1d1d) padding-box, linear-gradient(${deg}deg, rgba(17,163,42,0.9), rgba(59,130,246,0.85)) border-box`;
@@ -235,13 +218,6 @@ const fetchSvg = (url: string, prefix: string) =>
 
 export function HeroMobile({ t }: { t: Dict }) {
   const rootRef = useRef<HTMLDivElement>(null);
-  const [counts, setCounts] = useState<Record<RowKey, number>>({ vcpu: 1, memory: 1, storage: 1 });
-  const [annual, setAnnual] = useState(false);
-  const factor = annual ? 12 : 1;
-  const suffix = annual ? "/yr" : "/mo";
-  const total = (10 * counts.vcpu + 5 * counts.memory + 0.1 * counts.storage) * factor;
-  const step = (key: RowKey, d: number, max: number) =>
-    setCounts((c) => ({ ...c, [key]: Math.min(max, Math.max(1, c[key] + d)) }));
 
   useGSAP(
     (ctx) => {
@@ -383,7 +359,7 @@ export function HeroMobile({ t }: { t: Dict }) {
           scrollTrigger: { trigger: section, start, toggleActions: "play none none reverse" },
         });
 
-      const [, s2, s3, s4, s5, s6, s7, s8, s9] = sections;
+      const [, s2, s3, s4, s5, s6, s7, s9] = sections;
 
       // Each section's timeline (and its ScrollTrigger, svg measuring, fetches…) is built LAZILY,
       // when the section comes within ~1.5 screens of the viewport — building all nine up front
@@ -526,14 +502,6 @@ export function HeroMobile({ t }: { t: Dict }) {
         tl.fromTo(term, { autoAlpha: 0, y: 20 }, { autoAlpha: 1, y: 0, duration: 0.5 }, 1.3);
         typeIn(tl, term, 1.6, 44);
         })).catch(() => {});
-      });
-
-      // 8. Pricing
-      lazy(s8, () => {
-        const tl = onEnter(s8);
-        copyIn(tl, s8);
-        tl.fromTo(s8.querySelector("[data-m-calc]"), { autoAlpha: 0, y: 30 }, { autoAlpha: 1, y: 0, duration: 0.7, ease: "power3.out" }, 0.3);
-        tl.fromTo(s8.querySelectorAll("[data-m-calc-row]"), { autoAlpha: 0, x: 10 }, { autoAlpha: 1, x: 0, duration: 0.4, stagger: 0.1 }, 0.6);
       });
 
       // 9. closing CTA
@@ -832,100 +800,6 @@ export function HeroMobile({ t }: { t: Dict }) {
             ]}
           />
         </div>
-      </section>
-
-      {/* 8 — Pricing */}
-      <section id="pricing" data-m-section className="scroll-mt-[calc(var(--header-h)+16px)] relative" style={sectionStyle}>
-        <Eyebrow>{t.s8.eyebrow}</Eyebrow>
-        <Heading>
-          <Lines lines={t.s8.heading} />
-        </Heading>
-        <Para>{t.s8.body}</Para>
-        <div
-          data-m-calc
-          className="font-heading"
-          style={{ marginTop: m(28), padding: m(18), borderRadius: m(14), border: "1px solid rgba(255,255,255,0.09)", background: "linear-gradient(115deg, rgba(255,255,255,0.032) 0%, rgba(255,255,255,0.01) 100%)" }}
-        >
-          <div className="flex items-center justify-center" style={{ gap: m(10), fontSize: m(13.5) }}>
-            <span className={annual ? "text-white/50" : "text-white/90"}>{t.s8.monthly}</span>
-            {/* the desktop switch: 49×27 track r4, 22×23 #11A32A knob, travel 23 */}
-            <button
-              type="button"
-              role="switch"
-              aria-checked={annual}
-              aria-label={t.a11y.billAnnually}
-              onClick={() => setAnnual((a) => !a)}
-              className="relative cursor-pointer"
-              style={{ width: m(44), height: m(24), borderRadius: m(4), background: "rgba(255,255,255,0.15)" }}
-            >
-              <span
-                className="absolute transition-transform duration-200"
-                style={{ top: m(2), left: m(2), width: m(20), height: m(20), borderRadius: m(4), background: "#11A32A", transform: annual ? `translateX(${m(20)})` : "translateX(0)" }}
-              />
-            </button>
-            <span className={annual ? "text-white/90" : "text-white/50"}>{t.s8.annual}</span>
-          </div>
-          {PRICING_ROWS.map((row, i) => (
-            <div data-m-calc-row key={row.key} className="flex items-center justify-between" style={{ marginTop: m(18) }}>
-              <div>
-                <p className="text-white/90" style={{ fontSize: m(15) }}>
-                  {t.s8.rows[i]!.label}
-                </p>
-                <p className="font-light text-white/45" style={{ fontSize: m(11), marginTop: m(3) }}>
-                  {t.s8.rows[i]!.unit} · {t.s8.rows[i]!.max}
-                </p>
-              </div>
-              <div className="flex items-center" style={{ gap: m(8) }}>
-                {([-1, 1] as const).map((d) => (
-                  <button
-                    key={d}
-                    type="button"
-                    aria-label={fill(d < 0 ? t.a11y.decrease : t.a11y.increase, { name: t.s8.rows[i]!.label })}
-                    onClick={() => step(row.key, d, row.max)}
-                    onPointerDown={pressRipple}
-                    disabled={d < 0 ? counts[row.key] <= 1 : counts[row.key] >= row.max}
-                    className={STEP_BTN_CLASS}
-                    style={{ width: m(30), height: m(30), fontSize: m(15), order: d < 0 ? 0 : 2 }}
-                  >
-                    {d < 0 ? "−" : "+"}
-                  </button>
-                ))}
-                <span className="text-center text-white/90" style={{ width: m(30), fontSize: m(15), order: 1 }}>
-                  {counts[row.key]}
-                </span>
-              </div>
-            </div>
-          ))}
-          <div className="flex items-center justify-between" style={{ marginTop: m(22), padding: `${m(12)} ${m(16)}`, borderRadius: m(8), border: "1px dashed rgba(255,255,255,0.25)" }}>
-            <span className="text-white/80" style={{ fontSize: m(14.5) }}>
-              {annual ? t.s8.totalAnnual : t.s8.totalMonthly}
-            </span>
-            <span className="font-medium text-brand" style={{ fontSize: m(22) }}>
-              {fmtPrice(total)}
-              <span className="text-white/50" style={{ fontSize: m(12) }}>
-                {suffix}
-              </span>
-            </span>
-          </div>
-          <p className="text-center font-light text-white/45" style={{ marginTop: m(12), fontSize: m(11.5) }}>
-            {t.s8.freeNote}
-          </p>
-        </div>
-        {/* the desktop CTA: bordered box with brighter blueprint corner brackets, brand label */}
-        <a
-          href={SIGNUP_URL}
-          {...ctaAttr("pricing-mobile")}
-          className="relative flex items-center justify-center border border-white/20 font-heading text-brand transition-colors hover:bg-white/5 active:bg-white/5"
-          style={{ marginTop: m(18), height: m(50), fontSize: m(14.5) }}
-        >
-          {(["-top-px -left-px border-t border-l", "-top-px -right-px border-t border-r", "-bottom-px -left-px border-b border-l", "-bottom-px -right-px border-b border-r"] as const).map((pos) => (
-            <span key={pos} aria-hidden="true" className={`absolute ${pos} border-white/60`} style={{ width: m(10), height: m(10) }} />
-          ))}
-          {t.s8.cta}
-        </a>
-        <p className="text-center font-heading font-light text-white/40" style={{ marginTop: m(10), fontSize: m(12.5) }}>
-          {t.s8.ctaNote}
-        </p>
       </section>
 
       {/* 9 — closing CTA */}

@@ -1,9 +1,9 @@
 import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/lib/seo";
-import { HTML_LANG, LANGS, LEGAL_DOCS, langPath, legalPath } from "@/lib/i18n";
+import { HTML_LANG, LANGS, LEGAL_DOCS, langPath, legalPath, pricingPath } from "@/lib/i18n";
 import { readLegal } from "@/lib/legal";
 
-// /sitemap.xml — the landing page and the two legal pages, one entry per language, each carrying
+// /sitemap.xml — the landing page, /pricing and the two legal pages, one entry per language, each carrying
 // the hreflang alternates (Google reads them from the sitemap as well as from the <head>). A legal
 // text that still has [[PLACEHOLDERS]] is a draft: noindex on the page, and not listed here.
 const alternatesFor = (pathOf: (l: (typeof LANGS)[number]) => string) =>
@@ -18,6 +18,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 1,
     alternates: { languages: alternatesFor((l) => langPath(l)) },
   }));
+  const pricing = LANGS.map((lang) => ({
+    url: `${SITE_URL}${pricingPath(lang)}`,
+    lastModified,
+    changeFrequency: "monthly" as const,
+    priority: 0.8,
+    alternates: { languages: alternatesFor((l) => pricingPath(l)) },
+  }));
   const legal = LEGAL_DOCS.flatMap((doc) =>
     LANGS.filter((lang) => !readLegal(doc, lang).draft).map((lang) => ({
       url: `${SITE_URL}${legalPath(lang, doc)}`,
@@ -27,5 +34,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
       alternates: { languages: alternatesFor((l) => legalPath(l, doc)) },
     })),
   );
-  return [...home, ...legal];
+  return [...home, ...pricing, ...legal];
 }

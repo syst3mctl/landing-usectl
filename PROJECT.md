@@ -1771,6 +1771,154 @@ Lighthouse on `/`, median of 3, baseline = the pre-work commit built in a git wo
 - `META-PIXEL-HANDOFF.md` is the other half of this work: it tells the manager team which dataset,
   which cookies to read, which events are theirs, and the two traps above.
 
+## Pricing moved out of the scene onto its own page (2026-11-10, branch `pricing`)
+
+User: take the pricing section out of the landing, keep the animation sequence intact, and give
+Pricing its own page.
+
+- **Scene (`HeroSectionClient.tsx`)**: state 8 is gone (its JSX, refs, calculator state and
+  timeline tweens 11.75 → 12.9). State 7's exits are untouched (11.45 → 11.8) and the closing
+  CTA's entrance keeps its shape (same blurTextIn, same 0.55 span) but now starts at `FINAL9_AT =
+  11.8`, right where the pricing entrance used to. Pages are now 8 + the footer:
+  `SNAP_TIMES = [0, 1.1, 2.3, 4.25, 5.95, 8.8, 11.2, end]`, `ENTER_TIMES` last = `FINAL9_AT`,
+  `CROSSING_SECONDS[6] = 2.0` (agents → closing), `RULER_TICKS` lost its last entry.
+  `PIN_SCROLL_DISTANCE` 12800 → 11600 so the scroll per timeline unit is unchanged (12.75 vs
+  14.1 units). `STATE_STORAGE_KEY` → `usectl:state:v2`, because the indexes after Agents shifted.
+- **Phones (`HeroMobile.tsx`)**: the `#pricing` section and its entrance are removed.
+- **Nav (`lib/nav.ts`)**: `SECTION_HASHES` lost `#pricing`; the Pricing item is a route now
+  (`page: true` → `pricingPath(lang)` = `/pricing` · `/ka/pricing`), so `navLinks` /
+  `footerNavLinks` take `lang`. An old `/#pricing` (or `/ka#pricing`) link is `location.replace`d
+  to the page by the shell's pre-paint script, before anything paints.
+- **The page**: `app/(en)/pricing`, `app/(ka)/ka/pricing` → `app/_site/pricing.tsx` (metadata from
+  the new `t.pricingPage`, hreflang, footer, `HomeHashLinks` so section links go back to the scene)
+  → `components/pricing/PricingPageClient.tsx`: the scene's state-8 markup on the s() canvas
+  (≥1024, plus a hatch "Pricing" eyebrow and an `h1`) and the old phone card on m() (<1024),
+  sharing one calculator state. Entrance: light fades up, eyebrow/headline/paragraph blur in, CTA
+  + panel rise, rows slide in; `[data-pr-reveal]` starts hidden in globals.css (visible under
+  reduced motion and via `<noscript>`). The phone card's per-month suffix now comes from the
+  dictionary (it was a hard-coded "/mo"). Sitemap lists `/pricing` and `/ka/pricing`.
+- Verified on `next build` + `next start` in Chromium at 1920×1080: wheel steps hero → … → Agents
+  → closing CTA → footer and back up (Agents re-ignites), `#agents` deep link, reload on `#start`,
+  nav jump, header Pricing → `/pricing`, Features from `/pricing` → `/#features`, legacy
+  `/#pricing` → `/pricing`, calculator maths ($301.20 for 2 vCPU annual), 390×844 phone page; zero
+  page errors. `tsc` / `eslint` clean.
+
+- **Same day, round 2 — the team's new pricing design + active nav.** `PricingPageClient.tsx` was
+  rebuilt to the design screenshots: centred hero ("Pick your resources. That's your price.",
+  gradient line, Start Free pill, Monthly/Annual), the plans box (Machine card with "Most Popular",
+  $15.00, 6 features, trial button · Enterprise "Custom", 7 features, "Talk to sales" → the Book a
+  demo popup, `BookDemoModal` mounted on the page), the green trial line, "The price on this page
+  is the price on your invoice." (3 items), the FAQ accordion (first open; CSS grid 0fr→1fr), the
+  closing "Start free" card. The old calculator lives in a right-side drawer behind the fixed
+  "Pricing Calculation" tab (≥1024) / an inline button (phones). One flow layout for all widths:
+  lengths are `r(desktop, phone)` over `.pr-page`'s `--k/--pd/--pp` (globals.css). Copy in
+  `t.pricingPage` (en + ka); **FAQ answers 2-10 are drafts to confirm with the team**; Annual shows
+  the Machine price ×12 "/year" (no discount assumed). New CTA placements `pricing-hero`,
+  `pricing-machine`, `pricing-final`, `pricing-calculator`. The plans box shows CONTACT_EMAIL
+  (info@), not the mock's hello@.
+  - Header/burger nav: `NavItemLink` (client, usePathname) colours the item brand green with
+    `aria-current="page"` while you are on its page (only path links can match, i.e. Pricing).
+  - Round 3: clicking a plan card moves the highlight to it (`plan` state; the "Most Popular" badge
+    stays on Machine). The calculator no longer slides in from the side: `CalculatorMorph` is ONE
+    fixed element that is the right-edge "Pricing Calculation" pill when closed and tweens its own
+    left/top/width/height/radius (CSS transitions, 600ms, cubic-bezier(.2,.8,.2,1)) into a centred
+    panel; label fades out, calculator fades in at 380ms, close reverses (approved from a demo).
+    Geometry: closed = an invisible anchor div's rect (≥1024) or the phones' inline button; open =
+    the content measured at its open width. Choreography runs from click handlers (React's
+    set-state-in-effect lint), opened by the phone button through `calcControl`.
+  - Round 4: the open panel grew in WIDTH only (1060 design px, ~580 tall at 1920 — user: keep the
+    height): two columns on ≥1024 (summary + big total + CTA | toggle + rows with a range bar),
+    one column on phones. Polish: iOS-sheet ease (cubic-bezier(.32,.72,0,1), 680ms), green-tinted
+    border + soft shadow when open, backdrop blur, the label blurs out, contents stagger in
+    (`.pr-st` + `--d`, globals.css) and drop out together on close, the total pops on change
+    (`.pr-pop`), the scene light fades up inside.
+  - Round 5: wider again (1240 design px, ~680 tall at 1920) and a new layout: header (eyebrow,
+    title, line | Monthly/Annual + close), then resource cards (label/unit, one − value + pill,
+    subtotal, range bar) beside a green-tinted receipt (total, per-row breakdown, the free month,
+    a filled brand CTA). Phones stack it.
+  - Round 6: the team's exact Figma specs (2026-11-10, measured on next start at 1920 and matching
+    within ~1-2px): Machine card 587×689 at x373/y575, r16, 2px border; its button 473×60 r38 at
+    x427/y1153; "Most Popular" 165×42 r16 at x754/y607; "Start Free" 132×44 r40 at y386; heading
+    74/500, gradient rgba(17,163,42,.55)→rgba(143,198,255,.55); body 24/300; plan name 20/400;
+    tagline + detail 16/300; features 14/300 on a 34px pitch; price 40/500 + "/month" 14/300;
+    email 14/300; trial line 22/300 #11A32ACC; invoice items 22/300; 01-03 tiles 64×64 r16;
+    letter-spacing -2% everywhere (`LS`). Multi-line copy uses line-height 1.25 rather than the
+    board's 100% (which would overlap the lines in the browser).
+  - Round 7: plans box 1230×762 at x345/y551, r16, 2px border; an 18px gap between the cards (each
+    578 wide now). The "Pricing Calculation" pill: 58×226, r36, label 18/500 #11A32A, at
+    x1763/y782 of the PAGE — it is position:absolute in the page while closed (scrolls with it,
+    `PILL_PLACE`) and switches to position:fixed only while it grows / is open / shrinks back.
+  - Round 8: the closing card's scene light moved OUT of the card (it was clipped by the card's
+    overflow:hidden): it is the section's, behind the clear card near its lower right, spilling past
+    the border (root got overflow-x:clip so it can't cause sideways scroll). FAQ redone: the row no
+    longer jumps (the button's padding is constant; the answer tucks up via the grid's own
+    margin-top), the answer fades in out of a light blur a beat after the height opens, the open
+    row brightens, and + → × now cross-fades white → green discs while only the glyph turns 135°
+    with a slight overshoot.
+  - Round 9 (Figma specs, measured: x/y match the board exactly at 1920): FAQ heading 40/500;
+    list 794 wide; questions 18/700; answers 18/300; 01 tiles 42×42 r12 at x611/y2299; the +/×
+    disc 28 at x1295/y2300. Closing card 1394×342 r53 at x263/y3630 (light re-centred, still 0.6);
+    heading 32/500, line 24/400, buttons 156×44 r40 p15/22 with 14/500 labels (`FINAL_BTN`). The
+    invoice and FAQ sections got +83 top margin and the closing card +22 to land on the board's y.
+  - Round 10: arriving on /pricing always starts at its top (it now scrollTo(0,0)s on mount and
+    puts history.scrollRestoration back to auto — the scene sets it to manual), except on a reload
+    of /pricing itself, where the browser's restore is kept. The logo on /pricing and the legal
+    pages (HomeHashLinks) clears the scene's saved page (STATE_STORAGE_KEY) before loading "/", so
+    it opens on the hero instead of wherever the scene was last (e.g. The Machine). Verified:
+    Machine → Pricing (y 0) → reload at 1500 (stays 1500) → logo ("/", y 0) → Pricing → The
+    Machine (#the-machine, lands on it).
+  - Round 11: (a) /pricing → home is now a CLIENT-SIDE navigation (HomeHashLinks: router.push, "/"
+    prefetched on mount) instead of a full page load — ~350ms on next start; the page to open is
+    handed to the scene through STATE_STORAGE_KEY (cleared for the logo) plus html[data-restoring]
+    to hide the stage until it lands, i.e. the same path a reload takes. Verified: logo → hero then
+    wheel steps build/features/machine; Agents → #agents then start/contact and back. (b) The
+    "refresh at the bottom of /pricing jumps to the top" bug was dev-only: React StrictMode ran
+    the mount effect twice and the second run saw the module flag already set; the decision is
+    now made once per mount (`keepScroll` ref). Verified on next dev: 3862 → 3862 after reload.
+    (c) The team's icons: public/pricing/fire.svg (plan cards, 30×30 with its own tinted box)
+    and public/pricing/most-popular.svg (the badge, 24×24); the hand-drawn Flame is gone.
+  - Round 12: the closed pill now FOLLOWS the scroll: it starts at the board's x1763/y782, rides up
+    with the page until it reaches the middle of the screen, sticks there (position: sticky in
+    PILL_COLUMN, which runs from y782 to the end of the page body), and leaves with the content
+    before the footer. Measured: y 783 → 583 → 475 (stuck) … 316 → 54 at the bottom. The column
+    is a stacking context, so its z-index jumps to 61 while the pill is open (above the z-60
+    backdrop) — without that the backdrop dimmed the open panel too.
+  - The column ends so the pill parks on the closing card's vertical CENTRE (bottom: r(170 + 58):
+    the section's margin plus half of 342 − 226). Measured: pill centre == card centre from the
+    moment they meet to the end of the page.
+  - Open calculator, round 13: the header uses the body's own two columns (1.45fr | 1fr), so the
+    line under the title ends where the resource cards end; the close button sits top right and
+    the Monthly / Annual switch under it, on the line's last row. The three resource cards are
+    flex-1 in their column, so the left column and the receipt start and end on the same lines
+    (measured 434–833 for both, EN and KA).
+  - Open-from-the-corner bug: when the pill switched from its absolute/sticky layout to fixed, the
+    transitions were already on, so left/top tweened from the absolute layout's 0/0 (= the
+    viewport corner) and the panel grew out of the top-left. Now `morphOn` keeps transitions off
+    for the frame the pill is pinned on its own rect, then turns them on, then grows. Measured
+    frame by frame: the first frames sit exactly on the pill (1763/783 at the top, 1763/475 while
+    stuck mid-screen, the button's rect on phones), then tween to the centred panel; closing
+    lands back on the same rect.
+  - Round 14: the number between − and + is an input (`CountInput`: digits only, capped at the
+    row's max as you type, empty → back to the value on blur, Enter/↑/↓ work), and the bar under
+    each row is a slider (`RangeBar`, role=slider: drag or click anywhere on it, arrows / PgUp /
+    PgDn / Home / End; a knob that grows on hover/drag; no width transition while dragging). It
+    keeps the bar's sqrt scale, so the pointer maps back through v = 1 + f² × (max − 1). Verified:
+    typing 8 → $85.10, 99 → capped at 16, dragging Memory 25/50/75/100% → 5/17/36/64 with the
+    number, the row price and the total following.
+    Then (same day): the knob is gone (the plain 3px line again, with a taller invisible hit
+    area), and the fill no longer jumps: while dragging it follows the pointer continuously
+    (measured 30 → 599px in even 30px steps) instead of snapping to the value's steps, and a click
+    eases to its spot over 500ms; on release it settles onto the value's own position.
+  - Full check before handing over (2026-11-10): tsc + eslint + next build clean; a 56-case
+    Playwright run on next start, all passing — the scene down/up through all 8 pages + footer in
+    EN and KA, nav jumps, reload restore, deep links, legacy /#pricing and /ka#pricing redirects;
+    /pricing layout on the board's spots, active nav, card highlight, Annual, FAQ, Talk to sales →
+    Book a demo, the sticky pill, the morph (no corner jump), the calculator (typing cap, drag, totals,
+    shared switch, Esc), reload keeps scroll, logo / Agents back to the scene; KA copy and the EN/KA
+    switch; phone (stacked home without pricing, burger, calculator); reduced motion; title /
+    canonical / hreflang / sitemap; zero page or console errors. Totals now get a thousands
+    separator ($5,761.20).
+
 ## Open items / TODO
 
 - **NEXT BIG STEP — split the desktop scene into per-section components (user's idea, agreed
@@ -1785,7 +1933,7 @@ Lighthouse on `/`, median of 3, baseline = the pre-work commit built in a git wo
   - Hard part: shared elements that MORPH across sections (hero server → Stacks two-piece →
     Machine unfold; state-6 board → AI composition) need an explicit handoff (FLIP-style), or they
     degrade to crossfades.
-  - Approach: incremental, never a big-bang rewrite. Pilot = Pricing + closing CTA (no shared
+  - Approach: incremental, never a big-bang rewrite. Pilot = the closing CTA (Pricing left the scene 2026-11-10; no shared
     elements) on the new controller while the rest stays on the old timeline; user evaluates; then
     migrate section by section, morph pairs last. Commit a stable point before starting.
   - Mobile (`HeroMobile`) is separate and not part of this.
