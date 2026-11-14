@@ -2,7 +2,7 @@
 
 **Last updated:** November 14, 2026
 
-These Terms of Use (the **"Terms"**) are an agreement between you and **Sistem Siti Eli LLC** (შპს „სისტემ სითი ელი“), 37 Zhiuli Shartava St., Tbilisi 2209, Georgia (**"usectl"**, **"we"**, **"us"**).
+These Terms of Use (the **"Terms"**) are an agreement between you and **Systemctl LLC** (შპს „სისტემ სითი ელი“), 37 Zhiuli Shartava St., Tbilisi 2209, Georgia (**"usectl"**, **"we"**, **"us"**).
 
 They cover your use of usectl.com and of the usectl dashboard, API, CLI, mobile app, MCP server, AI features and related services (together, the **"Service"**).
 
@@ -204,6 +204,6 @@ We may update these Terms. For significant changes, we will notify you by email 
 
 ## 18. Contact
 
-**Sistem Siti Eli LLC**
+**Systemctl LLC**
 37 Zhiuli Shartava St., Tbilisi 2209, Georgia
 Email: **info@usectl.com**

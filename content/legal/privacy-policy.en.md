@@ -10,7 +10,7 @@ A Georgian version of this policy is available. If the two versions differ, the 
 
 ## 1. Who we are
 
-The Service is operated by **Sistem Siti Eli LLC** (შპს „სისტემ სითი ელი“), registered at 37 Zhiuli Shartava St., Tbilisi 2209, Georgia (**"usectl"**, **"we"**, **"us"**).
+The Service is operated by **Systemctl LLC** (შპს „სისტემ სითი ელი“), registered at 37 Zhiuli Shartava St., Tbilisi 2209, Georgia (**"usectl"**, **"we"**, **"us"**).
 
 For personal data about our own users, such as account, billing and website data, we are the **controller**.
 
@@ -182,6 +182,6 @@ We may update this policy. For significant changes, we will notify you by email 
 
 ## 14. Contact
 
-**Sistem Siti Eli LLC**
+**Systemctl LLC**
 37 Zhiuli Shartava St., Tbilisi 2209, Georgia
 Email: **info@usectl.com**
