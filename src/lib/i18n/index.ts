@@ -42,8 +42,20 @@ export const getDict = (lang: Lang): Dict => DICTS[lang];
  */
 export const langPath = (lang: Lang, hash = "") => `/${LANG_SEGMENT[lang]}${hash}`;
 
-/** The Pricing page (its own route since 2026-11-10): "/pricing" · "/ka/pricing". */
-export const pricingPath = (lang: Lang) => `${LANG_SEGMENT[lang] ? `/${LANG_SEGMENT[lang]}` : ""}/pricing`;
+/**
+ * The pages that are their own ROUTE rather than a section of the landing scene: Pricing since
+ * 2026-11-10, Features and Agents since 2026-11-16. One helper so a path can't be spelled two ways.
+ */
+export const ROUTE_PAGES = ["pricing", "features", "agents"] as const;
+export type RoutePage = (typeof ROUTE_PAGES)[number];
+
+/** "/pricing" · "/ka/features" — the language segment plus the page's own. */
+export const pagePath = (lang: Lang, page: RoutePage) =>
+  `${LANG_SEGMENT[lang] ? `/${LANG_SEGMENT[lang]}` : ""}/${page}`;
+
+export const pricingPath = (lang: Lang) => pagePath(lang, "pricing");
+export const featuresPath = (lang: Lang) => pagePath(lang, "features");
+export const agentsPath = (lang: Lang) => pagePath(lang, "agents");
 
 /** The two legal pages. Their texts live in content/legal/ (rendered by app/_site/legal.tsx). */
 export const LEGAL_DOCS = ["privacy", "terms"] as const;

@@ -6,7 +6,7 @@
 // number drives both: desktop glides the timeline to that state, mobile scrolls to the section
 // carrying that id. `external` links leave the site instead (no state, opened in a new tab).
 import type { Dict } from "@/lib/i18n/en";
-import { pricingPath, type Lang } from "@/lib/i18n";
+import { pagePath, type Lang, type RoutePage } from "@/lib/i18n";
 
 export type NavLink = { label: string; href: string; state?: number; external?: boolean };
 
@@ -39,7 +39,17 @@ export type CtaPlacement =
   | "closing-start"
   | "closing-start-mobile"
   | "closing-see-how"
-  | "closing-see-how-mobile";
+  | "closing-see-how-mobile"
+  // the landing page's "The Substrate" band (2026-11-16)
+  | "substrate"
+  // the /features page (2026-11-16): the hero pair and the closing card's "Start Free"
+  | "features-hero"
+  | "features-final"
+  // the /agents page (2026-11-16): the closing card's "Deploy Agent", the cards' "Setup guide" and
+  // the templates' "Deploy template" (all to the manager)
+  | "agents-final"
+  | "agents-setup"
+  | "agents-template";
 
 /** Spread onto a link that points at SIGNUP_URL: `{...ctaAttr("header")}`. */
 export const ctaAttr = (placement: CtaPlacement) => ({ "data-cta": placement });
@@ -94,19 +104,21 @@ export const SOCIAL_LINKS = [
 // The nav, without its labels: the label comes from the active language's dictionary (`key` is the
 // entry in `Dict["nav"]`), so the header, the burger menu and BOTH footer columns can't drift from
 // each other or from the translation.
-// `page` = a separate route in the active language (Pricing has been its own page since
-// 2026-11-10 — /pricing, /ka/pricing — instead of a state of the scene).
-type NavItem = { key: keyof Dict["nav"]; href: string; state?: number; external?: boolean; page?: true };
+// `page` = a separate ROUTE in the active language rather than a state of the scene: Pricing
+// since 2026-11-10, Features since 2026-11-16 (/features, /ka/features). The scene still owns a
+// "#features" section (state 2, "Your Stacks, in one place") and keeps that hash in the address
+// bar — a different URL from the page, so the two don't collide.
+type NavItem = { key: keyof Dict["nav"]; href: string; state?: number; external?: boolean; page?: RoutePage };
 
 const NAV_ITEMS: readonly NavItem[] = [
   { key: "machine", href: "#the-machine", state: 3 }, // "Give every project its own space"
-  { key: "agents", href: "#agents", state: 6 }, // "Give your agent a place to work"
-  { key: "features", href: "#features", state: 2 }, // "Your Stacks, in one place"
-  { key: "pricing", href: "/pricing", page: true }, // its own page now — see pricingPath()
+  { key: "agents", href: "/agents", page: "agents" }, // its own page since 2026-11-16 — the scene keeps its "#agents" section (state 6)
+  { key: "features", href: "/features", page: "features" }, // its own page — see featuresPath()
+  { key: "pricing", href: "/pricing", page: "pricing" }, // its own page — see pricingPath()
   { key: "documentation", href: DOCS_URL, external: true },
 ];
 
-const hrefFor = (item: NavItem, lang: Lang) => (item.page ? pricingPath(lang) : item.href);
+const hrefFor = (item: NavItem, lang: Lang) => (item.page ? pagePath(lang, item.page) : item.href);
 
 /** The header / burger-menu nav in one language. */
 export const navLinks = (t: Dict, lang: Lang): readonly NavLink[] =>
@@ -135,8 +147,15 @@ export const SECTION_HASHES = [
   "#deploy", // 5 "Push your code."
   "#agents", // 6 "Give your agent a place to work"
   "#start", // 7 closing CTA "Give your next product a place"
-  "#contact", // 8 the footer
+  "#substrate", // 8 "You build it. We help you run it." — the first page BELOW the pin
+  "#contact", // 9 the footer
 ] as const;
+
+// How many pages live below the pinned scene, in document order: the Substrate section, then the
+// footer (SubstrateSection + Footer in app/_site/landing.tsx, both tagged `data-page-after-pin`).
+// HeroSectionClient derives its FOOTER_INDEX from this, so adding another band below the scene
+// means adding its hash above and bumping this number — nothing else.
+export const PAGES_AFTER_PIN = 2;
 // (#pricing was page 7 until 2026-11-10; Pricing is its own route now, and an old /#pricing link
 // is sent there by the shell's pre-paint script — app/_site/shell.tsx)
 export const LEGACY_PRICING_HASH = "#pricing";
@@ -150,7 +169,9 @@ export const STATE_BY_HASH: Readonly<Record<string, number>> = Object.fromEntrie
 // layout.tsx's pre-paint script reads the same key to hide the stage until that restore lands.
 // v2 since Pricing left the scene (2026-11-10): the page indexes after Agents shifted by one, so a
 // session saved under the old key must not be restored onto the wrong page.
-export const STATE_STORAGE_KEY = "usectl:state:v2";
+// v3 since the Substrate section became page 8 (2026-11-16): the footer moved from 8 to 9, so a
+// session saved under v2 must not be restored onto the wrong page.
+export const STATE_STORAGE_KEY = "usectl:state:v3";
 
 export const NAV_STATE_BY_HASH: Readonly<Record<string, number>> = Object.fromEntries(
   NAV_ITEMS.flatMap((link) => (link.state === undefined ? [] : [[link.href, link.state] as const])),

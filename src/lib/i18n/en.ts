@@ -272,6 +272,123 @@ export const en = {
     tail: " - we’ll handle the infrastructure behind",
   },
 
+  // "The Substrate" — the band between the closing CTA and the footer on the landing page
+  // (components/sections/SubstrateSection.tsx). Two columns of technology icons on each side,
+  // staggered; the icons and the section's background image are PLACEHOLDERS until the team's
+  // assets land in design/.
+  substrate: {
+    eyebrow: "The Substrate",
+    heading: "You build it. We help you run it.",
+    body: "From choosing resources to deploying your app, usectl makes infrastructure simpler.",
+    cta: "Deploy your app for free",
+  },
+
+  // the /features page (app/_site/features.tsx, components/features/FeaturesPageClient.tsx).
+  // DRAFT copy: the user is sending the real block texts from their screenshots — the seven
+  // `blocks` below (title / body / three cards) are placeholders in the right shape, so swapping
+  // them is a text-only change. `tab` is the sticky bar's short label for the same block.
+  // the /features page (app/_site/features.tsx, components/features/FeaturesPageClient.tsx).
+  // Copy is VERBATIM from the team's boards in design/features/ (2026-11-16). `label` is the small
+  // green line above a card's title and is OPTIONAL — the design's first card has none.
+  featuresPage: {
+    title: "Features",
+    description:
+      "Powerful infrastructure controls for modern developers: Git deploys, global routing, autoscaling, telemetry, security, configuration, logs and an interactive terminal.",
+    eyebrow: "Complete Control",
+    heading: "Everything you need to build, ship, and scale.",
+    body:
+      "Powerful infrastructure controls designed for modern developers. Manage your deployments, networking, and scaling effortlessly from a clean dashboard or CLI.",
+    startFree: "Start Free",
+    talkToSales: "Talk to sales",
+    final: {
+      eyebrow: "Secure sandboxes & autonomous OPS",
+      heading: "Put your agents to work on usectl",
+      body: "Host open-source AI agents in gVisor sandboxes and let native copilots manage your infrastructure.",
+      start: "Start Free",
+      docs: "Read Docs",
+    },
+    scrollUp: "Scroll UP",
+    blocks: [
+      {
+        tab: "Deploy",
+        title: "Instant Deploys via Git Push & Webhooks",
+        body:
+          "Connect your repository once and let usectl handle the rest. Every git push automatically builds and deploys your code in seconds, while open Pull Requests instantly generate temporary staging preview environments.",
+        cards: [
+          { label: "", title: "GitHub & Webhooks", body: "Connect any repository and trigger instant builds on every push." },
+          { label: "usectl.app", title: "PR Preview Environments", body: "Automatically spin up temporary staging URLs for every pull request" },
+          { label: "~0.8s build time", title: "Lightning Fast Builds", body: "Optimized container builds that ship your code to production in seconds." },
+        ],
+      },
+      {
+        tab: "Network & Routing",
+        title: "Global Routing & Custom Domains",
+        body:
+          "Route incoming traffic seamlessly with built-in load balancing, automatic TLS certificates, and zero-configuration domains that point straight to your services.",
+        cards: [
+          { label: "Free usectl domain", title: "Public Networking", body: "Expose your application to the public internet instantly with automated routing and SSL provisioning." },
+          { label: "Encrypted", title: "Private Networking", body: "Connect colocated services securely across your project with high-speed internal DNS resolution." },
+          { label: "Configurable port", title: "TCP & UDP Proxy", body: "Send traffic to any service or custom protocol that doesn\u2019t support HTTP with full flexibility." },
+        ],
+      },
+      {
+        tab: "Scale",
+        title: "Horizontal & Vertical Scaling",
+        body:
+          "Scale your application effortlessly. Adjust pod replicas instantly for high availability or resize machine resources granularly to handle peak workloads.",
+        cards: [
+          { label: "Replica count", title: "Horizontal Pod Replicas", body: "Scale your instance count up or down instantly with simple CLI updates (usectl machines pods set)." },
+          { label: "vCPU & RAM tuning", title: "Granular Machine Resizing", body: "Tune CPU and memory allocations precisely to match your workload performance requirements." },
+          { label: "Auto-distribution", title: "High Availability & Failover", body: "Distribute replicas across nodes automatically to ensure zero downtime during traffic spikes." },
+        ],
+      },
+      {
+        tab: "Monitoring & Metrics",
+        title: "Real-Time Telemetry & AI Incident Response",
+        body:
+          "Comprehensive observability powered by Mimir, Loki, and Tempo. Monitor resource health, track traffic metrics, and let AI automatically resolve incidents before they impact users.",
+        cards: [
+          { label: "Zero Prometheus", title: "Metrics & Tracing Stack", body: "High-performance telemetry powered by Grafana Alloy, Mimir, Loki, and Tempo for complete visibility." },
+          { label: "Auto-rollback", title: "Deploy-Safety Watcher", body: "Automatic rollbacks triggered instantly if error rates (HTTP 5xx) exceed safety thresholds during updates." },
+          { label: "Qwen3-14B AI", title: "AI Incident Agent", body: "Autonomous diagnostics and 1-tap remediation powered by advanced LLMs analyzing logs and traces in real time." },
+        ],
+      },
+      {
+        tab: "Security",
+        title: "Defense-in-Depth Security & Sandboxed Isolation",
+        body:
+          "Enterprise-grade security architecture featuring kernel-level gVisor isolation, strict network namespace policies, encrypted Vault storage, and secure AI guardrails.",
+        cards: [
+          { label: "System call isolation", title: "gVisor Container Sandbox", body: "Isolate untrusted workloads and AI agents completely using kernel-level system call interception (runsc)." },
+          { label: "AES-256-GCM", title: "Vault Envelope Encryption", body: "Store sensitive secrets safely with AES-256-GCM encryption, hash-chained audit logs, and write-only protected variables." },
+          { label: "Zero Direct Write", title: "AI Copilot Guardrails", body: "Maintain strict human oversight with \u201cModel Proposes, Human Approves\u201d workflows and scoped agent API keys." },
+        ],
+      },
+      {
+        tab: "Variables & Configuration",
+        title: "Scoped Variables & Secure Configurations",
+        body:
+          "Manage environment variables and secrets with granular pod-level scoping, write-only protection, and zero-leakage encryption across your deployments.",
+        cards: [
+          { label: "Pod-level scoping", title: "Pod-Scoped Variables", body: "Bind environment configurations specifically to target pods rather than the entire machine for precise control." },
+          { label: "Zero leakage", title: "Write-Only Secrets", body: "Secure sensitive tokens and keys with masked interfaces and write-only retrieval to prevent accidental exposure." },
+          { label: "AES-256 protected", title: "Encrypted Storage", body: "Ensure all configuration data remains safe at rest with advanced encryption and audit-ready tracking." },
+        ],
+      },
+      {
+        tab: "Logs & Terminal",
+        title: "Real-Time Logs & Interactive Terminal",
+        body:
+          "Diagnose issues instantly with centralized log streaming powered by Loki, or jump directly into secure interactive container terminals for advanced debugging.",
+        cards: [
+          { label: "Loki-powered", title: "Centralized Log Streaming", body: "Aggregate and tail container logs in real time across your entire cluster using high-performance Loki storage." },
+          { label: "Secure exec", title: "Interactive Terminal Access", body: "Execute diagnostic commands safely inside target containers directly from your CLI or web dashboard." },
+          { label: "Node-level agents", title: "Alloy Log Collection", body: "Benefit from efficient, node-level log harvesting managed seamlessly by Grafana Alloy agents." },
+        ],
+      },
+    ],
+  },
+
   footer: {
     navigation: "Navigation",
     contact: "Contact",
@@ -338,6 +455,59 @@ export const en = {
     decrease: "Decrease {name}",
     increase: "Increase {name}",
     language: "Language",
+  },
+
+  // the /agents page (app/_site/agents.tsx, components/agents/AgentsPageClient.tsx). Copy is
+  // VERBATIM from the Figma board "Agents" (833:2833), 2026-11-16. `prompt` is copied to the
+  // clipboard exactly as written (user, 2026-11-16).
+  agentsPage: {
+    title: "Agents",
+    description:
+      "Run open-source AI agents in isolated gVisor sandboxes with persistent storage, while autonomous native copilots triage failures and manage incidents safely.",
+    eyebrow: "Usectl for agents",
+    heading: "Connect your agent to usectl",
+    body:
+      "Run open-source AI agents in isolated gVisor sandboxes with persistent storage, while autonomous native copilots triage failures and manage incidents safely.",
+    prompt: "Read [usectl.com/agents.md](https://usectl.com/agents.md) and set up my environment",
+    copy: "Copy",
+    copied: "Copied",
+    logosLabel: "Works with Claude, ChatGPT, Cursor, OpenCode, Grok, Gemini and Devin",
+    choose: {
+      heading: "Choose your agent",
+      setup: "Setup guide",
+      cards: [
+        { title: "Hermes Agent", body: "Persistent memory & isolated networks" },
+        { title: "OpenClaw", body: "Secure zero-exposure deployment" },
+        { title: "Task Agent", body: "Background workers & webhooks" },
+      ],
+    },
+    copilots: {
+      heading: "Built-in infrastructure copilots",
+      cards: [
+        { title: "Devo Admin Copilot", body: "Propose-and-Approve workflows with zero direct writes. Approve via CLI, Web, or Face ID." },
+        { title: "Failed-Deploy Triage", body: "Auto-analyzes build logs on failure at zero user cost, commenting fixes on PRs." },
+        { title: "Incident Remediation", body: "Monitors Grafana alerts across notify, approve, or auto modes with 1-tap approvals." },
+        { title: "Ops & Weekly Digests", body: "Nightly cluster reports at 05:00 UTC and Monday machine summaries." },
+      ],
+    },
+    untrusted: {
+      heading: "Built for untrusted execution",
+      cards: [
+        { title: "Hermes Agent", body: "gVisor Kernel Sandbox (runsc)" },
+        { title: "Scoped API Keys (usectl agt)", body: "Least-privilege tokens bound to project IDs and expiration." },
+      ],
+    },
+    templates: {
+      heading: "Explore templates",
+      deploy: "Deploy template",
+      items: ["Hermes on usectl", "OpenClaw Sandboxed", "CI/CD Triage Bot"],
+    },
+    final: {
+      eyebrow: "Secure AI & Autonomous OPS",
+      heading: "Put your agents to work on usectl",
+      body: "Host open-source AI agents in gVisor sandboxes and let native copilots manage your infrastructure.",
+      deploy: "Deploy Agent",
+    },
   },
 
   // <head>: search + share copy. Lengths are deliberate — Google cuts titles at ~60 characters

@@ -1918,6 +1918,22 @@ Pricing its own page.
     switch; phone (stacked home without pricing, burger, calculator); reduced motion; title /
     canonical / hreflang / sitemap; zero page or console errors. Totals now get a thousands
     separator ($5,761.20).
+  - 2026-11-11: the KA "დაიწყე უფასოდ" hero pill no longer clips (132 is a min-width now). The
+    closing card is explicitly clear glass, and every reveal clears its leftover GSAP transform
+    when it finishes (clearProps) — a transformed box is its own compositing layer, and the user
+    saw the closing card as an opaque patch with no background lines through it.
+
+## Legal texts: placeholders removed (2026-11-11)
+
+User asked to take the [[...]] out of the privacy page. Done in all four texts (privacy + terms,
+EN + KA): the legal entity name and ID code were unknown, so the operator line now reads
+"operated by **usectl**, 37 Zhiuli Shartava St., Tbilisi 2209, Georgia" (no ID code) and the
+contact block is headed **usectl**; the "confirm before publishing" (no AI training) and "confirm
+refund policy" notes were dropped as they stood; Web3Forms' location is "India" (it is run by
+Web3Creative, Kerala, per its own FAQ). With no [[ left, `readLegal` no longer marks the pages as
+drafts: they are indexable now and listed in the sitemap. If the company's registered name and ID
+code become available, they belong back in those two lines.
+
 
 ## Open items / TODO
 
@@ -2057,3 +2073,69 @@ Pricing its own page.
   GE fetch → 200, GE Googlebot → 200, GE /ka and /robots.txt → 200.
 - After deploy, check from Georgia in a fresh/incognito window: `usectl.com` → `/ka`. If it does
   NOT redirect, the platform's ingress isn't passing `cf-ipcountry` to the pod.
+
+## Branch `features-page`: thinner grid, no progress bar, The Substrate, /features (2026-11-16)
+
+Branched off **`pricing`** (not `master`: the Pricing page only exists there). Four stages, each
+reviewed by the user before the next.
+
+**1. The background grid is drawn at the design's weight.** Figma strokes it at 0.05px / white 5%;
+a sub-pixel stroke does not survive rasterisation, so the WEIGHT carries the intent at the
+design's own colour: **0.5px / rgba(255,255,255,0.05)**, replacing 2px / 0.02 (four times the
+design). On a 2× screen 0.5px is exactly one device pixel — crisp; on 1× the browser paints it at
+~50% coverage, i.e. fainter, which is the right direction. Both values are now CSS variables
+(`--grid-line-w` / `--grid-line-color` in globals.css) and `grid.ts` exports them as the strings
+`LINE_W` / `LINE_HALF` / `LINE_COLOR`, so BackgroundLines and Header hold no numbers.
+- **The #00000040 layer is built BOTH ways, switched by one variable**: `--bg-tint-above: 1` puts
+  it above the grain and the grid (dimming those too), `0` puts it below them (only the page
+  colour darkens, lines keep full strength). Both layers are always in the DOM, so flipping it is
+  a repaint. The user picks; the loser can then be deleted.
+- Noise untouched — the team's background image and its parameters are not in `design/` yet.
+
+**2. The left scroll-progress ruler is gone** (`navigation-bar.png`, its masked green fill and the
+~60 lines that scrubbed it). It was desktop-only; the phone build never had one. The tick geometry
+and the piecewise fill map are in git history.
+
+**3. "The Substrate" band** (`components/sections/SubstrateSection.tsx`) sits between the closing
+CTA and the footer on the landing page, outside the page grid (own opaque background, like the
+footer). Copy in `t.substrate`; four columns of placeholder icon tiles, two per side, offset into
+a zigzag.
+- **It is a PAGE of the scroll journey**, which is what made this more than a component: the
+  driver assumed exactly ONE page below the pin (the footer, `scrollTo: "max"`). Now
+  `PAGES_AFTER_PIN` (lib/nav.ts) says how many there are, `SUBSTRATE_INDEX`/`FOOTER_INDEX` derive
+  from it, and `afterPinY(i)` finds each band in the DOM by `data-page-after-pin="N"` (falling
+  back to the document bottom, so a missing band can't dead-end the journey). The wheel handler's
+  below-the-pin branch STEPS one page per push instead of toggling between two, and the pin's
+  quantiser adopts the nearest band rather than always the footer.
+- `SECTION_HASHES` gained `#substrate` at index 8 (footer → 9), so `STATE_STORAGE_KEY` is **v3**.
+  `HeroMobile`'s hash spy checks the band before the footer.
+- Measured: the journey runs 1006 → 2102 → … → 11601 `#start` → 12261 `#substrate` → 12861
+  `#contact`, and the band's top lands exactly on the 96px header.
+
+**4. `/features` + `/ka/features`** — `app/_site/features.tsx` (metadata, hreflang, footer,
+HomeHashLinks) + `components/features/FeaturesPageClient.tsx`. Hero, a **sticky tab bar** under the
+header (7 tabs; the active one follows the block you are reading and a click scrolls to it), seven
+blocks of placeholder illustration + title + body + 3 cards, a closing CTA card and "Scroll UP".
+- The spy is a rAF-throttled scroll listener, not IntersectionObserver: the blocks are taller than
+  the viewport, so "which is intersecting" is ambiguous while one fills the screen, whereas "the
+  last one I have scrolled into" always has one answer. The bar's measured height goes into
+  `--fe-bar-h`, which the blocks' `scroll-margin-top` uses, so a click never parks a heading
+  behind the bar (verified: every heading lands ≥ header+bar).
+- Nav: **"Features" now points at the page**, not at the scene's state 2 — `page` on a NAV_ITEM is
+  a `RoutePage` now (`pagePath(lang, page)`), so Pricing and Features share one mechanism. The
+  scene keeps its own `#features` section and hash; different URL, no collision. If the team wants
+  both in the nav, add a second item.
+- In the sitemap and the CTA placement union (`features-hero`, `features-final`, `substrate`).
+
+**Placeholders, each isolated so swapping is one line**: the Substrate background (`BACKGROUND` in
+SubstrateSection) and its icon tiles (`ICON_COLUMNS` + `IconTile`), and on /features
+`BlockIllustration` and `CardIcon`. Real assets are expected in `public/substrate/` and
+`public/features/`.
+
+**Copy**: English is final-ish; `ka.ts`'s two new blocks are marked `⚠️ გადასამოწმებელია` and the
+seven feature blocks' texts are drafts — the user is sending the real copy from their screenshots.
+Georgian follows the house rules (no em dashes, `usectl-ში`-style hyphens, "გაშვება" for deploy,
+English kept for the uppercase mono card labels).
+
+Verified: `tsc` / `eslint` / `next build` clean, `/features` and `/ka/features` prerendered static,
+zero console errors, the full desktop journey in both directions, the tab bar in both languages.

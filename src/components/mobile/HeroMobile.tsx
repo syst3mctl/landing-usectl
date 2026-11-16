@@ -270,6 +270,9 @@ export function HeroMobile({ t }: { t: Dict }) {
       // /#pricing deep link keeps its hash until the browser's own anchor jump (or the reader)
       // actually scrolls.
       const hashSections = Array.from(root.querySelectorAll<HTMLElement>("[data-m-section]"));
+      // the two bands below this component, in SECTION_HASHES order: the Substrate section and
+      // the footer. They live in app/_site/landing.tsx, outside `root`.
+      const substrateEl = document.querySelector<HTMLElement>('[data-page-after-pin="1"]');
       const footerEl = document.querySelector<HTMLElement>("[data-footer-stacked]");
       let hashRaf = 0;
       const syncHash = () => {
@@ -279,6 +282,7 @@ export function HeroMobile({ t }: { t: Dict }) {
         hashSections.forEach((sec, i) => {
           if (sec.getBoundingClientRect().top <= line) idx = i;
         });
+        if (substrateEl && substrateEl.getBoundingClientRect().top <= line) idx = SECTION_HASHES.length - 2;
         if (footerEl && footerEl.getBoundingClientRect().top <= line) idx = SECTION_HASHES.length - 1;
         const want = SECTION_HASHES[idx] ?? "";
         if (window.location.hash !== want) {

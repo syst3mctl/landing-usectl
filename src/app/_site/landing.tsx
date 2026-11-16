@@ -1,4 +1,5 @@
 import { HeroSection } from "@/components/sections/HeroSection";
+import { SubstrateSection } from "@/components/sections/SubstrateSection";
 import { Footer } from "@/components/layout/Footer";
 import { FooterMobile } from "@/components/mobile/FooterMobile";
 import { BookDemoModal } from "@/components/ui/BookDemoModal";
@@ -12,9 +13,13 @@ export function Landing({ lang }: { lang: Lang }) {
   return (
     <main className="flex flex-1 flex-col">
       <HeroSection lang={lang} />
+      {/* "The Substrate" — page 8 of the scroll journey, between the scene and the footer, on
+          every build (the desktop driver scrolls to its `data-page-after-pin`, the phone and
+          reduce-motion builds simply scroll into it). */}
+      <SubstrateSection t={t} />
       {/* The footer also supplies the trailing scroll room the hero's pin end needs (the
           "last section" trap documented in PROJECT.md — the temporary spacer lived here). */}
-      <div data-footer-pinned className="max-lg:hidden">
+      <div data-footer-pinned data-page-after-pin="2" className="max-lg:hidden">
         <Footer t={t} lang={lang} />
       </div>
       <FooterMobile t={t} lang={lang} />

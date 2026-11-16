@@ -8,7 +8,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ScrollToPlugin } from "gsap/ScrollToPlugin";
 import { useGSAP } from "@gsap/react";
 import { s, readScale, HEADER_HEIGHT_PX } from "@/lib/grid";
-import { ctaAttr, SECTION_HASHES, SIGNUP_URL, STATE_BY_HASH, STATE_STORAGE_KEY } from "@/lib/nav";
+import { ctaAttr, PAGES_AFTER_PIN, SECTION_HASHES, SIGNUP_URL, STATE_BY_HASH, STATE_STORAGE_KEY } from "@/lib/nav";
 import type { Dict, Lang } from "@/lib/i18n";
 import { TYPE_SCALE } from "@/lib/i18n/typeScale";
 import { SceneLight } from "@/components/layout/SceneLight";
@@ -502,7 +502,6 @@ export function HeroSectionClient({
   const terminal7Ref = useRef<HTMLDivElement>(null);
   const connectors7Ref = useRef<SVGSVGElement>(null);
   const final9Ref = useRef<HTMLDivElement>(null);
-  const rulerFillRef = useRef<HTMLDivElement>(null);
   const scrollDownRef = useRef<HTMLButtonElement>(null);
   const ssrReserveRef = useRef<HTMLDivElement>(null);
 
@@ -547,7 +546,6 @@ export function HeroSectionClient({
       const terminal7 = terminal7Ref.current;
       const connectors7 = connectors7Ref.current;
       const final9 = final9Ref.current;
-      const rulerFill = rulerFillRef.current;
       if (
         !section || !stage || !heroText || !secondText || !thirdText || !server || !serverSvgHost || !glow ||
         !box || !callouts || !bottomPiece || !guides || !panel || !panelLine ||
@@ -555,7 +553,7 @@ export function HeroSectionClient({
         !fifthText || !server5 || !pods ||
         !sixthText || !board6 || !terminal6 || !pushLine6 || !node6 || !pipe6Wrap || !pipe6Canvas || !badge6 || !deploy6 ||
         !seventhText || !agent7 || !bottom7 || !badge7 || !badgeLine7 ||
-        !terminal7 || !connectors7 || !final9 || !rulerFill
+        !terminal7 || !connectors7 || !final9
       ) {
         return;
       }
@@ -1786,7 +1784,36 @@ export function HeroSectionClient({
       const total = tl.totalDuration();
       const TRANSITION_SECONDS = 1.7;
       const LAST = SNAP_TIMES.length - 1;
-      const FOOTER_INDEX = LAST + 1; // the footer is one more fullpage "page" past state 9
+      // Pages BELOW the pin, in document order (PAGES_AFTER_PIN in lib/nav.ts): the Substrate
+      // band, then the footer. They are rendered by app/_site/landing.tsx — outside this
+      // component — so they are located in the DOM by `data-page-after-pin="N"` (N counted from
+      // 1) rather than passed in as refs. A missing element simply falls back to the document
+      // bottom, so the journey can never dead-end on a page that isn't there.
+      const SUBSTRATE_INDEX = LAST + 1;
+      const FOOTER_INDEX = LAST + PAGES_AFTER_PIN; // the last page of all
+      const clampPage = (i: number) => Math.min(FOOTER_INDEX, Math.max(0, i));
+      const bottomY = () => document.documentElement.scrollHeight;
+      /** Where page `i` (below the pin) starts, in document coordinates. */
+      const afterPinY = (i: number) => {
+        if (i >= FOOTER_INDEX) return bottomY(); // the last one parks at the document bottom
+        const el = document.querySelector<HTMLElement>(`[data-page-after-pin="${i - LAST}"]`);
+        if (!el) return bottomY();
+        // the header is sticky, so the band's top has to clear it to be fully visible
+        return el.getBoundingClientRect().top + window.scrollY - HEADER_HEIGHT_PX;
+      };
+      /** Which below-the-pin page a hand-made scroll (scrollbar drag, Space) landed on. */
+      const nearestAfterPin = () => {
+        let best = SUBSTRATE_INDEX;
+        let bestD = Infinity;
+        for (let i = SUBSTRATE_INDEX; i <= FOOTER_INDEX; i++) {
+          const d = Math.abs(window.scrollY - afterPinY(i));
+          if (d < bestD) {
+            bestD = d;
+            best = i;
+          }
+        }
+        return best;
+      };
       const STATE_KEY = STATE_STORAGE_KEY; // session-scoped, so a reload reopens on the same page
       // Remember the page for a reload — and keep the URL honest while doing it.
       //
@@ -1958,9 +1985,9 @@ export function HeroSectionClient({
         // started yet" (user feedback) — out shows motion on the very first frame and still
         // lands softly over the full duration
         gsap.to(window, {
-          // the footer is page LAST+1: the timeline stays parked at its end and only the scroll
-          // travels, so the footer arrives as one glide instead of a native crawl
-          scrollTo: i > LAST ? "max" : pinST.start + (SNAP_TIMES[i] / total) * PIN_SCROLL_DISTANCE,
+          // below the pin (the Substrate band, then the footer) the timeline stays parked at its
+          // end and only the scroll travels, so each band arrives as one glide, not a native crawl
+          scrollTo: i > LAST ? afterPinY(i) : pinST.start + (SNAP_TIMES[i] / total) * PIN_SCROLL_DISTANCE,
           duration,
           ease,
           overwrite: true,
@@ -2101,9 +2128,10 @@ export function HeroSectionClient({
           // scrollbar drag / keyboard that lands PAST the pin is a move to the footer page, not
           // something to quantise back to state 9
           if (self.progress > 0.999 && pinST && window.scrollY > pinST.end + 5) {
-            stateIndex = FOOTER_INDEX;
+            const page = nearestAfterPin();
+            stateIndex = page;
             syncScrollDown();
-            rememberState(FOOTER_INDEX);
+            rememberState(page);
             return;
           }
           const t = self.progress * total;
@@ -2152,9 +2180,7 @@ export function HeroSectionClient({
           if (!pinST || restoreAborted) return;
           const i = Math.min(Math.max(0, Math.round(saved)), FOOTER_INDEX);
           const targetY =
-            i > LAST
-              ? document.documentElement.scrollHeight
-              : pinST.start + (SNAP_TIMES[i] / total) * PIN_SCROLL_DISTANCE;
+            i > LAST ? afterPinY(i) : pinST.start + (SNAP_TIMES[i] / total) * PIN_SCROLL_DISTANCE;
           const maxY = document.documentElement.scrollHeight - window.innerHeight;
           if (maxY < targetY - 2 && tries < 30) {
             requestAnimationFrame(() => restore(tries + 1));
@@ -2371,12 +2397,15 @@ export function HeroSectionClient({
         if (stateIndex > LAST || (!transitioning && sc > pinST.end + 5)) {
           e.preventDefault();
           if (transitioning) {
-            const goingToFooter = stateIndex > LAST;
-            if (newPush && ((goingToFooter && dir < 0) || (!goingToFooter && dir > 0))) {
+            // turning a running flight around: step ONE page against its direction. With two
+            // bands down here (Substrate, footer) this can no longer be the old "the footer or
+            // state LAST" pair — stepping generalises it and behaves identically for one band.
+            const flightDir = stateIndex >= transitionFrom ? 1 : -1;
+            if (newPush && dir !== flightDir) {
               chain++;
               flickFresh = false;
               gestureFiredFlight = true;
-              goToState(goingToFooter ? LAST : FOOTER_INDEX, hurryNow());
+              goToState(clampPage(stateIndex + dir), hurryNow());
             }
             return;
           }
@@ -2387,8 +2416,14 @@ export function HeroSectionClient({
           // second push once the return glide is handled by the in-pin redirect logic
           flickFresh = false;
           gestureFiredFlight = true;
-          if (dir < 0) goToState(LAST);
-          else if (stateIndex <= LAST) goToState(FOOTER_INDEX);
+          if (stateIndex <= LAST) {
+            // scrolled past the pin by hand (scrollbar drag, Space): an up push climbs back into
+            // the scene's last state, a down push adopts the first band below it
+            goToState(dir < 0 ? LAST : SUBSTRATE_INDEX);
+            return;
+          }
+          const next = clampPage(stateIndex + dir);
+          if (next !== stateIndex) goToState(next);
           return;
         }
         if (transitioning) {
@@ -2402,9 +2437,7 @@ export function HeroSectionClient({
           const flightDir = stateIndex >= transitionFrom ? 1 : -1;
           if (newPush && dir !== flightDir) {
             const back =
-              transitionFrom !== stateIndex
-                ? transitionFrom
-                : Math.min(LAST, Math.max(0, stateIndex + dir));
+              transitionFrom !== stateIndex ? transitionFrom : clampPage(stateIndex + dir);
             flickFresh = false;
             gestureFiredFlight = true;
             chain++;
@@ -2677,58 +2710,6 @@ export function HeroSectionClient({
         gsap.set(heroText, { opacity: 1 });
       }
 
-      // The left ruler's green overlay fills top-down across the pinned journey, and every state
-      // now lands EXACTLY on one of the bar's LONG ticks — one long tick per section, never
-      // short of it and never past it (user: "ყოველი 5 პატარა ხაზის შემდეგ ერთი დიდი ხაზი მოდის,
-      // ეგ ერთი დიდი ხაზი შეივსოს, არც გადაცდეს არც დააკლდეს მომდევნო სექციაზე რომ მივალ").
-      //
-      // Measured off navigation-bar.png (35×913 native): the long ticks are the 26px-wide rows
-      // (the short ones are 15px) and sit at y 91-92 / 182-183 / 273-274 / 364-365 / 456 /
-      // 547-548 / 638-639 / 729-730 / 820-821, with exactly five short ticks between each pair.
-      // RULER_TICKS holds each long tick's BOTTOM edge, so the clip covers the whole tick; the
-      // fill div is inset-0 of the bar and the mask is stretched 100%×100%, so a fraction of the
-      // PNG's height is the same fraction of the div's height whatever --s is.
-      //
-      // Why a piecewise map instead of one straight ramp: the crossings are not equally long in
-      // timeline units, so a linear fill over totalDuration() parked at arbitrary positions.
-      const RULER_PNG_H = 913;
-      const RULER_TICKS = [0, 93, 184, 275, 366, 457, 549, 640];
-      // A settled flight can park a hair off its snap time (measured: up to 1% of a crossing,
-      // which left the tick a fraction of a pixel short of full) — the first/last 2% of every
-      // crossing therefore snaps, so a state at rest is ALWAYS exactly on its tick.
-      const RULER_SNAP_EPS = 0.02;
-      const rulerFraction = (t: number) => {
-        const last = SNAP_TIMES.length - 1;
-        for (let i = 1; i <= last; i++) {
-          if (t < SNAP_TIMES[i] || i === last) {
-            const span = SNAP_TIMES[i] - SNAP_TIMES[i - 1];
-            let p = span > 0 ? gsap.utils.clamp(0, 1, (t - SNAP_TIMES[i - 1]) / span) : 1;
-            if (p > 1 - RULER_SNAP_EPS) p = 1;
-            else if (p < RULER_SNAP_EPS) p = 0;
-            const from = RULER_TICKS[Math.min(i - 1, RULER_TICKS.length - 1)];
-            const to = RULER_TICKS[Math.min(i, RULER_TICKS.length - 1)];
-            return (from + (to - from) * p) / RULER_PNG_H;
-          }
-        }
-        return 0;
-      };
-      // added last so totalDuration() already includes every state and trailing hold, and so the
-      // dead-zone index above (built before it) still sees only real content tweens
-      const rulerProxy = { t: 0 };
-      tl.to(
-        rulerProxy,
-        {
-          t: tl.totalDuration(),
-          duration: tl.totalDuration(),
-          ease: "none",
-          onUpdate: () => {
-            const bottom = (1 - rulerFraction(rulerProxy.t)) * 100;
-            rulerFill.style.clipPath = `inset(0px 0px ${bottom.toFixed(3)}% 0px)`;
-          },
-        },
-        0,
-      );
-
       return () => {
         restoreAborted = true;
         document.documentElement.removeAttribute("data-restoring");
@@ -2765,49 +2746,10 @@ export function HeroSectionClient({
       className="absolute inset-x-0"
       style={{ top: `max(0px, calc((100% - ${s(980)}) / 2))`, height: s(980) }}
     >
-      {/* vertical ruler bar left of the text (public/navigation-bar/navigation-bar.png, 35×913
-          native — green ticks at its top). Present in every state; the green-tinted overlay copy
-          fills top-down in lockstep with the whole pinned journey (clip-path scrubbed).
-          unoptimized: the optimizer's resample+recompress wipes out this asset's 1px
-          low-opacity ruler ticks entirely — serve the raw PNG instead. */}
-      <div
-        aria-hidden="true"
-        className="absolute"
-        style={{ left: s(99), top: s(48), width: s(30), height: s(782) }}
-      >
-        {/* grayscale: the PNG has green ticks baked into its top, but the ruler must start with
-            NO green at all — only the scroll-progress fill below brings the green in */}
-        <Image
-          src="/navigation-bar/navigation-bar.png"
-          alt=""
-          width={35}
-          height={913}
-          unoptimized
-          style={{ width: "100%", height: "100%", filter: "grayscale(1)" }}
-        />
-        {/* the green fill: solid brand layers MASKED by the ruler PNG itself, so revealed ticks
-            turn pure green (a filter-tinted copy stayed invisible — the ticks' alpha is too low;
-            two stacked layers punch the alpha up) */}
-        <div
-          ref={rulerFillRef}
-          className="absolute inset-0"
-          style={{ clipPath: "inset(0px 0px 100% 0px)" }}
-        >
-          {[0, 1].map((i) => (
-            <div
-              key={i}
-              className="absolute inset-0"
-              style={{
-                background: "#1ed148",
-                WebkitMaskImage: "url(/navigation-bar/navigation-bar.png)",
-                maskImage: "url(/navigation-bar/navigation-bar.png)",
-                WebkitMaskSize: "100% 100%",
-                maskSize: "100% 100%",
-              }}
-            />
-          ))}
-        </div>
-      </div>
+      {/* The vertical scroll-progress ruler that used to sit here (left of the text, at s(99)
+          — public/navigation-bar/navigation-bar.png with a green clip-path fill scrubbed by the
+          timeline) was removed on 2026-11-16 at the user's request. Its tick geometry and the
+          piecewise fill map are in git history if it is ever wanted back. */}
 
       {/* state 1 — hero text column. opacity 0 in the markup: the blur-in can only start once
           the effect has split the words, and without this the SSR frame showed the finished
