@@ -1,8 +1,8 @@
 # usectl Terms of Use
 
-**Last updated:** November 7, 2026
+**Last updated:** November 14, 2026
 
-These Terms of Use (the **"Terms"**) are an agreement between you and **usectl**, 37 Zhiuli Shartava St., Tbilisi 2209, Georgia (**"usectl"**, **"we"**, **"us"**).
+These Terms of Use (the **"Terms"**) are an agreement between you and **Systemctl LLC** (შპს „სისტემ სითი ელი“), 37 Zhiuli Shartava St., Tbilisi 2209, Georgia (**"usectl"**, **"we"**, **"us"**).
 
 They cover your use of usectl.com and of the usectl dashboard, API, CLI, mobile app, MCP server, AI features and related services (together, the **"Service"**).
 
@@ -63,7 +63,7 @@ Some resources may be charged based on usage, such as AI tokens, additional stor
 
 If a payment fails, we will notify you. You then have a **7-day grace period** to fix it.
 
-If the payment is still not made after that, your Machine is **archived**: its workloads are stopped, but your data is not deleted, and you can restore it by paying. If an account stays unpaid for a long time, we may delete archived data after giving you notice by email.
+If the payment is still not made after that, your Machine is **archived**: its workloads are stopped, but your data is kept for **30 days**, and you can restore it by paying. If you do not pay within those 30 days, the Machine and its data are deleted.
 
 ### 4.6 Price changes
 
@@ -146,7 +146,7 @@ If you send us feedback or suggestions, we may use them without any obligation t
 
 ### 11.1 By you
 
-You can stop using the Service and delete your account at any time from the dashboard or by emailing us.
+You can stop using the Service and delete your account at any time by emailing us at **info@usectl.com**. We delete the account, together with its projects and Machines, within **30 days**.
 
 ### 11.2 By us
 
@@ -163,7 +163,7 @@ Except in urgent cases, such as security risks, illegal activity or abuse, we wi
 
 Your workloads are stopped. Where the termination was not caused by a serious breach, you will have **30 days** to export your Customer Content. After that, we delete it as described in the Privacy Policy.
 
-Sections 4 (amounts owed), 5.3, 10, 12, 13 and 15 remain in force after termination.
+Sections 4 (amounts owed), 5.3, 10, 12, 13, 14 and 15 remain in force after termination.
 
 ## 12. Disclaimer
 
@@ -204,6 +204,6 @@ We may update these Terms. For significant changes, we will notify you by email 
 
 ## 18. Contact
 
-**usectl**
+**Systemctl LLC**
 37 Zhiuli Shartava St., Tbilisi 2209, Georgia
 Email: **info@usectl.com**
