@@ -50,6 +50,35 @@ function Tile({ n, style }: { n: number; style?: CSSProperties }) {
           filter: `blur(${s(10)})`,
         }}
       />
+      {/* board: each tile is a 76×76 r16 frame with Figma's Glass effect (white 1 % fill) — a
+          frosted dark plate with a light rim, strongest at the top-left and bottom-right corners.
+          The SVG export drops the effect, so it is rebuilt here; without it the glyphs float soft
+          and washed-out on the background. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          borderRadius: s(16),
+          background:
+            "linear-gradient(160deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.015) 45%, rgba(255,255,255,0.035) 100%), rgba(22,22,22,0.6)",
+          backdropFilter: `blur(${s(4)})`,
+          WebkitBackdropFilter: `blur(${s(4)})`,
+          boxShadow: `0 ${s(8)} ${s(18)} rgba(0,0,0,0.35), inset 0 0 ${s(12)} rgba(255,255,255,0.03)`,
+        }}
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          borderRadius: s(16),
+          padding: "1px",
+          background:
+            "linear-gradient(135deg, rgba(255,255,255,0.42) 0%, rgba(255,255,255,0.08) 28%, rgba(255,255,255,0.03) 50%, rgba(255,255,255,0.08) 72%, rgba(255,255,255,0.32) 100%)",
+          WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
+          WebkitMaskComposite: "xor",
+          mask: "linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0)",
+        }}
+      />
       <Image src={`/section-substrate/icon${n}.svg`} alt="" width={76} height={76} unoptimized className="relative h-full w-full" />
     </div>
   );
