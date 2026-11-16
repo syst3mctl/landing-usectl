@@ -51,6 +51,46 @@
   --grid-row: calc(var(--s) * 114);
   --grid-edge: 0px;
   --header-h: 96px;
+
+  /* ── THE GRID LINE ─────────────────────────────────────────────────────────────────────────
+     Figma strokes the grid at 0.05px / white 5%. A 0.05px stroke does not survive a browser's
+     rasteriser (it is rounded up to one device pixel and its colour scaled down by the coverage
+     it lost, which on a 1× screen comes out as nothing at all), so the design's INTENT — the
+     faintest possible hairline — is matched with the weight instead, at the design's own colour:
+       0.5px  = exactly one device pixel on a 2× screen (this Mac, most phones), crisp, no blur;
+                on a 1× screen the browser paints it at ~50% coverage, i.e. even fainter — which
+                is the right direction for a line that wants to be 0.05px.
+     Easy alternatives if 0.5 reads too strong or too weak on your display — change ONLY here:
+       --grid-line-w: 1px    + --grid-line-color: rgba(255,255,255,0.025)  (same total "ink",
+                                                                            softer, never blurry)
+       --grid-line-w: 0.25px (fainter still; below ~0.3px some GPUs drop it entirely)
+     Until 2026-11-16 these were 2px / 0.02 — four times the design's weight. */
+  /* 1px by default; 0.5px only where that is still at least ONE device pixel (see the
+     resolution query right after this block). A line thinner than one device pixel is what made
+     lines vanish at some browser zoom levels (2026-11-16): at 90 % on a retina screen the device
+     pixel ratio drops to 1.8, a 0.5px line becomes 0.9 of a pixel, and where it falls between two
+     pixels the rasteriser drops it. Same "ink" both ways: one device pixel at white 5 %. */
+  --grid-line-w: 1px;
+  --grid-line-color: rgba(255, 255, 255, 0.05);
+
+  /* ── THE #00000040 LAYER ───────────────────────────────────────────────────────────────────
+     The dark sheet the Figma file lays over the background. Both ways of reading it are built
+     (see BackgroundLines.tsx); THIS is the switch:
+       --bg-tint-above: 1  → (ა) an overlay ABOVE the grid and the grain, so it dims those too
+       --bg-tint-above: 0  → (ბ) the same colour as the page background, UNDER the lines, so the
+                                 base goes darker and the lines keep their full strength
+     Flip the 1 to a 0, save, look. Nothing else has to change. */
+  --bg-tint: rgba(0, 0, 0, 0.25); /* = #00000040 */
+  --bg-tint-above: 1;
+}
+
+/* ≥ 2 device pixels per CSS pixel (retina at 100 % zoom or more, most phones): 0.5px is a whole
+   device pixel, so the line can be as thin as the board wants without disappearing. Re-evaluated
+   live when the user zooms, because zoom changes the device pixel ratio. */
+@media (min-resolution: 2dppx) {
+  :root {
+    --grid-line-w: 0.5px;
+  }
 }
 
 /* < 1024 (phones, portrait tablets): own grid — 6 columns (10 on tablets) between 20px (32px)
@@ -451,6 +491,28 @@ html[data-restoring] [data-hero-stage] {
   }
 }
 
+/* /features (components/features/FeaturesPageClient.tsx): every [data-fe-reveal] fades up once,
+   the first time it comes near the viewport — the component's IntersectionObserver adds
+   data-fe-in. Under prefers-reduced-motion the observer never runs, so the rule below must not
+   leave anything hidden: that media query puts them at their final values outright. <noscript>
+   does the same (app/_site/features.tsx). */
+[data-fe-reveal] {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1), transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+[data-fe-reveal][data-fe-in] {
+  opacity: 1;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-fe-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
 /* The legal pages (/privacy, /terms and their /ka twins — app/_site/legal.tsx). The text is
    markdown rendered to plain HTML, so it is styled by element here rather than with utilities. */
 .legal {
@@ -585,4 +647,22 @@ html[data-restoring] [data-hero-stage] {
 .pr-pop {
   display: inline-block;
   animation: pr-pop 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Board-built scrolling pages (/features, /agents): the background grid scrolls with the page
+   instead of staying fixed to the viewport. On the Figma boards the lines are part of the page —
+   rows at 96 + 114·n from the top of the DOCUMENT — and content is placed on them (the agents
+   cards' corner "+" marks sit exactly on crossings), which a viewport-fixed grid can only match at
+   scroll 0. The body is `relative min-h-full`, so `absolute inset-0` spans the whole document. */
+body:has([data-grid-scroll]) .bg-lines {
+  position: absolute;
+}
+/* …and there the line is 1px at white 3 % on every screen (2026-11-16): the grid layer is then as
+   tall as the whole page, and Chrome may rasterise such a layer below the screen's pixel ratio when
+   other composited content (the blurred SceneLight glows) shares the area — a 0.5px line then falls
+   under one raster pixel and vanishes ("ამ ადგილას ხაზები აღარ ჩანს"). A whole CSS pixel survives any
+   raster scale; 3 % keeps it about as light as 0.5px at 5 % on a retina screen. */
+body:has([data-grid-scroll]) {
+  --grid-line-w: 1px;
+  --grid-line-color: rgba(255, 255, 255, 0.03);
 }

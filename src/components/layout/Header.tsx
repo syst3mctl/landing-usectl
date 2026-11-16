@@ -4,7 +4,7 @@ import { ColumnLines } from "@/components/layout/BackgroundLines";
 import { MobileMenu } from "@/components/layout/MobileMenu";
 import { NavItemLink } from "@/components/layout/NavItemLink";
 import { ButtonArrow } from "@/components/ui/icons";
-import { INSET_VW, HEADER_HIDE_WIDE, HEADER_HIDE_NARROW, LINE_COLOR, LINE_THICKNESS_PX } from "@/lib/grid";
+import { INSET_VW, HEADER_HIDE_WIDE, HEADER_HIDE_NARROW, LINE_COLOR, LINE_W, LINE_HALF } from "@/lib/grid";
 import { ctaAttr, navLinks, SIGNUP_URL } from "@/lib/nav";
 import { LangSwitcher } from "@/components/layout/LangSwitcher";
 import type { Dict, Lang } from "@/lib/i18n";
@@ -32,8 +32,8 @@ export function Header({ t, lang }: { t: Dict; lang: Lang }) {
         style={{
           left: "var(--grid-inset)",
           right: "calc(var(--grid-inset) - var(--grid-edge))",
-          backgroundImage: `repeating-linear-gradient(to right, ${LINE_COLOR} 0, ${LINE_COLOR} ${LINE_THICKNESS_PX}px, transparent ${LINE_THICKNESS_PX}px, transparent var(--grid-pitch))`,
-          backgroundPositionX: `-${LINE_THICKNESS_PX / 2}px`,
+          backgroundImage: `repeating-linear-gradient(to right, ${LINE_COLOR} 0, ${LINE_COLOR} ${LINE_W}, transparent ${LINE_W}, transparent var(--grid-pitch))`,
+          backgroundPositionX: `calc(-1 * ${LINE_HALF})`,
         }}
       />
       {/* The row's ≥1024 geometry (width, centring, the 130/99 design paddings) lives in

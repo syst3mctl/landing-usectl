@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/lib/seo";
-import { HTML_LANG, LANGS, LEGAL_DOCS, langPath, legalPath, pricingPath } from "@/lib/i18n";
+import { HTML_LANG, LANGS, LEGAL_DOCS, agentsPath, featuresPath, langPath, legalPath, pricingPath } from "@/lib/i18n";
 import { readLegal } from "@/lib/legal";
 
 // /sitemap.xml — the landing page, /pricing and the two legal pages, one entry per language, each carrying
@@ -25,6 +25,20 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.8,
     alternates: { languages: alternatesFor((l) => pricingPath(l)) },
   }));
+  const features = LANGS.map((lang) => ({
+    url: `${SITE_URL}${featuresPath(lang)}`,
+    lastModified,
+    changeFrequency: "monthly" as const,
+    priority: 0.8,
+    alternates: { languages: alternatesFor((l) => featuresPath(l)) },
+  }));
+  const agents = LANGS.map((lang) => ({
+    url: `${SITE_URL}${agentsPath(lang)}`,
+    lastModified,
+    changeFrequency: "monthly" as const,
+    priority: 0.8,
+    alternates: { languages: alternatesFor((l) => agentsPath(l)) },
+  }));
   const legal = LEGAL_DOCS.flatMap((doc) =>
     LANGS.filter((lang) => !readLegal(doc, lang).draft).map((lang) => ({
       url: `${SITE_URL}${legalPath(lang, doc)}`,
@@ -34,5 +48,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
       alternates: { languages: alternatesFor((l) => legalPath(l, doc)) },
     })),
   );
-  return [...home, ...pricing, ...legal];
+  return [...home, ...features, ...agents, ...pricing, ...legal];
 }

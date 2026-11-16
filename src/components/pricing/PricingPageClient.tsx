@@ -170,7 +170,7 @@ export function PricingPageClient({ t }: { t: Dict }) {
         gsap.fromTo(
           hero.querySelectorAll("[data-pr-reveal]"),
           { autoAlpha: 0, filter: "blur(12px)", y: 8 },
-          { autoAlpha: 1, filter: "blur(0px)", y: 0, duration: 0.7, ease: "power3.out", stagger: 0.1, delay: 0.1 },
+          { autoAlpha: 1, filter: "blur(0px)", y: 0, duration: 0.7, ease: "power3.out", stagger: 0.1, delay: 0.1, clearProps: "transform,filter" },
         );
       }
       // every later block rises in as it scrolls into view (once)
@@ -184,6 +184,10 @@ export function PricingPageClient({ t }: { t: Dict }) {
             duration: 0.7,
             ease: "power2.out",
             stagger: 0.08,
+            // once in place, drop the leftover transform: a transformed box is its own compositing
+            // layer, and over the fixed background grid (whose grain uses mix-blend) some browsers
+            // painted the closing card as an opaque patch with no grid lines through it (user, 2026-11-11)
+            clearProps: "transform",
             scrollTrigger: { trigger: group, start: "top 85%", once: true },
           },
         );
@@ -437,7 +441,7 @@ export function PricingPageClient({ t }: { t: Dict }) {
         </div>
         <div
           data-pr-reveal
-          className="relative flex flex-col items-center justify-center border border-white/[0.12] text-center"
+          className="relative flex flex-col items-center justify-center border border-white/[0.12] bg-transparent text-center"
           style={{ minHeight: r(342, 0), borderRadius: r(53, 28), padding: `${r(40)} ${r(40, 20)}` }}
         >
           <h2 className="font-heading font-medium text-brand" style={{ fontSize: r(32, 21), lineHeight: 1.1, letterSpacing: LS }}>

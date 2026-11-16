@@ -32,9 +32,20 @@ export const ROW_PITCH = vw(114); // horizontal line spacing
 export const HEADER_HEIGHT_PX = 96; // Header.tsx h-24 — fixed on purpose, does NOT scale
 
 export const NUM_COLUMNS = 22; // 1722 / 82 + 1, matches the confirmed x=99..1820 span
-export const LINE_THICKNESS_PX = 2; // thicker than a hairline on purpose — with fluid (vw) pitch, 1px lines land on fractional device pixels and anti-alias unevenly (some crisp, some blurry); 2px makes that variance much less noticeable
-const LINE_ALPHA = 0.02;
-export const LINE_COLOR = `rgba(255,255,255,${LINE_ALPHA})`;
+
+// The line's WEIGHT and COLOUR are CSS variables (--grid-line-w / --grid-line-color, defined in
+// globals.css) rather than numbers baked in here, so both can be tuned in ONE place without
+// touching any component. They were 2px / rgba(255,255,255,0.02) until 2026-11-16, when the design
+// was matched properly: Figma strokes the grid at 0.05px, white 5%.
+// Everything that draws a line uses these three strings; LINE_HALF is the half-weight offset that
+// centres a line on its grid coordinate (a 0.5px line sits 0.25px left of the column's x).
+export const LINE_W = "var(--grid-line-w, 0.5px)";
+// 0 since 2026-11-16: centring the line on its x (−half its width) put a one-device-pixel line
+// ACROSS two device pixels whenever x is a whole pixel, which the rasteriser paints as two
+// half-strength pixels — the "faint / missing at some zoom levels" lines. Starting the line ON the
+// x keeps it on one pixel; the shift is a quarter / half of a CSS pixel, invisible.
+export const LINE_HALF = "0px";
+export const LINE_COLOR = "var(--grid-line-color, rgba(255,255,255,0.05))";
 
 // Explicit hide-lists for vertical columns — replaces four failed CSS-mask attempts (mask-composite, data-URI SVG
 // mask, inline SVG mask with userSpaceOnUse, inline SVG mask with objectBoundingBox — see PROJECT.md for why).

@@ -258,6 +258,123 @@ export const ka: Dict = {
     tail: ", ინფრასტრუქტურას ჩვენ მივხედავთ",
   },
 
+  // ⚠️ ახალი ტექსტი 2026-11-16 — გადასამოწმებელია (NEW, NEEDS REVIEW)
+  // "The Substrate" is translated as "საფუძველი". If the team means it as a PRODUCT name rather
+  // than a description, leave the English words here instead — one line.
+  substrate: {
+    eyebrow: "საფუძველი",
+    heading: "შენ ქმნი. გაშვებაში ჩვენ გეხმარებით.",
+    body: "რესურსების არჩევიდან აპლიკაციის გაშვებამდე, usectl ინფრასტრუქტურას ამარტივებს.",
+    cta: "გაუშვი აპლიკაცია უფასოდ",
+  },
+
+  // ⚠️ ახალი ტექსტი 2026-11-16 — გადასამოწმებელია (NEW, NEEDS REVIEW)
+  // The seven blocks are a draft in the right shape: the user is sending the real copy from their
+  // screenshots. Card LABELS stay English (uppercase mono), like every other spec label on the site.
+  // ⚠️ ახალი ტექსტი 2026-11-16 — გადასამოწმებელია (NEW, NEEDS REVIEW)
+  // Translated from the team's boards in design/features/. The small GREEN LABELS above each card
+  // are left in English on purpose: most of them are product or spec strings that cannot be
+  // translated at all (AES-256-GCM, Qwen3-14B AI, usectl.app, Loki-powered), and mixing the two
+  // would read as an accident. Say the word and the translatable ones switch.
+  featuresPage: {
+    title: "ფუნქციები",
+    description:
+      "ინფრასტრუქტურის სრული კონტროლი დეველოპერისთვის: Git-ით გაშვება, გლობალური მარშრუტიზაცია, ავტომასშტაბირება, ტელემეტრია, უსაფრთხოება, კონფიგურაცია, ლოგები და ინტერაქტიული ტერმინალი.",
+    eyebrow: "სრული კონტროლი",
+    heading: "ყველაფერი, რაც შექმნას, გაშვებასა და ზრდას სჭირდება.",
+    body:
+      "ინფრასტრუქტურის მძლავრი კონტროლი თანამედროვე დეველოპერისთვის. მართე გაშვება, ქსელი და მასშტაბირება ერთი სუფთა დაფიდან ან CLI-დან.",
+    startFree: "დაიწყე უფასოდ",
+    talkToSales: "დაუკავშირდი გაყიდვებს",
+    final: {
+      eyebrow: "უსაფრთხო sandbox-ები და ავტონომიური OPS",
+      heading: "დაასაქმე შენი აგენტები usectl-ზე",
+      body: "გაუშვი ღია კოდის AI აგენტები gVisor sandbox-ებში და მიეცი copilot-ებს შენი ინფრასტრუქტურის მართვის საშუალება.",
+      start: "დაიწყე უფასოდ",
+      docs: "იხილე დოკუმენტაცია",
+    },
+    scrollUp: "ზემოთ",
+    blocks: [
+      {
+        tab: "გაშვება",
+        title: "მყისიერი გაშვება Git Push-ითა და Webhook-ებით",
+        body:
+          "ერთხელ დააკავშირე რეპოზიტორია და დანარჩენს usectl მოაგვარებს. ყოველი git push ავტომატურად აგებს და წამებში უშვებს შენს კოდს, ხოლო ღია Pull Request-ები მყისვე ქმნის დროებით staging გარემოებს.",
+        cards: [
+          { label: "", title: "GitHub და Webhook-ები", body: "დააკავშირე ნებისმიერი რეპოზიტორია და ყოველ push-ზე მიიღე მყისიერი build." },
+          { label: "usectl.app", title: "PR Preview გარემოები", body: "ყოველი pull request-ისთვის ავტომატურად ჩნდება დროებითი staging მისამართი" },
+          { label: "~0.8s build time", title: "სწრაფი build-ები", body: "ოპტიმიზებული კონტეინერის build-ები, რომლებიც კოდს წამებში უშვებს production-ში." },
+        ],
+      },
+      {
+        tab: "ქსელი",
+        title: "გლობალური მარშრუტიზაცია და საკუთარი დომენები",
+        body:
+          "მიმართე შემომავალი ტრაფიკი ჩაშენებული დატვირთვის ბალანსირებით, ავტომატური TLS სერტიფიკატებითა და დომენებით, რომლებიც კონფიგურაციის გარეშე მიუთითებს შენს სერვისებზე.",
+        cards: [
+          { label: "Free usectl domain", title: "საჯარო ქსელი", body: "გამოიტანე აპლიკაცია ინტერნეტში მყისვე, ავტომატური მარშრუტიზაციითა და SSL-ით." },
+          { label: "Encrypted", title: "კერძო ქსელი", body: "დააკავშირე პროექტის სერვისები უსაფრთხოდ, სწრაფი შიდა DNS-ით." },
+          { label: "Configurable port", title: "TCP და UDP პროქსი", body: "გაგზავნე ტრაფიკი ნებისმიერ სერვისზე ან პროტოკოლზე, რომელიც HTTP-ს არ იყენებს." },
+        ],
+      },
+      {
+        tab: "მასშტაბირება",
+        title: "ჰორიზონტალური და ვერტიკალური მასშტაბირება",
+        body:
+          "გაზარდე აპლიკაცია მარტივად. შეცვალე pod-ების რაოდენობა მყისვე მაღალი ხელმისაწვდომობისთვის ან დეტალურად დაარეგულირე Machine-ის რესურსები პიკური დატვირთვისთვის.",
+        cards: [
+          { label: "Replica count", title: "ჰორიზონტალური Pod რეპლიკები", body: "გაზარდე ან შეამცირე ინსტანსების რაოდენობა მყისვე, მარტივი CLI ბრძანებით (usectl machines pods set)." },
+          { label: "vCPU & RAM tuning", title: "Machine-ის დეტალური ზომა", body: "დაარეგულირე CPU და მეხსიერება ზუსტად იმდენად, რამდენიც შენს დატვირთვას სჭირდება." },
+          { label: "Auto-distribution", title: "მაღალი ხელმისაწვდომობა", body: "რეპლიკები ავტომატურად ნაწილდება კვანძებზე, რომ ტრაფიკის ნახტომისას გაჩერება არ მოხდეს." },
+        ],
+      },
+      {
+        tab: "მონიტორინგი",
+        title: "რეალურ დროში ტელემეტრია და AI ინციდენტების მართვა",
+        body:
+          "სრული ხედვა Mimir-ის, Loki-სა და Tempo-ს საფუძველზე. აკონტროლე რესურსები, თვალი ადევნე ტრაფიკს და მიეცი AI-ს ინციდენტების მოგვარება მანამ, სანამ ისინი მომხმარებელს შეეხება.",
+        cards: [
+          { label: "Zero Prometheus", title: "მეტრიკები და Tracing", body: "მაღალი წარმადობის ტელემეტრია Grafana Alloy-ის, Mimir-ის, Loki-სა და Tempo-ს საფუძველზე." },
+          { label: "Auto-rollback", title: "გაშვების უსაფრთხოების მეთვალყურე", body: "ავტომატური დაბრუნება წინა ვერსიაზე, თუ განახლებისას შეცდომების წილი (HTTP 5xx) ზღვარს გადააჭარბებს." },
+          { label: "Qwen3-14B AI", title: "AI ინციდენტების აგენტი", body: "ავტონომიური დიაგნოსტიკა და ერთი შეხებით აღდგენა: LLM რეალურ დროში კითხულობს ლოგებსა და trace-ებს." },
+        ],
+      },
+      {
+        tab: "უსაფრთხოება",
+        title: "მრავალშრიანი უსაფრთხოება და იზოლირებული sandbox-ები",
+        body:
+          "კორპორატიული დონის უსაფრთხოება: ბირთვის დონის gVisor იზოლაცია, ქსელის მკაცრი namespace პოლიტიკა, დაშიფრული Vault საცავი და AI-ს დაცული ჩარჩოები.",
+        cards: [
+          { label: "System call isolation", title: "gVisor კონტეინერის Sandbox", body: "სრულად იზოლირე უცნობი დატვირთვები და AI აგენტები ბირთვის დონეზე სისტემური გამოძახებების გადაჭერით (runsc)." },
+          { label: "AES-256-GCM", title: "Vault-ის დაშიფვრა", body: "შეინახე საიდუმლოები უსაფრთხოდ AES-256-GCM დაშიფვრით, ჯაჭვური აუდიტის ლოგებითა და write-only ცვლადებით." },
+          { label: "Zero Direct Write", title: "AI Copilot-ის ჩარჩოები", body: "შეინარჩუნე ადამიანის კონტროლი: მოდელი სთავაზობს, ადამიანი ამტკიცებს, პლუს შეზღუდული აგენტის API გასაღებები." },
+        ],
+      },
+      {
+        tab: "ცვლადები",
+        title: "გარემოს ცვლადები და დაცული კონფიგურაცია",
+        body:
+          "მართე გარემოს ცვლადები და საიდუმლოები თითო pod-ის დონეზე, write-only დაცვითა და გაჟონვის გარეშე დაშიფვრით მთელ გაშვებაზე.",
+        cards: [
+          { label: "Pod-level scoping", title: "Pod-ზე მიბმული ცვლადები", body: "მიაბი კონფიგურაცია კონკრეტულ pod-ებს და არა მთელ Machine-ს, ზუსტი კონტროლისთვის." },
+          { label: "Zero leakage", title: "Write-Only საიდუმლოები", body: "დაიცავი ტოკენები და გასაღებები დამალული ინტერფეისითა და write-only წვდომით, შემთხვევითი გამჟღავნების თავიდან ასაცილებლად." },
+          { label: "AES-256 protected", title: "დაშიფრული საცავი", body: "მთელი კონფიგურაცია უსაფრთხოდ ინახება თანამედროვე დაშიფვრითა და აუდიტისთვის მზა ჩანაწერებით." },
+        ],
+      },
+      {
+        tab: "ლოგები",
+        title: "რეალურ დროში ლოგები და ინტერაქტიული ტერმინალი",
+        body:
+          "იპოვე პრობლემა მყისვე ცენტრალიზებული ლოგებით Loki-ზე, ან პირდაპირ შედი კონტეინერის უსაფრთხო ტერმინალში დეტალური გამართვისთვის.",
+        cards: [
+          { label: "Loki-powered", title: "ცენტრალიზებული ლოგები", body: "შეკრიბე და მიჰყევი კონტეინერების ლოგებს რეალურ დროში მთელ კლასტერში, Loki-ს საფუძველზე." },
+          { label: "Secure exec", title: "ინტერაქტიული ტერმინალი", body: "შეასრულე დიაგნოსტიკური ბრძანებები უსაფრთხოდ კონტეინერის შიგნით, CLI-დან ან ვებ დაფიდან." },
+          { label: "Node-level agents", title: "Alloy ლოგების შეგროვება", body: "ლოგები კვანძის დონეზე ეფექტურად გროვდება Grafana Alloy-ის აგენტებით." },
+        ],
+      },
+    ],
+  },
+
   footer: {
     navigation: "ნავიგაცია",
     contact: "კონტაქტი",
@@ -314,6 +431,58 @@ export const ka: Dict = {
     decrease: "{name}: შემცირება",
     increase: "{name}: გაზრდა",
     language: "ენა",
+  },
+
+  // /agents. DRAFT ქართული — სახელები (Hermes Agent, OpenClaw, usectl agt, gVisor, runsc) ინგლისურად რჩება;
+  // `prompt` ბუფერში ზუსტად ასე კოპირდება, ამიტომ ინგლისურია (აგენტი ინგლისურ ინსტრუქციას კითხულობს).
+  agentsPage: {
+    title: "აგენტები",
+    description:
+      "გაუშვი ღია კოდის AI აგენტები იზოლირებულ gVisor სენდბოქსებში მუდმივი საცავით, ხოლო ავტონომიური ჩაშენებული კოპილოტები ხარვეზებს გაარჩევენ და ინციდენტებს უსაფრთხოდ მართავენ.",
+    eyebrow: "Usectl აგენტებისთვის",
+    heading: "დააკავშირე შენი აგენტი usectl-ს",
+    body:
+      "გაუშვი ღია კოდის AI აგენტები იზოლირებულ gVisor სენდბოქსებში მუდმივი საცავით, ხოლო ავტონომიური ჩაშენებული კოპილოტები ხარვეზებს გაარჩევენ და ინციდენტებს უსაფრთხოდ მართავენ.",
+    prompt: "Read [usectl.com/agents.md](https://usectl.com/agents.md) and set up my environment",
+    copy: "კოპირება",
+    copied: "დაკოპირდა",
+    logosLabel: "მუშაობს Claude-თან, ChatGPT-თან, Cursor-თან, OpenCode-თან, Grok-თან, Gemini-თან და Devin-თან",
+    choose: {
+      heading: "აირჩიე შენი აგენტი",
+      setup: "დაყენების გზამკვლევი",
+      cards: [
+        { title: "Hermes Agent", body: "მუდმივი მეხსიერება და იზოლირებული ქსელები" },
+        { title: "OpenClaw", body: "უსაფრთხო გაშვება გარე წვდომის გარეშე" },
+        { title: "Task Agent", body: "ფონური პროცესები და webhook-ები" },
+      ],
+    },
+    copilots: {
+      heading: "ჩაშენებული ინფრასტრუქტურის კოპილოტები",
+      cards: [
+        { title: "Devo Admin Copilot", body: "„შესთავაზე და დაადასტურე“ პროცესები პირდაპირი ჩაწერის გარეშე. დაადასტურე CLI-დან, ვებიდან ან Face ID-ით." },
+        { title: "Failed-Deploy Triage", body: "ჩავარდნისას ბილდის ლოგებს თავად აანალიზებს, შენთვის უფასოდ, და გასწორებებს PR-ებში წერს." },
+        { title: "Incident Remediation", body: "Grafana-ს შეტყობინებებს აკვირდება notify, approve ან auto რეჟიმებში, ერთი შეხებით დადასტურებით." },
+        { title: "Ops & Weekly Digests", body: "ღამის კლასტერის ანგარიშები 05:00 UTC-ზე და ორშაბათობით მანქანების შეჯამება." },
+      ],
+    },
+    untrusted: {
+      heading: "შექმნილია არასანდო კოდის გასაშვებად",
+      cards: [
+        { title: "Hermes Agent", body: "gVisor ბირთვის სენდბოქსი (runsc)" },
+        { title: "Scoped API Keys (usectl agt)", body: "მინიმალური უფლებების ტოკენები, მიბმული პროექტის ID-ებზე და ვადაზე." },
+      ],
+    },
+    templates: {
+      heading: "შაბლონები",
+      deploy: "შაბლონის გაშვება",
+      items: ["Hermes on usectl", "OpenClaw Sandboxed", "CI/CD Triage Bot"],
+    },
+    final: {
+      eyebrow: "უსაფრთხო AI და ავტონომიური OPS",
+      heading: "ამუშავე შენი აგენტები usectl-ზე",
+      body: "გაუშვი ღია კოდის AI აგენტები gVisor სენდბოქსებში და ინფრასტრუქტურის მართვა ჩაშენებულ კოპილოტებს მიანდე.",
+      deploy: "აგენტის გაშვება",
+    },
   },
 
   seo: {

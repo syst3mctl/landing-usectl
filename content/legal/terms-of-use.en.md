@@ -2,7 +2,7 @@
 
 **Last updated:** November 7, 2026
 
-These Terms of Use (the **"Terms"**) are an agreement between you and **[[LEGAL ENTITY NAME]]**, identification code **[[ID CODE]]**, 37 Zhiuli Shartava St., Tbilisi 2209, Georgia (**"usectl"**, **"we"**, **"us"**).
+These Terms of Use (the **"Terms"**) are an agreement between you and **usectl**, 37 Zhiuli Shartava St., Tbilisi 2209, Georgia (**"usectl"**, **"we"**, **"us"**).
 
 They cover your use of usectl.com and of the usectl dashboard, API, CLI, mobile app, MCP server, AI features and related services (together, the **"Service"**).
 
@@ -71,7 +71,7 @@ We may change prices. For existing subscriptions, we will give you at least **30
 
 ### 4.7 Refunds
 
-Fees already paid are **not refunded**, including for partly used periods, unless the law requires a refund or we agree to one in writing. [[CONFIRM REFUND POLICY]]
+Fees already paid are **not refunded**, including for partly used periods, unless the law requires a refund or we agree to one in writing.
 
 ## 5. Your content
 
@@ -204,6 +204,6 @@ We may update these Terms. For significant changes, we will notify you by email 
 
 ## 18. Contact
 
-**[[LEGAL ENTITY NAME]]**
+**usectl**
 37 Zhiuli Shartava St., Tbilisi 2209, Georgia
 Email: **info@usectl.com**

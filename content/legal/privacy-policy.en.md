@@ -10,7 +10,7 @@ A Georgian version of this policy is available. If the two versions differ, the 
 
 ## 1. Who we are
 
-The Service is operated by **[[LEGAL ENTITY NAME]]**, identification code **[[ID CODE]]**, registered at 37 Zhiuli Shartava St., Tbilisi 2209, Georgia (**"usectl"**, **"we"**, **"us"**).
+The Service is operated by **usectl**, 37 Zhiuli Shartava St., Tbilisi 2209, Georgia (**"usectl"**, **"we"**, **"us"**).
 
 For personal data about our own users, such as account, billing and website data, we are the **controller**.
 
@@ -73,7 +73,7 @@ usectl includes AI features: the Devo assistant, automated deploy triage, the in
 - By default, these features run on **models hosted in our own infrastructure**. Your prompts, logs and code sent to these features are not passed to outside AI companies.
 - If **you** configure an external AI provider (for example OpenAI, Anthropic or Google), requests you send through it go to that provider under its own terms and privacy policy.
 - We record token usage so we can meter and bill the AI addon.
-- **We do not use your Customer Content to train AI models.** [[CONFIRM BEFORE PUBLISHING]]
+- **We do not use your Customer Content to train AI models.**
 
 ## 6. Who we share data with
 
@@ -85,7 +85,7 @@ We share personal data only with service providers that help us run the Service,
 | Stripe | Payment processing, subscriptions and invoices | EU / USA |
 | Google | Sending email (Google Workspace), Google sign-in, website analytics (Google Analytics, only with your consent), demo bookings (Google Calendar) | EU / USA |
 | Meta Platforms Ireland Ltd. and Meta Platforms, Inc. | Meta Pixel on usectl.com: measuring our ad campaigns (only with your consent) | EU (Ireland) / USA |
-| Web3Forms | Delivering newsletter sign-ups from the website footer to our inbox | [[CONFIRM]] |
+| Web3Forms (Web3Creative) | Delivering newsletter sign-ups from the website footer to our inbox | India |
 | GitHub | Repository access, GitHub sign-in | USA |
 | Apple | Sign in with Apple, push notifications on iOS | USA |
 | Cloudflare | TLS and routing for custom domains; detecting the visitor's country on usectl.com | Global |
@@ -176,6 +176,6 @@ We may update this policy. For significant changes, we will notify you by email 
 
 ## 14. Contact
 
-**[[LEGAL ENTITY NAME]]**
+**usectl**
 37 Zhiuli Shartava St., Tbilisi 2209, Georgia
 Email: **info@usectl.com**

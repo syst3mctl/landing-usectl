@@ -5,7 +5,8 @@ import {
   ROW_PITCH,
   HEADER_HEIGHT_PX,
   LINE_COLOR,
-  LINE_THICKNESS_PX,
+  LINE_W,
+  LINE_HALF,
   NUM_COLUMNS,
 } from "@/lib/grid";
 
@@ -21,6 +22,9 @@ const ROW_GRID_TOP = `calc(var(--header-h, ${HEADER_HEIGHT_PX}px) + var(--grid-r
 // `max-[1799px]` left a one-pixel hole at exactly 1799px where neither rule matched and every
 // column showed (measured 2026-09-20 at 1798/1799/1800). `max-[1800px]` is the exact complement of
 // `min-[1800px]`, so the two can no longer disagree at any width.
+/** rows for the longest page: /features is ~7 300 board px tall; 140 × 114 ≈ 16 000 */
+const ROW_COUNT = 140;
+
 const HIDDEN_AT_WIDE = "min-[1800px]:hidden";
 const HIDDEN_AT_NARROW = "max-[1800px]:hidden";
 
@@ -53,8 +57,8 @@ export function ColumnLines({
             data-col={col}
             className={`absolute top-0 h-full ${visibilityClass}`}
             style={{
-              left: `calc(${idx} * ${COLUMN_PITCH} - ${LINE_THICKNESS_PX / 2}px)`,
-              width: `${LINE_THICKNESS_PX}px`,
+              left: `calc(${idx} * ${COLUMN_PITCH} - ${LINE_HALF})`,
+              width: LINE_W,
               backgroundColor: color,
             }}
           />
@@ -83,26 +87,41 @@ function CssGridLines({ color = LINE_COLOR }: { color?: string }) {
           columns stayed hidden; team feedback 2026-09-29 ("ხაზების ბოლომდე აწევა header-თან")
           asked for every column to run all the way up to the header instead. Inside the header
           itself the nav gap stays (Header.tsx's own ColumnLines). */}
+      {/* Lines are real 1-line DIVs, not repeating gradients (2026-11-16: "ზოგ ზუმზე ხაზები
+          ქრება"). A gradient stop thinner than a device pixel, or one that falls between two, is
+          dropped or halved by the rasteriser depending on zoom and width; a positioned box is
+          snapped to whole device pixels instead, so every line always paints. Extra columns /
+          rows past the layer's edge are clipped (overflow-hidden), which is how the same markup
+          serves the 22-column desktop grid and the 6/10-column phone and tablet grids.
+          --grid-* / --header-h (globals.css) equal INSET_VW / COLUMN_PITCH / 96px on desktop; below
+          1024 they switch to a phone/tablet grid whose last line lands exactly on the right inset. */}
       <div
-        className="absolute bottom-0"
+        className="absolute bottom-0 overflow-hidden"
         style={{
-          // --grid-* / --header-h (globals.css) equal INSET_VW / COLUMN_PITCH / 96px on desktop; below
-          // 1024 they switch to a phone/tablet grid whose last line lands exactly on the right inset
           left: `var(--grid-inset, ${INSET_VW})`,
-          right: `calc(var(--grid-inset, ${INSET_VW}) - var(--grid-edge, 0px))`,
+          right: `calc(var(--grid-inset, ${INSET_VW}) - var(--grid-edge, 0px) - ${LINE_W})`,
           top: `var(--header-h, ${HEADER_HEIGHT_PX}px)`,
-          backgroundImage: `repeating-linear-gradient(to right, ${color} 0, ${color} ${LINE_THICKNESS_PX}px, transparent ${LINE_THICKNESS_PX}px, transparent var(--grid-pitch, ${COLUMN_PITCH}))`,
-          backgroundPositionX: `-${LINE_THICKNESS_PX / 2}px`,
         }}
-      />
-      {/* horizontal row lines — full viewport width (left:0 to right:0), starts below the header so none land inside it */}
-      <div
-        className="absolute inset-x-0 bottom-0"
-        style={{
-          top: ROW_GRID_TOP,
-          backgroundImage: `repeating-linear-gradient(to bottom, ${color} 0, ${color} ${LINE_THICKNESS_PX}px, transparent ${LINE_THICKNESS_PX}px, transparent var(--grid-row, ${ROW_PITCH}))`,
-        }}
-      />
+      >
+        {Array.from({ length: NUM_COLUMNS }, (_, i) => (
+          <div
+            key={i}
+            className="absolute inset-y-0"
+            style={{ left: `calc(${i} * var(--grid-pitch, ${COLUMN_PITCH}) - ${LINE_HALF})`, width: LINE_W, backgroundColor: color }}
+          />
+        ))}
+      </div>
+      {/* horizontal row lines — full viewport width, starting one row below the header so none land
+          inside it. ROW_COUNT covers the longest page at any scale; the rest is clipped. */}
+      <div className="absolute inset-x-0 bottom-0 overflow-hidden" style={{ top: ROW_GRID_TOP }}>
+        {Array.from({ length: ROW_COUNT }, (_, i) => (
+          <div
+            key={i}
+            className="absolute inset-x-0"
+            style={{ top: `calc(${i} * var(--grid-row, ${ROW_PITCH}))`, height: LINE_W, backgroundColor: color }}
+          />
+        ))}
+      </div>
     </>
   );
 }
@@ -111,7 +130,18 @@ export function BackgroundLines() {
   return (
     // FIXED to the viewport, not to the page — the header-band column lines always line up with the
     // sticky header, and pinned/scrolling content never shows the grid sliding behind it.
-    <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+    // `bg-lines`: on the long scrolling pages (/features, /agents — they carry [data-grid-scroll]) this
+    // layer is switched from fixed to absolute in globals.css, so the grid scrolls WITH the content,
+    // as on the Figma boards, where the cards' corner marks sit on the grid's crossings.
+    <div aria-hidden className="bg-lines pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+      {/* The design's #00000040 layer, VARIANT (B): below the grain and the grid, i.e. it only
+          darkens the page colour and the lines keep their full strength. One variable picks which
+          of the two is live — see --bg-tint-above in globals.css. The two layers are deliberately
+          both in the DOM: switching is then a repaint, not a re-render. */}
+      <div
+        className="absolute inset-0"
+        style={{ background: "var(--bg-tint)", opacity: "calc(1 - var(--bg-tint-above, 1))" }}
+      />
       {/* Grain texture (Figma's own `feTurbulence` noise filter, exported as-is in the SVG) —
           at full opacity its thresholded noise reads as scattered white dots in some browsers
           (`feFuncA type="discrete"` makes a binary stipple pattern by construction, and some
@@ -127,6 +157,12 @@ export function BackgroundLines() {
         }}
       />
       <CssGridLines />
+      {/* Same layer, VARIANT (A): on top of the grain AND the grid, so it dims those too — the
+          literal reading of the Figma file, where #00000040 is the topmost background layer. */}
+      <div
+        className="absolute inset-0"
+        style={{ background: "var(--bg-tint)", opacity: "var(--bg-tint-above, 1)" }}
+      />
     </div>
   );
 }
