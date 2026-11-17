@@ -398,7 +398,11 @@ export function FeaturesPageClient({ t }: { t: Dict }) {
   }, []);
 
   return (
-    <div data-grid-scroll className="fe-page relative w-full">
+    // overflow-x-clip: decorations that reach past the page's edge (the CTA card's side lights)
+    // must not widen the page — on a phone they made it 429px wide, so a sideways swipe dragged the
+    // whole site over and left it there (user, 2026-11-17). `clip`, not `hidden`: it creates no
+    // scroll container, so the sticky tab bar keeps sticking. /agents and /pricing already had it.
+    <div data-grid-scroll className="fe-page relative w-full overflow-x-clip">
       {/* ── hero ─────────────────────────────────────────────────────────────────────────
           board: eyebrow y184 (88 under the 96 header), H1 y204, lead y303 (913 wide),
           buttons y394 (156×44 / 158×44, gap 18), then 132 to the tab capsule. */}
