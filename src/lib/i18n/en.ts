@@ -294,17 +294,17 @@ export const en = {
   featuresPage: {
     title: "Features",
     description:
-      "Powerful infrastructure controls for modern developers: Git deploys, global routing, autoscaling, telemetry, security, configuration, logs and an interactive terminal.",
+      "Powerful infrastructure controls for modern developers: Git deploys, edge routing, scaling, telemetry, security, configuration, logs and an interactive terminal.",
     eyebrow: "Complete Control",
     heading: "Everything you need to build, ship, and scale.",
     body:
       "Powerful infrastructure controls designed for modern developers. Manage your deployments, networking, and scaling effortlessly from a clean dashboard or CLI.",
     startFree: "Start Free",
-    talkToSales: "Talk to sales",
+    talkToSales: "Book a demo",
     final: {
       eyebrow: "Secure sandboxes & autonomous OPS",
       heading: "Put your agents to work on usectl",
-      body: "Host open-source AI agents in gVisor sandboxes and let native copilots manage your infrastructure.",
+      body: "Host open-source AI agents in network-isolated sandboxes and let built-in copilots manage your infrastructure.",
       start: "Start Free",
       docs: "Read Docs",
     },
@@ -312,55 +312,55 @@ export const en = {
     blocks: [
       {
         tab: "Deploy",
-        title: "Instant Deploys via Git Push & Webhooks",
+        title: "Automatic Deploys on Every Git Push",
         body:
-          "Connect your repository once and let usectl handle the rest. Every git push automatically builds and deploys your code in seconds, while open Pull Requests instantly generate temporary staging preview environments.",
+          "Connect a GitHub repository once and let usectl handle the rest. Every push to your tracked branch builds and deploys automatically, and pull requests can get their own temporary preview environments.",
         cards: [
-          { label: "", title: "GitHub & Webhooks", body: "Connect any repository and trigger instant builds on every push." },
-          { label: "usectl.app", title: "PR Preview Environments", body: "Automatically spin up temporary staging URLs for every pull request" },
-          { label: "~0.8s build time", title: "Lightning Fast Builds", body: "Optimized container builds that ship your code to production in seconds." },
+          { label: "", title: "GitHub Integration", body: "Connect a GitHub repository and every push to your branch starts a build." },
+          { label: "*.usectl.com", title: "PR Preview Environments", body: "Turn on previews and every pull request gets a temporary URL, removed when the PR closes." },
+          { label: "Layer caching", title: "Cached Container Builds", body: "Container builds reuse cached layers, so unchanged steps are skipped on every deploy." },
         ],
       },
       {
         tab: "Network & Routing",
-        title: "Global Routing & Custom Domains",
+        title: "Edge Routing & Custom Domains",
         body:
-          "Route incoming traffic seamlessly with built-in load balancing, automatic TLS certificates, and zero-configuration domains that point straight to your services.",
+          "Traffic enters through Cloudflare\u2019s global edge with automatic TLS, then is load-balanced across your replicas. Start on a free usectl.com subdomain or bring your own domain.",
         cards: [
-          { label: "Free usectl domain", title: "Public Networking", body: "Expose your application to the public internet instantly with automated routing and SSL provisioning." },
-          { label: "Encrypted", title: "Private Networking", body: "Connect colocated services securely across your project with high-speed internal DNS resolution." },
-          { label: "Configurable port", title: "TCP & UDP Proxy", body: "Send traffic to any service or custom protocol that doesn\u2019t support HTTP with full flexibility." },
+          { label: "Free usectl domain", title: "Public Networking", body: "Expose your application to the public internet instantly with automated routing and TLS." },
+          { label: "Isolated", title: "Private Networking", body: "Services in a machine reach each other over internal DNS, while network policies keep other tenants out." },
+          { label: "Cluster-internal", title: "Internal TCP & UDP Ports", body: "Open extra TCP or UDP ports so sibling services can reach them. Public traffic is HTTP(S)." },
         ],
       },
       {
         tab: "Scale",
         title: "Horizontal & Vertical Scaling",
         body:
-          "Scale your application effortlessly. Adjust pod replicas instantly for high availability or resize machine resources granularly to handle peak workloads.",
+          "Scale your application on your terms. Set the replica count of any app, or resize its CPU and memory to handle heavier workloads.",
         cards: [
-          { label: "Replica count", title: "Horizontal Pod Replicas", body: "Scale your instance count up or down instantly with simple CLI updates (usectl machines pods set)." },
-          { label: "vCPU & RAM tuning", title: "Granular Machine Resizing", body: "Tune CPU and memory allocations precisely to match your workload performance requirements." },
-          { label: "Auto-distribution", title: "High Availability & Failover", body: "Distribute replicas across nodes automatically to ensure zero downtime during traffic spikes." },
+          { label: "Replica count", title: "Horizontal Pod Replicas", body: "Set your instance count with one CLI command (usectl machines pods set <machine> <pod> replicas=N)." },
+          { label: "vCPU & RAM tuning", title: "Granular Resource Sizing", body: "Tune CPU and memory for each app, down to 100m CPU and 128 MiB, to match your workload." },
+          { label: "Zero-downtime rollouts", title: "Rolling Updates", body: "New pods come up before old ones stop, so a deploy doesn’t take your app offline." },
         ],
       },
       {
         tab: "Monitoring & Metrics",
         title: "Real-Time Telemetry & AI Incident Response",
         body:
-          "Comprehensive observability powered by Mimir, Loki, and Tempo. Monitor resource health, track traffic metrics, and let AI automatically resolve incidents before they impact users.",
+          "Comprehensive observability powered by Mimir, Loki, and Tempo. Monitor resource health, track traffic metrics, and let the AI incident agent diagnose alerts and propose fixes you approve.",
         cards: [
-          { label: "Zero Prometheus", title: "Metrics & Tracing Stack", body: "High-performance telemetry powered by Grafana Alloy, Mimir, Loki, and Tempo for complete visibility." },
-          { label: "Auto-rollback", title: "Deploy-Safety Watcher", body: "Automatic rollbacks triggered instantly if error rates (HTTP 5xx) exceed safety thresholds during updates." },
-          { label: "Qwen3-14B AI", title: "AI Incident Agent", body: "Autonomous diagnostics and 1-tap remediation powered by advanced LLMs analyzing logs and traces in real time." },
+          { label: "No Prometheus server", title: "Metrics & Tracing Stack", body: "High-performance telemetry powered by Grafana Alloy, Mimir, Loki, and Tempo for complete visibility." },
+          { label: "Optional auto-rollback", title: "Deploy-Safety Watcher", body: "Turn it on and usectl rolls a deploy back if the HTTP 5xx rate stays above a safety threshold after release." },
+          { label: "Qwen3-14B AI", title: "AI Incident Agent", body: "When an alert fires, an LLM reads logs, metrics and recent deploys, explains the likely cause and proposes a fix you approve in one tap." },
         ],
       },
       {
         tab: "Security",
         title: "Defense-in-Depth Security & Sandboxed Isolation",
         body:
-          "Enterprise-grade security architecture featuring kernel-level gVisor isolation, strict network namespace policies, encrypted Vault storage, and secure AI guardrails.",
+          "Layered security featuring network-isolated agent sandboxes, strict per-namespace network policies, a built-in encrypted secret vault, and AI guardrails.",
         cards: [
-          { label: "System call isolation", title: "gVisor Container Sandbox", body: "Isolate untrusted workloads and AI agents completely using kernel-level system call interception (runsc)." },
+          { label: "Internet-only egress", title: "Isolated Agent Sandboxes", body: "Hosted AI agents run in their own pods behind a network policy: they reach the public internet and nothing else in the cluster." },
           { label: "AES-256-GCM", title: "Vault Envelope Encryption", body: "Store sensitive secrets safely with AES-256-GCM encryption, hash-chained audit logs, and write-only protected variables." },
           { label: "Zero Direct Write", title: "AI Copilot Guardrails", body: "Maintain strict human oversight with \u201cModel Proposes, Human Approves\u201d workflows and scoped agent API keys." },
         ],
@@ -369,20 +369,20 @@ export const en = {
         tab: "Variables & Configuration",
         title: "Scoped Variables & Secure Configurations",
         body:
-          "Manage environment variables and secrets with granular pod-level scoping, write-only protection, and zero-leakage encryption across your deployments.",
+          "Manage environment variables and secrets at machine or pod level, with write-only protection and encryption at rest.",
         cards: [
           { label: "Pod-level scoping", title: "Pod-Scoped Variables", body: "Bind environment configurations specifically to target pods rather than the entire machine for precise control." },
-          { label: "Zero leakage", title: "Write-Only Secrets", body: "Secure sensitive tokens and keys with masked interfaces and write-only retrieval to prevent accidental exposure." },
-          { label: "AES-256 protected", title: "Encrypted Storage", body: "Ensure all configuration data remains safe at rest with advanced encryption and audit-ready tracking." },
+          { label: "Write-only", title: "Write-Only Secrets", body: "Protected variables are never shown again after saving, and sensitive keys are masked in the dashboard and CLI." },
+          { label: "AES-256-GCM", title: "Encrypted Variables", body: "Environment variables are stored with AES-256-GCM encryption, and every change is logged: who and when, never the value." },
         ],
       },
       {
         tab: "Logs & Terminal",
         title: "Real-Time Logs & Interactive Terminal",
         body:
-          "Diagnose issues instantly with centralized log streaming powered by Loki, or jump directly into secure interactive container terminals for advanced debugging.",
+          "Diagnose issues quickly: search logs stored in Loki, live-tail any pod from the CLI, or jump into a secure interactive terminal inside a container.",
         cards: [
-          { label: "Loki-powered", title: "Centralized Log Streaming", body: "Aggregate and tail container logs in real time across your entire cluster using high-performance Loki storage." },
+          { label: "Loki-powered", title: "Centralized Log Search", body: "Search and filter container logs across your machine, stored in Loki, from the dashboard or your AI tools over MCP." },
           { label: "Secure exec", title: "Interactive Terminal Access", body: "Execute diagnostic commands safely inside target containers directly from your CLI or web dashboard." },
           { label: "Node-level agents", title: "Alloy Log Collection", body: "Benefit from efficient, node-level log harvesting managed seamlessly by Grafana Alloy agents." },
         ],
@@ -464,11 +464,11 @@ export const en = {
   agentsPage: {
     title: "Agents",
     description:
-      "Run open-source AI agents in isolated gVisor sandboxes with persistent storage, while autonomous native copilots triage failures and manage incidents safely.",
+      "Run open-source AI agents in network-isolated sandboxes with persistent storage, while built-in copilots triage failures and manage incidents safely.",
     eyebrow: "Usectl for agents",
     heading: "Connect your agent to usectl",
     body:
-      "Run open-source AI agents in isolated gVisor sandboxes with persistent storage, while autonomous native copilots triage failures and manage incidents safely.",
+      "Run open-source AI agents in network-isolated sandboxes with persistent storage, while built-in copilots triage failures and manage incidents safely.",
     prompt: "https://manager.usectl.com/api/mcp", // the MCP endpoint, copied as is (user, 2026-11-17)
     copy: "Copy",
     copied: "Copied",
@@ -478,35 +478,35 @@ export const en = {
       setup: "Setup guide",
       cards: [
         { title: "Hermes Agent", body: "Persistent memory & isolated networks" },
-        { title: "OpenClaw", body: "Secure zero-exposure deployment" },
-        { title: "Task Agent", body: "Background workers & webhooks" },
+        { title: "OpenClaw", body: "Token-protected workspace & chat gateways" },
+        { title: "Task Agent", body: "Background tasks with tools & web access" },
       ],
     },
     copilots: {
       heading: "Built-in infrastructure copilots",
       cards: [
-        { title: "Devo Admin Copilot", body: "Propose-and-Approve workflows with zero direct writes. Approve via CLI, Web, or Face ID." },
+        { title: "Devo Admin Copilot", body: "Propose-and-Approve workflows with zero direct writes. Approve from the CLI, the web panel, or the iOS app." },
         { title: "Failed-Deploy Triage", body: "Auto-analyzes build logs on failure at zero user cost, commenting fixes on PRs." },
         { title: "Incident Remediation", body: "Monitors Grafana alerts across notify, approve, or auto modes with 1-tap approvals." },
-        { title: "Ops & Weekly Digests", body: "Nightly cluster reports at 05:00 UTC and Monday machine summaries." },
+        { title: "Weekly Machine Digests", body: "A weekly summary of each machine every Monday at 07:00 UTC: deploys, incidents and pod health." },
       ],
     },
     untrusted: {
       heading: "Built for untrusted execution",
       cards: [
-        { title: "Hermes Agent", body: "gVisor Kernel Sandbox (runsc)" },
-        { title: "Scoped API Keys (usectl agt)", body: "Least-privilege tokens bound to project IDs and expiration." },
+        { title: "Network-isolated agents", body: "Internet-only egress, no access to your cluster or private networks." },
+        { title: "Scoped API Keys (usectl tokens)", body: "Least-privilege keys bound to machines, read or write access, and an expiry." },
       ],
     },
     templates: {
       heading: "Explore templates",
       deploy: "Deploy template",
-      items: ["Hermes on usectl", "OpenClaw Sandboxed", "CI/CD Triage Bot"],
+      items: ["Hermes on usectl", "OpenClaw on usectl", "Task Agent"],
     },
     final: {
       eyebrow: "Secure AI & Autonomous OPS",
       heading: "Put your agents to work on usectl",
-      body: "Host open-source AI agents in gVisor sandboxes and let native copilots manage your infrastructure.",
+      body: "Host open-source AI agents in network-isolated sandboxes and let built-in copilots manage your infrastructure.",
       deploy: "Deploy Agent",
     },
   },
