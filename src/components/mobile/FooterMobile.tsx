@@ -7,6 +7,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import { m } from "./HeroMobile";
+import { Noise } from "@/components/ui/Noise";
 import {
   CONTACT_EMAIL,
   CONTACT_HREF,
@@ -78,6 +79,9 @@ export function FooterMobile({ t, lang }: { t: Dict; lang: Lang }) {
           filter: "blur(24px)",
         }}
       />
+
+      {/* the design's noise, above the glow and below the content (see Footer.tsx) */}
+      <Noise />
 
       <div data-mf-reveal className="relative">
         <Link href={langPath(lang)} aria-label={t.a11y.home} className="inline-block">

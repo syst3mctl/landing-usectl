@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { Noise } from "@/components/ui/Noise";
 import {
   INSET_VW,
   COLUMN_PITCH,
@@ -148,14 +149,12 @@ export function BackgroundLines() {
           browsers rasterize the filter at a capped resolution before scaling, exaggerating the
           dots). Cut opacity here (CSS, not touching the Figma-exported SVG itself) so it stays a
           one-line, easily reversible knob. */}
-      <div
-        className="absolute inset-0 opacity-30 mix-blend-multiply"
-        style={{
-          backgroundImage: "url(/background/background-lines.svg)",
-          backgroundRepeat: "repeat-y",
-          backgroundSize: "100% auto",
-        }}
-      />
+      {/* Since 2026-11-17 drawn as the Noise tile (same filter, same 30 %) instead of the
+          1920×13528 sheet itself: on a retina screen the browser rasterises a sheet that size at a
+          reduced, layer-dependent resolution, so the page and the header (which repeats these
+          layers) came out a shade apart on the Mac and identical on a 1× monitor. A 256-unit tile
+          rasterises the same everywhere. The sheet stays in public/background/ as the reference. */}
+      <Noise />
       <CssGridLines />
       {/* Same layer, VARIANT (A): on top of the grain AND the grid, so it dims those too — the
           literal reading of the Figma file, where #00000040 is the topmost background layer. */}

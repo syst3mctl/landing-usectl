@@ -7,16 +7,28 @@ import { ButtonArrow } from "@/components/ui/icons";
 import { INSET_VW, HEADER_HIDE_WIDE, HEADER_HIDE_NARROW, LINE_COLOR, LINE_W, LINE_HALF } from "@/lib/grid";
 import { ctaAttr, navLinks, SIGNUP_URL } from "@/lib/nav";
 import { LangSwitcher } from "@/components/layout/LangSwitcher";
+import { Noise } from "@/components/ui/Noise";
 import type { Dict, Lang } from "@/lib/i18n";
 import { langPath } from "@/lib/i18n";
 
 export function Header({ t, lang }: { t: Dict; lang: Lang }) {
   const links = navLinks(t, lang);
   return (
-    <header className="sticky top-0 z-50 w-full overflow-x-clip border-b border-white/10 bg-background/60 backdrop-blur-md">
-      {/* Rendered here (a child of <header>, above its own bg-background/60 + backdrop-blur-md
-          layer) rather than in BackgroundLines.tsx's fixed background — at this grid's real
-          opacity, sitting behind the header's blur washes the lines out to fully invisible. See
+    // The header is painted with THE PAGE'S OWN LAYERS (2026-11-17): #1e1d1d, the same grain tile at
+    // the same size and place (both start at the viewport's top-left), then the #00000040 sheet — so
+    // it is the body's colour AND texture, pixel for pixel. Every cheaper attempt left a band:
+    // a page-coloured fill can't carry the grain (bg-background/60, bg-page/60 read lighter), and a
+    // see-through blur smears the grain flat (bg-black/5 + backdrop-blur read as a smooth, darker
+    // strip on a retina screen). Opaque now: content scrolling under it is hidden, not blurred.
+    <header className="sticky top-0 z-50 w-full overflow-x-clip border-b border-transparent bg-background">
+      <div aria-hidden className="pointer-events-none absolute inset-0">
+        {/* the page's grain — the SAME Noise tile BackgroundLines draws, so both rasterise alike on
+            any screen (the old 1920×13528 sheet did not on retina) */}
+        <Noise />
+      </div>
+      {/* Rendered here (a child of <header>, above its page layers) rather than in
+          BackgroundLines.tsx's fixed background — at this grid's real opacity, sitting behind the
+          header's (former) blur washed the lines out to fully invisible. See
           BackgroundLines.tsx's own note at the removed call site. */}
       <ColumnLines
         hideWide={HEADER_HIDE_WIDE}
@@ -36,6 +48,21 @@ export function Header({ t, lang }: { t: Dict; lang: Lang }) {
           backgroundPositionX: `calc(-1 * ${LINE_HALF})`,
         }}
       />
+      {/* The seam under the header is drawn as ONE MORE GRID LINE (width/colour of the page grid,
+          × 0.75 for the #00000040 sheet the page's lines sit under) — it was white 10 %, twice a
+          grid line, and that bright seam is what made the header read as a separate band. The
+          1px transparent border keeps the header's height (97) exactly as the scene measures it;
+          the line sits in that border's place. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0"
+        style={{ bottom: "-1px", height: "var(--grid-line-w)", background: "var(--grid-line-color)", opacity: 0.75 }}
+      />
+      {/* the #00000040 sheet LAST among the background layers — over the grain AND the header's
+          lines, exactly as BackgroundLines lays it over the page's (variant A), so the header's
+          lines are dimmed like the page's; the row below is positioned and later, so it stays
+          above the sheet */}
+      <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: "var(--bg-tint)" }} />
       {/* The row's ≥1024 geometry (width, centring, the 130/99 design paddings) lives in
           globals.css's `.header-row`, because it is written in --sh — the scale the pinned scene is
           really drawn at — so the logo keeps sitting on the content's column on any display. Below

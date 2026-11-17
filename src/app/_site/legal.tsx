@@ -50,10 +50,10 @@ export function LegalPage({ lang, doc }: { lang: Lang; doc: LegalDoc }) {
     <main className="relative flex flex-1 flex-col">
       <HomeHashLinks home={langPath(lang)} />
       <article
-        className="legal relative mx-auto w-full max-w-[860px] bg-background/90 px-6 py-14 sm:px-10 lg:py-20"
+        className="legal relative mx-auto w-full max-w-[860px] bg-page/90 px-6 py-14 sm:px-10 lg:py-20"
         dangerouslySetInnerHTML={{ __html: html }}
       />
-      <footer className="relative mx-auto flex w-full max-w-[860px] flex-wrap items-center gap-x-5 gap-y-2 border-t border-white/10 bg-background/90 px-6 py-8 font-heading text-[13px] text-white/45 sm:px-10">
+      <footer className="relative mx-auto flex w-full max-w-[860px] flex-wrap items-center gap-x-5 gap-y-2 border-t border-white/10 bg-page/90 px-6 py-8 font-heading text-[13px] text-white/45 sm:px-10">
         <span>
           &copy; 2026{" "}
           <a href={SYSTEMCTL_URL} target="_blank" rel="noopener noreferrer" className="text-brand transition-opacity hover:opacity-70">
