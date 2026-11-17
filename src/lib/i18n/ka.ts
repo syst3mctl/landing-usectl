@@ -148,6 +148,7 @@ export const ka: Dict = {
     perYear: "/წელი",
     totalMonthly: "შენი თვიური ფასი",
     totalAnnual: "შენი წლიური ფასი",
+    machinePrice: "შენი Machine-ის ფასი", // the calculator receipt's badge (board 2026-11-17)
     freeNote: "პირველი თვე უფასოა. ბარათის მიბმა არ გჭირდება.",
   },
 
@@ -443,7 +444,7 @@ export const ka: Dict = {
     heading: "დააკავშირე შენი აგენტი usectl-ს",
     body:
       "გაუშვი ღია კოდის AI აგენტები იზოლირებულ gVisor სენდბოქსებში მუდმივი საცავით, ხოლო ავტონომიური ჩაშენებული კოპილოტები ხარვეზებს გაარჩევენ და ინციდენტებს უსაფრთხოდ მართავენ.",
-    prompt: "Read [usectl.com/agents.md](https://usectl.com/agents.md) and set up my environment",
+    prompt: "https://manager.usectl.com/api/mcp", // the MCP endpoint, copied as is (user, 2026-11-17)
     copy: "კოპირება",
     copied: "დაკოპირდა",
     logosLabel: "მუშაობს Claude-თან, ChatGPT-თან, Cursor-თან, OpenCode-თან, Grok-თან, Gemini-თან და Devin-თან",

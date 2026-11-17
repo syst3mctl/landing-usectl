@@ -154,6 +154,7 @@ export const en = {
     perYear: "/yr",
     totalMonthly: "Your monthly price",
     totalAnnual: "Your annual price",
+    machinePrice: "Your Machine Price", // the calculator receipt's badge (board 2026-11-17)
     freeNote: "The first month is free. You don’t need to link a card.",
   },
 
@@ -468,7 +469,7 @@ export const en = {
     heading: "Connect your agent to usectl",
     body:
       "Run open-source AI agents in isolated gVisor sandboxes with persistent storage, while autonomous native copilots triage failures and manage incidents safely.",
-    prompt: "Read [usectl.com/agents.md](https://usectl.com/agents.md) and set up my environment",
+    prompt: "https://manager.usectl.com/api/mcp", // the MCP endpoint, copied as is (user, 2026-11-17)
     copy: "Copy",
     copied: "Copied",
     logosLabel: "Works with Claude, ChatGPT, Cursor, OpenCode, Grok, Gemini and Devin",

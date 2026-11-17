@@ -11,6 +11,7 @@ import { pressRipple } from "@/lib/pressRipple";
 import { openBookDemo } from "@/lib/bookDemo";
 import { CONTACT_EMAIL, CONTACT_HREF, ctaAttr, SIGNUP_URL, type CtaPlacement } from "@/lib/nav";
 import { fill, type Dict } from "@/lib/i18n";
+import { GlassRim } from "@/components/ui/GlassRim";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
@@ -197,7 +198,9 @@ export function PricingPageClient({ t }: { t: Dict }) {
   );
 
   return (
-    <div ref={rootRef} className="pr-page relative flex flex-1 flex-col overflow-x-clip" style={{ paddingInline: r(40, 20) }}>
+    // data-grid-scroll: the background grid scrolls WITH the page, as on /features and /agents
+    // (globals.css) — it stood still behind the scrolling content here (user, 2026-11-17)
+    <div ref={rootRef} data-grid-scroll className="pr-page relative flex flex-1 flex-col overflow-x-clip" style={{ paddingInline: r(40, 20) }}>
       {/* ---------------- hero ---------------- */}
       <section data-pr-hero className="flex flex-col items-center text-center" style={{ paddingTop: r(84, 40) }}>
         <p data-pr-reveal className="flex items-center font-heading font-light text-white/60" style={{ gap: r(10, 9), fontSize: r(17, 12) }}>
@@ -344,9 +347,11 @@ export function PricingPageClient({ t }: { t: Dict }) {
           {p.invoice.items.map((item, i) => (
             <div data-pr-reveal key={i} className="lg:justify-self-center">
               <span
-                className="inline-flex items-center justify-center border border-white/[0.06] bg-white/[0.03] font-heading text-white/70"
+                className="relative inline-flex items-center justify-center bg-white/[0.03] font-heading text-white/70"
                 style={{ width: r(64, 46), height: r(64, 46), borderRadius: r(16, 12), padding: r(5), fontSize: r(21, 15), letterSpacing: LS }}
               >
+                {/* the same glass rim as the /features tabs: lit top-left, gone on two corners */}
+                <GlassRim w={64} h={64} r={16} />
                 {String(i + 1).padStart(2, "0")}
               </span>
               <p className="font-heading font-light text-white/70" style={{ fontSize: r(22, 15), lineHeight: 1.25, letterSpacing: LS, marginTop: r(26, 14), maxWidth: r(360, 520) }}>
@@ -385,9 +390,11 @@ export function PricingPageClient({ t }: { t: Dict }) {
                     style={{ gap: r(20, 12), padding: `${r(26, 16)} ${r(34, 16)} ${r(26, 16)} ${r(48, 16)}` }}
                   >
                     <span
-                      className={`inline-flex shrink-0 items-center justify-center border bg-white/[0.03] transition-colors duration-500 ${open ? "border-brand/30 text-brand" : "border-white/[0.08] text-white/45"}`}
+                      className={`relative inline-flex shrink-0 items-center justify-center bg-white/[0.03] transition-colors duration-500 ${open ? "text-brand" : "text-white/45"}`}
                       style={{ width: r(42, 32), height: r(42, 32), borderRadius: r(12, 9), padding: r(5), fontSize: r(13, 11), letterSpacing: LS }}
                     >
+                      {/* glass rim as on the board (open: only the number turns green) */}
+                      <GlassRim w={42} h={42} r={12} />
                       {String(i + 1).padStart(2, "0")}
                     </span>
                     <span className="flex-1 font-bold text-white/90" style={{ fontSize: r(18, 14.5), lineHeight: 1.2, letterSpacing: LS }}>
@@ -573,7 +580,8 @@ function CalculatorMorph({
     const vh = window.innerHeight;
     const width = c.offsetWidth;
     const height = Math.min(c.offsetHeight, vh - 32);
-    return { left: (vw - width) / 2, top: Math.max(16, (vh - height) / 2), width, height, radius: 24 };
+    // board: 1306 wide, radius 12 — the radius scales with the panel
+    return { left: (vw - width) / 2, top: Math.max(16, (vh - height) / 2), width, height, radius: Math.max(10, (12 * width) / 1306) };
   }, []);
 
   const [open, setOpenState] = useState(false);
@@ -703,8 +711,8 @@ function CalculatorMorph({
             ? { left: geo.left, top: geo.top, width: geo.width, height: geo.height, borderRadius: geo.radius }
             : { borderRadius: r(36) }),
           backgroundColor: open ? "#211f1f" : "#2b2a2a",
-          borderColor: open ? "rgba(17,163,42,0.28)" : undefined,
-          boxShadow: open ? "0 30px 120px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.03), 0 0 80px rgba(17,163,42,0.10)" : "none",
+          // board: a plain 1px edge — no green border, no green halo (user, 2026-11-17)
+          boxShadow: open ? "0 30px 120px rgba(0,0,0,0.55)" : "none",
           transition: fixedMode && morphOn ? `${morphing}, border-color ${MORPH_MS}ms ${MORPH_EASE}, box-shadow ${MORPH_MS}ms ${MORPH_EASE}` : undefined,
           // the column is invisible on phones; the open panel must show anyway
           visibility: fixedMode ? "visible" : visible ? undefined : "hidden",
@@ -730,18 +738,9 @@ function CalculatorMorph({
           <div
             ref={contentRef}
             className="relative"
-            style={{ width: `min(${r(1240, 400)}, calc(100vw - 24px))`, padding: `${r(46, 20)} ${r(54, 16)} ${r(52, 20)}` }}
+            style={{ width: `min(${r(1306, 400)}, calc(100vw - 24px))`, padding: `${r(28, 18)} ${r(48, 16)} ${r(36, 18)}` }}
           >
-            {/* the pricing scene light, coming up behind the summary once the panel has opened */}
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-0 overflow-hidden transition-opacity duration-700"
-              style={{ opacity: showContent ? 1 : 0 }}
-            >
-              <div className="absolute" style={{ right: r(-260, -300), top: r(-140, 120), width: r(950, 700), height: r(901, 660) }}>
-                <SceneLight variant="pricing" style={{ inset: 0, width: "100%", height: "100%" }} />
-              </div>
-            </div>
+            {/* (the green scene light that used to rise behind the summary is gone — user, 2026-11-17) */}
 
             {/* header on the SAME two columns as the body below, so the line under the title ends
                 exactly where the resource cards end; on the right, the close button at the top and
@@ -752,10 +751,10 @@ function CalculatorMorph({
                   <Image src="/section-hero/hatch.svg" alt="" width={36} height={12} aria-hidden="true" unoptimized style={{ width: r(26, 20), height: "auto" }} />
                   {t.pricingPage.eyebrow}
                 </p>
-                <p className="pr-st font-heading font-medium text-white/95" style={{ ["--d" as string]: 1, fontSize: r(34, 21), marginTop: r(10, 6), letterSpacing: "-0.015em", lineHeight: 1.1 }}>
+                <p className="pr-st font-heading font-medium text-white/95" style={{ ["--d" as string]: 1, fontSize: r(28, 21), marginTop: r(8, 6), letterSpacing: "-0.015em", lineHeight: 1.1 }}>
                   {t.pricingPage.calcTab}
                 </p>
-                <p className="pr-st font-heading font-light text-white/55 max-lg:hidden" style={{ ["--d" as string]: 2, fontSize: r(16, 13.5), lineHeight: 1.55, marginTop: r(14), textWrap: "pretty" }}>
+                <p className="pr-st font-heading font-light text-white/55 max-lg:hidden" style={{ ["--d" as string]: 2, fontSize: r(15, 13), lineHeight: 1.4, marginTop: r(8), textWrap: "pretty" }}>
                   {t.s8.body}
                 </p>
               </div>
@@ -783,11 +782,11 @@ function CalculatorMorph({
               <Toggle annual={annual} setAnnual={setAnnual} t={t} />
             </div>
 
-            <div className="relative grid lg:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)]" style={{ gap: r(28, 14), marginTop: r(34, 18) }}>
+            <div className="relative grid lg:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)]" style={{ gap: r(28, 14), marginTop: r(22, 16) }}>
               {/* resource cards */}
               {/* the three cards share the receipt's full height (flex-1 each), so the left and the
                   right column start and end on the same lines */}
-              <div className="flex flex-col" style={{ gap: r(14, 10) }}>
+              <div className="flex flex-col" style={{ gap: r(12, 8) }}>
                 {PRICING_ROWS.map((row, i) => {
                   // how much of the row's range is picked (sqrt, so the first GB of a 1 TB range
                   // still visibly move the bar)
@@ -796,7 +795,7 @@ function CalculatorMorph({
                     <div
                       key={row.key}
                       className="pr-st flex flex-1 flex-col justify-center border border-white/[0.07] bg-white/[0.025] font-heading transition-colors duration-300 hover:border-white/[0.12]"
-                      style={{ ["--d" as string]: 3 + i, borderRadius: r(18, 14), padding: `${r(22, 14)} ${r(26, 14)} ${r(20, 14)}` }}
+                      style={{ ["--d" as string]: 3 + i, borderRadius: r(16, 14), padding: `${r(16, 12)} ${r(24, 14)} ${r(14, 12)}` }}
                     >
                       <div className="flex items-center justify-between" style={{ gap: r(16, 10) }}>
                         <div className="min-w-0">
@@ -853,50 +852,87 @@ function CalculatorMorph({
 
               {/* the receipt: total, breakdown, the free month, the CTA */}
               <div
-                className="pr-st flex flex-col border border-brand/25 font-heading"
+                className="pr-st flex flex-col font-heading"
                 style={{
                   ["--d" as string]: 4,
-                  borderRadius: r(20, 16),
-                  padding: `${r(28, 18)} ${r(30, 18)} ${r(28, 18)}`,
-                  background: "linear-gradient(160deg, rgba(17,163,42,0.10) 0%, rgba(17,163,42,0.03) 45%, rgba(255,255,255,0.015) 100%)",
+                  // board: 539×459, radius 16, fill #D9D9D90D, 2px stroke as a linear gradient
+                  // #26282D → #FFFFFF26 (drawn as a border-box gradient under a padding-box fill;
+                  // the panel's own #211f1f sits under the 5 % fill so the stroke can't show through)
+                  borderRadius: r(16),
+                  border: "2px solid transparent",
+                  padding: `${r(20, 14)} ${r(24, 16)} ${r(20, 14)}`,
+                  background:
+                    "linear-gradient(rgba(217,217,217,0.05), rgba(217,217,217,0.05)) padding-box, linear-gradient(#211f1f, #211f1f) padding-box, linear-gradient(160deg, #26282D, rgba(255,255,255,0.15)) border-box",
                 }}
               >
-                <p className="text-white/65" style={{ fontSize: r(15, 13.5) }}>
-                  {annual ? t.s8.totalAnnual : t.s8.totalMonthly}
-                </p>
-                <p className="flex items-baseline" style={{ marginTop: r(8, 4) }} aria-live="polite">
-                  {/* key: a changed total re-mounts and plays .pr-pop */}
-                  <span key={`${total}-${annual}`} className="pr-pop font-medium tabular-nums text-brand" style={{ fontSize: r(62, 36), lineHeight: 1, letterSpacing: "-0.03em" }}>
-                    {fmtPrice(total)}
+                {/* board (2026-11-17): a green outlined badge top-right, an inner card with the plan
+                    and the total (cents dimmed), the breakdown rows, an outlined CTA, the note */}
+                <div className="flex justify-end">
+                  {/* board: 185×42, radius 16, 1px; Space Grotesk Light 14 / 100 %, −2 %, #11A32A */}
+                  <span
+                    className="inline-flex items-center justify-center border border-brand/40 font-heading font-light"
+                    style={{ height: r(42, 34), minWidth: r(185, 150), gap: r(8, 6), paddingInline: r(16, 12), borderRadius: r(16, 12), fontSize: r(14, 12), lineHeight: 1, letterSpacing: LS, color: "#11A32A" }}
+                  >
+                    <Flame size={r(18, 14)} />
+                    {t.s8.machinePrice}
                   </span>
-                  <span className="font-light text-white/50" style={{ fontSize: r(18, 13), marginLeft: r(6, 4) }}>
-                    {suffix}
-                  </span>
-                </p>
-                <ul className="flex flex-col border-t border-white/[0.08] font-light" style={{ marginTop: r(24, 16), paddingTop: r(18, 12), gap: r(10, 7), fontSize: r(14.5, 12.5) }}>
+                </div>
+                <div
+                  className="border border-white/[0.08] bg-white/[0.01]"
+                  style={{ marginTop: r(12, 10), borderRadius: r(20, 14), padding: `${r(14, 12)} ${r(22, 14)} ${r(16, 12)}` }}
+                >
+                  <p className="text-white/80" style={{ fontSize: r(22, 17) }}>
+                    {t.pricingPage.machine.name}
+                  </p>
+                  <p className="font-light text-white/70" style={{ fontSize: r(16, 13), marginTop: r(4, 3) }}>
+                    {t.pricingPage.machine.tagline}
+                  </p>
+                  {(() => {
+                    const [whole, cents = "00"] = total.toFixed(2).split(".");
+                    return (
+                      <p className="flex items-baseline" style={{ marginTop: r(10, 8) }} aria-live="polite">
+                        {/* key: a changed total re-mounts and plays .pr-pop */}
+                        <span
+                          key={`${total}-${annual}`}
+                          className="pr-pop font-medium tabular-nums"
+                          style={{ fontSize: r(44, 32), lineHeight: 1, letterSpacing: "-0.03em" }}
+                        >
+                          <span className="text-white/85">${Number(whole).toLocaleString("en-US")}.</span>
+                          <span className="text-white/25">{cents}</span>
+                        </span>
+                        <span className="font-light text-white/45" style={{ fontSize: r(16, 12), marginLeft: r(4, 3) }}>
+                          {annual ? t.pricingPage.perYear : t.pricingPage.perMonth}
+                        </span>
+                      </p>
+                    );
+                  })()}
+                </div>
+                <ul className="flex flex-col font-heading" style={{ marginTop: r(14, 12), gap: r(10, 8), paddingInline: r(2) }}>
                   {PRICING_ROWS.map((row, i) => (
-                    <li key={row.key} className="flex items-center justify-between text-white/60">
-                      <span>
-                        {t.s8.rows[i]!.label} <span className="text-white/35">× {counts[row.key]}</span>
+                    <li key={row.key} className="flex items-baseline justify-between">
+                      <span className="font-medium text-white/90" style={{ fontSize: r(17, 14) }}>
+                        {t.s8.rows[i]!.label}{" "}
+                        <span className="font-light text-white/35" style={{ fontSize: r(14, 12), marginLeft: r(6, 4) }}>
+                          {counts[row.key]}X
+                        </span>
                       </span>
-                      <span className="tabular-nums text-white/80">{fmtPrice(row.price * counts[row.key] * factor)}</span>
+                      <span className="font-medium tabular-nums text-white/90" style={{ fontSize: r(17, 14) }}>
+                        {fmtPrice(row.price * counts[row.key] * factor)}
+                      </span>
                     </li>
                   ))}
                 </ul>
-                <p className="flex items-start font-light text-white/50" style={{ gap: r(8), marginTop: r(20, 14), fontSize: r(13.5, 11.5), lineHeight: 1.45 }}>
-                  <span className="text-brand" style={{ marginTop: "0.05em" }}>
-                    <Check size={r(15, 13)} />
-                  </span>
-                  {t.s8.freeNote}
-                </p>
-                <div className="mt-auto" style={{ paddingTop: r(24, 16) }}>
+                <div className="mt-auto" style={{ paddingTop: r(16, 12) }}>
                   <SignupLink
                     placement="pricing-calculator"
-                    className="relative inline-flex w-full items-center justify-center gap-1 whitespace-nowrap rounded-full bg-brand font-heading font-medium text-[#0f1a10] transition-[background-color,transform] duration-300 hover:bg-[#19b935] active:scale-[0.98]"
-                    style={{ height: r(56, 48), fontSize: r(17, 14.5) }}
+                    className="relative inline-flex w-full items-center justify-center whitespace-nowrap rounded-full border border-white/60 font-heading text-white/90 transition-[border-color,background-color,transform] duration-300 hover:border-white hover:bg-white/[0.04] active:scale-[0.98]"
+                    style={{ height: r(46, 42), fontSize: r(16, 14) }}
                   >
-                    {t.s8.cta} <ButtonArrow size="1.15em" opacity={0.9} />
+                    {t.s8.cta}
                   </SignupLink>
+                  <p className="text-center font-light text-white/45" style={{ marginTop: r(10, 8), fontSize: r(13, 11) }}>
+                    {t.s8.freeNote}
+                  </p>
                 </div>
               </div>
             </div>
@@ -906,6 +942,21 @@ function CalculatorMorph({
         </div>
       </div>
     </>
+  );
+}
+
+/** the badge's flame (an outline, stroked in the badge's colour) */
+function Flame({ size }: { size: string }) {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" style={{ width: size, height: size }}>
+      <path
+        d="M12 21.5c-3.9 0-6.5-2.6-6.5-6.2 0-3.5 2.4-5.4 3.6-7.6.6 1.4.4 2.9-.1 4 1.6-.8 2.9-2.6 3.1-5 .1-1.2-.1-2.5-.6-3.7 3.9 2.1 7 6.3 7 10.9 0 4.6-2.9 7.6-6.5 7.6Z"
+        stroke="currentColor"
+        strokeWidth={1.6}
+        strokeLinejoin="round"
+      />
+      <path d="M12 21.5c-1.7 0-2.9-1.2-2.9-2.9 0-1.9 1.6-2.9 2.3-4.4 1.6 1.2 3.5 2.7 3.5 4.6 0 1.6-1.2 2.7-2.9 2.7Z" stroke="currentColor" strokeWidth={1.6} strokeLinejoin="round" />
+    </svg>
   );
 }
 
@@ -1019,7 +1070,7 @@ function RangeBar({
       className="relative cursor-pointer touch-none select-none rounded-full outline-none focus-visible:ring-1 focus-visible:ring-white/20"
       style={{ height: r(16, 20), marginTop: r(9, 4), marginBottom: r(-6, -6) }}
     >
-      <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 overflow-hidden rounded-full bg-white/[0.07]" style={{ height: r(3) }}>
+      <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 overflow-hidden rounded-full bg-white/[0.07]" style={{ height: r(5, 4) /* was 3 — a touch thicker (user, 2026-11-17) */ }}>
         <div
           className={`h-full rounded-full ${drag === null ? "transition-[width] duration-500 ease-out" : ""}`}
           style={{ width: `${Math.max(0.03, width) * 100}%`, background: "linear-gradient(90deg, #11A32A, #8FC6FF)" }}
