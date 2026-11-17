@@ -41,6 +41,10 @@
   --sh: max(0.53333px, min(var(--s), calc((100svh - 96px) / 980)));
 
   --background: #1e1d1d;
+  /* What the page actually SHOWS: #1e1d1d under the design's #00000040 sheet (--bg-tint below).
+     Anything solid that must read as "the page colour" (the CTA card, the legal sheet) uses
+     this, not --background, or it renders a visibly lighter band. Keep the two in step. */
+  --page: #171616;
   --foreground: #ededed;
   --brand: #11a32a;
 
@@ -208,6 +212,7 @@
 
 @theme inline {
   --color-background: var(--background);
+  --color-page: var(--page);
   --color-foreground: var(--foreground);
   --color-brand: var(--brand);
 }

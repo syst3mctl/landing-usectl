@@ -7,9 +7,6 @@ import { s, txt } from "./scale";
 // +140, buttons +202. Layer order is the board's: the card's fill, THEN the three glows (so they
 // tint the card itself and the left one spills past its corner), THEN the copy.
 
-/** the side blobs' strength: Figma gives them no layer opacity, but the footer's export of the same
- *  blobs carries 16–18 % — tuned against the board's render */
-const GLOW_SIDE = 0.35;
 
 export function CtaCard({
   eyebrow,
@@ -33,7 +30,7 @@ export function CtaCard({
         className="absolute inset-0"
         // #1E1D1D under the page's #00000040 sheet (globals.css --bg-tint) = what the board shows:
         // the card reads as the page colour with the grid hidden, not as a lighter panel
-        style={{ borderRadius: s(53), border: "1px solid rgba(255,255,255,0.1)", background: "#171616" }}
+        style={{ borderRadius: s(53), border: "1px solid rgba(255,255,255,0.1)", background: "var(--page)" }}
       />
       <div aria-hidden className="pointer-events-none absolute inset-0">
         {/* board (card px), read from Figma 2026-11-16:
@@ -60,21 +57,31 @@ export function CtaCard({
             style={{ background: "rgba(17,163,42,0.22)", clipPath: "polygon(0 0, 100% 0, 62% 100%, 38% 100%)" }}
           />
         </div>
+        {/* The side lights, Vector 198 (1215, 145) and 203 (−83, −70): 213×236, #B6F1C0 → #11A32A
+            with translucent stops, layer blur 200. A PRE-RENDERED image (public/cta/glow-side.webp,
+            made by scripts/make-cta-glow-side.py): the blob convolved with a true Gaussian (σ 100 ≈
+            Figma's blur 200), peak ~6 % of its mean colour, and dithered in the alpha (±3 LSB) —
+            a light this faint lifts the page only ~5–11 levels, and every CSS way of drawing it
+            (blur(), a radial gradient, either with grain on top) quantised into visible rings
+            ("spiral"). The image is 613×636 board px (the blob + 200 each side) at 1.5 px each, so
+            on a retina screen it is drawn about 1:1 and the dither survives. */}
         {[
           { l: 1215, t: 145 },
           { l: -83, t: -70 },
         ].map((g, k) => (
-          <div
+          // eslint-disable-next-line @next/next/no-img-element -- a decorative, fixed-size layer; next/image adds nothing here
+          <img
             key={k}
-            className="absolute rounded-full"
+            src="/cta/glow-side.webp"
+            alt=""
+            aria-hidden
+            draggable={false}
+            className="pointer-events-none absolute max-w-none select-none"
             style={{
-              left: `${(g.l / 1394) * 100}%`,
-              top: s(g.t),
-              width: `${(213 / 1394) * 100}%`,
-              height: s(236),
-              background: "linear-gradient(140deg, #B6F1C0, #11A32A)",
-              opacity: GLOW_SIDE,
-              filter: `blur(${s(100)})`,
+              left: `${((g.l - 200) / 1394) * 100}%`,
+              top: s(g.t - 200),
+              width: `${(613 / 1394) * 100}%`,
+              height: s(636),
             }}
           />
         ))}

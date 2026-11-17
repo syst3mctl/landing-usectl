@@ -16,6 +16,7 @@ import { langPath, legalPath, type Dict, type Lang } from "@/lib/i18n";
 import { SceneLight } from "./SceneLight";
 import { SubscribeForm } from "./SubscribeForm";
 import { CookieSettingsButton } from "./CookieSettingsButton";
+import { Noise } from "@/components/ui/Noise";
 
 // Footer (built 2026-09-28 against Desktop/new-version/footer/ — one 1708-wide screenshot,
 // design px = ref × 1.124). A REAL section after the pinned hero: its opaque background is what
@@ -62,6 +63,10 @@ export function Footer({ t, lang }: { t: Dict; lang: Lang }) {
           filter: "grayscale(1) brightness(2.5)",
         }}
       />
+
+      {/* the design's noise over the whole footer — above the light and the watermark (the glow is
+          seen THROUGH the grain, as on the board), below the text */}
+      <Noise />
 
       {/* brand column */}
       <div className="absolute" style={{ left: s(187), top: s(76) }}>

@@ -7,6 +7,7 @@ import { CtaCard } from "@/components/page/CtaCard";
 import { BTN_BRAND_HOVER, btnStyle, fz, s, txt } from "@/components/page/scale";
 import { SceneLight } from "@/components/layout/SceneLight";
 import { ButtonArrow } from "@/components/ui/icons";
+import { Noise } from "@/components/ui/Noise";
 import { ctaAttr, SIGNUP_URL } from "@/lib/nav";
 import type { Dict } from "@/lib/i18n";
 
@@ -52,6 +53,54 @@ function MoreLink({ href, children, size = 16, place }: { href: string; children
       {children}
       <Image src="/agents/next.svg" alt="" aria-hidden width={24} height={24} unoptimized style={{ width: fz(24, 18), height: "auto", opacity: 0.8 }} />
     </a>
+  );
+}
+
+/**
+ * The board's section bands — Rectangle 227 (copilots, y1236 h681) and 228 (templates, y2718
+ * h447). On the board they are the SAME colour as the page (measured on the Figma canvas
+ * 2026-11-17: 24 inside = 24 outside) — all they do is stop the page grid. So a band is painted
+ * with the page's own layers (#1e1d1d, the grain tile, the #00000040 sheet), like the header.
+ *
+ * ≥1024 the bands sit ON the grid's rows, as on the board (1236 − 96 = 10 × 114; 2718 − 96 =
+ * 23 × 114), positioned in the page wrapper's coordinates: the wrapper starts under the 97px header
+ * (96 + its 1px border), the grid's row k runs [96 + k·row, + line width] in the document, so a
+ * band from row k to row m covers [k·row − 1 + line, m·row − 1] — the grid's own row line stays
+ * visible above and below it, ONE line at each edge (an extra line drawn by the band sat a few px
+ * off the row and read as a double line, 2026-11-17). < 1024 the grid's rows are a different scale,
+ * so the band simply wraps its section (FlowBand).
+ * z −1 inside the wrapper's stacking context (`isolate`): above the page grid, below the glows and
+ * the text.
+ */
+function BandFill() {
+  return (
+    <>
+      <Noise />
+      <div className="absolute inset-0" style={{ background: "var(--bg-tint)" }} />
+    </>
+  );
+}
+
+function GridBand({ from, to }: { from: number; to: number }) {
+  return (
+    <div
+      aria-hidden
+      className="pointer-events-none absolute inset-x-0 -z-10 hidden bg-background lg:block"
+      style={{
+        top: `calc(${from} * var(--grid-row) - 1px + var(--grid-line-w))`,
+        height: `calc(${to - from} * var(--grid-row) - var(--grid-line-w))`,
+      }}
+    >
+      <BandFill />
+    </div>
+  );
+}
+
+function FlowBand({ top }: { top: number }) {
+  return (
+    <div aria-hidden className="pointer-events-none absolute bottom-0 -z-10 w-screen bg-background lg:hidden" style={{ top: s(top), left: "calc(50% - 50vw)" }}>
+      <BandFill />
+    </div>
   );
 }
 
@@ -165,7 +214,11 @@ export function AgentsPageClient({ t }: { t: Dict }) {
   const col = "mx-auto w-full px-(--grid-inset) lg:px-[calc(var(--s)*167)]";
 
   return (
-    <div data-grid-scroll className="relative w-full overflow-x-clip">
+    <div data-grid-scroll className="relative isolate w-full overflow-x-clip">
+      {/* the section bands on the grid's rows (≥1024; see GridBand): copilots rows 10 → 16
+          (board 1236 → 1917 ≈ row 15.97), templates rows 23 → 27 (2718 → 3165 ≈ 26.92) */}
+      <GridBand from={10} to={16} />
+      <GridBand from={23} to={27} />
       {/* side glows, in page coordinates (board y − the 96 header). Group 1890 (right, behind the
           copilots): x1610 y1554, 599×499; Group 1889 (left, behind the templates): x−223 y2820,
           555×443. The SceneLight blobs' union (≈200→830 × 200→740 in its 950×901 box) is fitted
@@ -190,7 +243,8 @@ export function AgentsPageClient({ t }: { t: Dict }) {
         <div style={{ marginTop: s(35) }} className="flex max-w-full justify-center">
           <CopyPrompt text={a.prompt} copy={a.copy} copied={a.copied} />
         </div>
-        {/* 7 overlapping 64×64 tiles, radius 16, 40px logos */}
+        {/* 7 overlapping 64×64 tiles, radius 16, 40px logos at white 56 % (the board's grey: 154 on a
+            26 tile) */}
         <div role="img" aria-label={a.logosLabel} className="relative" style={{ width: s(287), height: s(64), marginTop: s(14), minWidth: 200, minHeight: 45 }}>
           {LOGOS.map((l, i) => (
             <div
@@ -202,19 +256,20 @@ export function AgentsPageClient({ t }: { t: Dict }) {
                 height: "100%",
                 borderRadius: s(16),
                 // board: Figma's glass effect on a white-1 % fill — the tile frosts whatever is under
-                // it (the previous logo shows through blurred, the "glow" between the icons) and
-                // catches light on its top-left edge
-                // the gradient sits on a near-opaque page-colour base: backdrop-filter starts a frame or
-                // two late after a load (and not at all under an ancestor with opacity < 1), and a
-                // bare 1 % fill showed the covered logo through the tile in that moment
-                background: "linear-gradient(135deg, rgba(255,255,255,0.07), rgba(255,255,255,0.01) 60%), rgba(30,29,29,0.82)",
+                // it, so where the tiles overlap the previous logo shows through BLURRED (each tile
+                // carries a soft smear of its neighbour, the "glow" between the icons) and the tile
+                // catches light on its top-left edge. Measured on the board (2026-11-17): the tile's
+                // inside = the page colour, so the fill is all but clear; only a 30 % page-colour base
+                // stays, for the frame or two before backdrop-filter starts after a load (it showed
+                // the covered logo sharp at 1 %). Was 82 % — that hid the smear entirely.
+                background: "linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.01) 60%), rgba(30,29,29,0.3)",
                 backdropFilter: `blur(${s(7)})`,
                 WebkitBackdropFilter: `blur(${s(7)})`,
                 boxShadow: "inset 1px 1px 0 rgba(255,255,255,0.22), inset -1px -1px 0 rgba(255,255,255,0.05)",
                 zIndex: i,
               }}
             >
-              <Image src={`/agents/${l.src}.svg`} alt="" width={l.w} height={l.h} unoptimized style={{ width: `${(l.w / 64) * 100}%`, height: "auto", opacity: 0.72 }} />
+              <Image src={`/agents/${l.src}.svg`} alt="" width={l.w} height={l.h} unoptimized style={{ width: `${(l.w / 64) * 100}%`, height: "auto", opacity: 0.56 }} />
             </div>
           ))}
         </div>
@@ -243,7 +298,10 @@ export function AgentsPageClient({ t }: { t: Dict }) {
       {/* ── Built-in infrastructure copilots ─────────────────────────────────────────────
           board: band y1236; heading +63 (y1299); titles y1428 at x195 / 783 / 1357, the fourth
           card under the second (y1651); body 47 under the title, 368 wide (Ops: 315). */}
-      <section className={`${col} relative`} style={{ paddingTop: s(277) }}>
+      {/* band (Rectangle 227) y1236 → 1917 — drawn by GridBand ≥1024; FlowBand (phones) starts 63 above
+          the heading (277 − 63 = 214); 129 past the cards (1917 − 1788) is the section's padding-bottom */}
+      <section className={`${col} relative`} style={{ paddingTop: s(277), paddingBottom: s(129) }}>
+        <FlowBand top={214} />
         <h2 data-fe-reveal className="relative lg:ml-[calc(var(--s)*18)]" style={H2()}>
           {a.copilots.heading}
         </h2>
@@ -262,7 +320,8 @@ export function AgentsPageClient({ t }: { t: Dict }) {
 
       {/* ── Built for untrusted execution ─────────────────────────────────────────────────
           board: heading y2174; corner cards 22 under it: x167 → 605 (438) and 823 → 1589 (766). */}
-      <section className={col} style={{ paddingTop: s(386) }}>
+      {/* 386 from the copilots' cards to this heading, 129 of it now inside the band above */}
+      <section className={col} style={{ paddingTop: s(386 - 129) }}>
         <h2 data-fe-reveal className="lg:ml-[calc(var(--s)*18)]" style={H2()}>
           {a.untrusted.heading}
         </h2>
@@ -278,7 +337,10 @@ export function AgentsPageClient({ t }: { t: Dict }) {
       {/* ── Explore templates ─────────────────────────────────────────────────────────────
           board: band y2718; heading +63 (y2781); items y2910 at x195 / 760 / 1325 (pitch 565);
           "Deploy template ›" 47 under the title (24 Light + 24 chevron). */}
-      <section className={`${col} relative`} style={{ paddingTop: s(278) }}>
+      {/* band (Rectangle 228) y2718 → 3165 — GridBand ≥1024; FlowBand: 63 above the heading
+          (278 − 63 = 215), 177 past the items (3165 − 2988) */}
+      <section className={`${col} relative`} style={{ paddingTop: s(278), paddingBottom: s(177) }}>
+        <FlowBand top={215} />
         <h2 data-fe-reveal className="relative lg:ml-[calc(var(--s)*18)]" style={H2()}>
           {a.templates.heading}
         </h2>
@@ -297,7 +359,7 @@ export function AgentsPageClient({ t }: { t: Dict }) {
       </section>
 
       {/* ── CTA ── board: card y3377 (389 under the templates), footer 183 under it */}
-      <section className="w-full px-(--grid-inset)" style={{ paddingTop: s(389), paddingBottom: s(183) }}>
+      <section className="w-full px-(--grid-inset)" style={{ paddingTop: s(389 - 177), paddingBottom: s(183) }}>
         <CtaCard eyebrow={a.final.eyebrow} heading={a.final.heading} body={a.final.body} bodyWidth={580}>
           <Link href={SIGNUP_URL} {...ctaAttr("agents-final")} className={BTN_BRAND_HOVER} style={btnStyle(184)}>
             {a.final.deploy} <ButtonArrow size={fz(24, 20)} />

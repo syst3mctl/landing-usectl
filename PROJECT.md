@@ -2139,3 +2139,41 @@ English kept for the uppercase mono card labels).
 
 Verified: `tsc` / `eslint` / `next build` clean, `/features` and `/ka/features` prerendered static,
 zero console errors, the full desktop journey in both directions, the tab bar in both languages.
+
+## Branch `fixed-ui`: page-colour seams, noise, Substrate + /agents bands, CTA lights (2026-11-17)
+
+Design-bug round against the V2 board, checked on the user's retina Mac (several of these only
+showed there — a 1× monitor hid them).
+
+- **Header = body, on every screen.** The page's colour is #1e1d1d + the grain + the #00000040
+  sheet; a single fill can't match that (bg-background/60, bg-page/60 read lighter; a see-through
+  blur smeared the grain flat and read darker on retina). The header now paints the page's own
+  layers (bg-background, the grain `Noise` tile, the sheet over its lines). Its bottom seam is one
+  more grid line (grid width/colour ×0.75), not white 10 % — the bright seam made it read as a band.
+  The 1px border is kept transparent so the header stays 97px (the scene measures it).
+- **The grain is a tile now** (`components/ui/Noise.tsx`, same feTurbulence as the old sheet:
+  0.769 / seed 6207 / 51 % / black 25 %, layered at 30 %), in BackgroundLines and the header. The
+  1920×13528 `background-lines.svg` was rasterised at reduced, layer-dependent resolution on
+  retina, so page and header came out a shade apart only on the Mac. The SVG stays as reference.
+  `Noise` takes freq/seed/cut/opacity to reproduce any board's Monotone noise.
+- `--page: #171616` (= #1e1d1d under the sheet) for solid "page colour" surfaces (CTA card, the
+  legal sheet); themeColor too.
+- **Footer** gets the noise over its light (desktop + mobile) — a glow seen through grain.
+- **Substrate band** is its own surface (team export `public/Group1902.svg`, read, not shipped):
+  opaque #1E1D1D + its noise (0.556 / 9460, full strength), lights over it, and the board's 20
+  partial lines (`V_LINES` / `H_LINES`, drawn with the grid's width/colour vars). Tile light =
+  Ellipse 1474: 49×11 at (+15, +57), #D9D9D9 40 %, blur 10, ABOVE the glass plate.
+- **/agents**: grok.svg had no fill (rendered black); opencode.svg's frame was #211e1e (invisible)
+  → white / inner white 70 %. Logo tiles: fill nearly clear (30 % base) so the neighbour shows
+  through blurred, as on the board; logos at white 56 %. Copilots / templates bands (Rectangle
+  227/228) = page colour on the board (measured 24 = 24) — they only stop the grid. ≥1024 they sit
+  exactly on grid rows (10→16, 23→27; `GridBand`) so each edge keeps the grid's own single row line
+  (a band-drawn edge line sat a few px off the row = double line); < 1024 `FlowBand` wraps the
+  section. design/agents/FIGMA-SPEC.md corrected.
+- **CTA card side lights** (Vector 198/203) are a pre-rendered, alpha-dithered image
+  (`public/cta/glow-side.webp`, from `scripts/make-cta-glow-side.py`): at ~5–11 levels of lift over
+  ~600px every CSS rendering (blur, radial gradient, ± grain) banded into rings. Peak ≈ 6 % of
+  rgb(99,202,117); drawn ~1:1 on retina so the dither survives.
+
+Not committed on purpose: `public/Group1902.svg` (reference export — belongs in design/, user to
+confirm), `.claude/`.

@@ -83,7 +83,7 @@ const GOOGLE_SITE_VERIFICATION = process.env.GOOGLE_SITE_VERIFICATION;
 const OG_LOCALE: Record<Lang, string> = { en: "en_US", ka: "ka_GE" };
 
 export const VIEWPORT: Viewport = {
-  themeColor: "#1e1d1d",
+  themeColor: "#171616",
   colorScheme: "dark",
 };
 
