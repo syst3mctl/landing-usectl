@@ -128,7 +128,8 @@ function FeatureCard({
       <div className="flex items-start" style={{ gap: s(11) }}>
         <CardIcon block={block} card={card} />
         <div className="min-w-0">
-          <h3 className="whitespace-nowrap" style={txt(20, 15, 400)}>
+          {/* one line whenever the column has room (max-content); wraps instead of overflowing when it doesn't */}
+          <h3 className="text-balance" style={txt(20, 15, 400)}>
             {title}
           </h3>
           <p style={{ ...txt(16, 13, 300), lineHeight: 1.25, marginTop: s(11), maxWidth: `max(170px, ${s(block === 0 ? 192 : 216)})` }}>
@@ -351,7 +352,9 @@ export function FeaturesPageClient({ t }: { t: Dict }) {
               </p>
               {/* board: cards are as wide as their text, 40 apart (762 → 1045 → 1369) */}
               <div
-                className="grid gap-y-8 max-sm:grid-cols-1 sm:grid-cols-[repeat(3,max-content)]"
+                // lg–xl: the copy column sits beside the illustration and is too narrow for three
+                // cards (long Georgian titles overflowed), so two there. Ranges are exclusive on purpose.
+                className="grid gap-y-8 max-sm:grid-cols-1 sm:max-lg:grid-cols-[repeat(3,minmax(0,max-content))] lg:max-xl:grid-cols-2 xl:grid-cols-[repeat(3,minmax(0,max-content))]"
                 style={{ columnGap: s(40), marginTop: s(40) }}
               >
                 {b.cards.map((c, ci) => (
