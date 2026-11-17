@@ -124,7 +124,13 @@ function CopyPrompt({ text, copy, copied }: { text: string; copy: string; copied
         justifyContent: "space-between",
       }}
     >
-      <code className="min-w-0 truncate font-heading" style={txt(14, 12, 500, "rgba(255,255,255,0.7)")}>
+      {/* invisible twin of the Copy button, so the prompt sits in the true centre of the pill;
+          dropped on phones, where the prompt needs every pixel */}
+      <span aria-hidden className="invisible hidden shrink-0 items-center sm:inline-flex" style={{ ...txt(14, 12, 300), gap: s(4) }}>
+        {done ? copied : copy}
+        <span style={{ display: "inline-block", width: fz(20, 16) }} />
+      </span>
+      <code className="min-w-0 flex-1 truncate text-center font-heading" style={txt(14, 12, 500, "rgba(255,255,255,0.7)")}>
         {text}
       </code>
       <button

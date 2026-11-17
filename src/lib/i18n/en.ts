@@ -303,7 +303,7 @@ export const en = {
     final: {
       eyebrow: "Secure sandboxes & autonomous OPS",
       heading: "Put your agents to work on usectl",
-      body: "Host open-source AI agents in gVisor sandboxes and let native copilots manage your infrastructure.",
+      body: "Host open-source AI agents in network-isolated sandboxes and let built-in copilots manage your infrastructure.",
       start: "Start Free",
       docs: "Read Docs",
     },
@@ -357,9 +357,9 @@ export const en = {
         tab: "Security",
         title: "Defense-in-Depth Security & Sandboxed Isolation",
         body:
-          "Enterprise-grade security architecture featuring kernel-level gVisor isolation, strict network namespace policies, encrypted Vault storage, and secure AI guardrails.",
+          "Enterprise-grade security architecture featuring network-isolated agent sandboxes, strict network namespace policies, encrypted Vault storage, and secure AI guardrails.",
         cards: [
-          { label: "System call isolation", title: "gVisor Container Sandbox", body: "Isolate untrusted workloads and AI agents completely using kernel-level system call interception (runsc)." },
+          { label: "Internet-only egress", title: "Isolated Agent Sandboxes", body: "Hosted AI agents run in their own pods behind a network policy: they reach the public internet and nothing else in the cluster." },
           { label: "AES-256-GCM", title: "Vault Envelope Encryption", body: "Store sensitive secrets safely with AES-256-GCM encryption, hash-chained audit logs, and write-only protected variables." },
           { label: "Zero Direct Write", title: "AI Copilot Guardrails", body: "Maintain strict human oversight with \u201cModel Proposes, Human Approves\u201d workflows and scoped agent API keys." },
         ],
@@ -463,12 +463,12 @@ export const en = {
   agentsPage: {
     title: "Agents",
     description:
-      "Run open-source AI agents in isolated gVisor sandboxes with persistent storage, while autonomous native copilots triage failures and manage incidents safely.",
+      "Run open-source AI agents in network-isolated sandboxes with persistent storage, while built-in copilots triage failures and manage incidents safely.",
     eyebrow: "Usectl for agents",
     heading: "Connect your agent to usectl",
     body:
-      "Run open-source AI agents in isolated gVisor sandboxes with persistent storage, while autonomous native copilots triage failures and manage incidents safely.",
-    prompt: "Read [usectl.com/agents.md](https://usectl.com/agents.md) and set up my environment",
+      "Run open-source AI agents in network-isolated sandboxes with persistent storage, while built-in copilots triage failures and manage incidents safely.",
+    prompt: "Read https://usectl.com/agents.md and set up usectl for me",
     copy: "Copy",
     copied: "Copied",
     logosLabel: "Works with Claude, ChatGPT, Cursor, OpenCode, Grok, Gemini and Devin",
@@ -477,35 +477,35 @@ export const en = {
       setup: "Setup guide",
       cards: [
         { title: "Hermes Agent", body: "Persistent memory & isolated networks" },
-        { title: "OpenClaw", body: "Secure zero-exposure deployment" },
-        { title: "Task Agent", body: "Background workers & webhooks" },
+        { title: "OpenClaw", body: "Token-protected workspace & chat gateways" },
+        { title: "Task Agent", body: "Background tasks with tools & web access" },
       ],
     },
     copilots: {
       heading: "Built-in infrastructure copilots",
       cards: [
-        { title: "Devo Admin Copilot", body: "Propose-and-Approve workflows with zero direct writes. Approve via CLI, Web, or Face ID." },
+        { title: "Devo Admin Copilot", body: "Propose-and-Approve workflows with zero direct writes. Approve from the CLI, the web panel, or the iOS app." },
         { title: "Failed-Deploy Triage", body: "Auto-analyzes build logs on failure at zero user cost, commenting fixes on PRs." },
         { title: "Incident Remediation", body: "Monitors Grafana alerts across notify, approve, or auto modes with 1-tap approvals." },
-        { title: "Ops & Weekly Digests", body: "Nightly cluster reports at 05:00 UTC and Monday machine summaries." },
+        { title: "Weekly Machine Digests", body: "A weekly summary of each machine every Monday at 07:00 UTC: deploys, incidents and pod health." },
       ],
     },
     untrusted: {
       heading: "Built for untrusted execution",
       cards: [
-        { title: "Hermes Agent", body: "gVisor Kernel Sandbox (runsc)" },
-        { title: "Scoped API Keys (usectl agt)", body: "Least-privilege tokens bound to project IDs and expiration." },
+        { title: "Network-isolated agents", body: "Internet-only egress, no access to your cluster or private networks." },
+        { title: "Scoped API Keys (usectl tokens)", body: "Least-privilege keys bound to machines, read or write access, and an expiry." },
       ],
     },
     templates: {
       heading: "Explore templates",
       deploy: "Deploy template",
-      items: ["Hermes on usectl", "OpenClaw Sandboxed", "CI/CD Triage Bot"],
+      items: ["Hermes on usectl", "OpenClaw on usectl", "Task Agent"],
     },
     final: {
       eyebrow: "Secure AI & Autonomous OPS",
       heading: "Put your agents to work on usectl",
-      body: "Host open-source AI agents in gVisor sandboxes and let native copilots manage your infrastructure.",
+      body: "Host open-source AI agents in network-isolated sandboxes and let built-in copilots manage your infrastructure.",
       deploy: "Deploy Agent",
     },
   },
