@@ -532,7 +532,7 @@ export function FeaturesPageClient({ t }: { t: Dict }) {
                   // Not backdrop-filter: nested under the capsule's own blur it came out ~+8 levels
                   // lighter than the board (measured), whatever the fill; a solid base lands on the
                   // board's +3.6 over the capsule.
-                  background: "linear-gradient(rgba(58,58,58,0.2), rgba(58,58,58,0.2)), rgb(31,30,30)",
+                  background: "linear-gradient(rgba(58,58,58,0.2), rgba(58,58,58,0.2)), rgb(28,27,27)", // re-based 2026-11-18 for the full-strength page noise: still +3.6 over the capsule
                 }}
               >
                 {/* the board's glass rim, lit from the top-left (components/ui/GlassRim) */}

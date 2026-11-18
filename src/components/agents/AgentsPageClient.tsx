@@ -75,8 +75,8 @@ function MoreLink({ href, children, size = 16, place }: { href: string; children
 function BandFill() {
   return (
     <>
-      <Noise />
-      <div className="absolute inset-0" style={{ background: "var(--bg-tint)" }} />
+      {/* Rectangle 227/228: #1E1D1D + Monotone noise size 1.5, #000 25 % */}
+      <Noise freq={0.66667} />
     </>
   );
 }

@@ -7,7 +7,8 @@ import type { CSSProperties } from "react";
  * blur is a heavy paint), sized as a 1920th of the viewport so the speck size follows the board.
  *
  * Defaults = the page grain (public/background/background-lines.svg): baseFrequency 0.769, seed
- * 6207, specks where luminance < 51 %, layered at 30 % (BackgroundLines' own knob). Server
+ * 6207, specks where luminance < 51 % — Figma's Monotone noise, size 1.3, black 25 % — drawn at
+ * full strength since 2026-11-18 (it was layered at 30 %, which read flat on the Mac). Server
  * component, no JS.
  */
 const TILE = 256;
@@ -19,7 +20,7 @@ function tileUrl(freq: number, seed: number, cut: number) {
 }
 
 export function Noise({
-  opacity = 0.3,
+  opacity = 1,
   freq = 0.76923,
   seed = 6207,
   cut = 51,
@@ -27,7 +28,7 @@ export function Noise({
   className = "",
   style,
 }: {
-  /** layer opacity — 0.3 is the page grain's; a board's own Noise effect is drawn at 1 */
+  /** layer opacity — 1 = the board's Monotone noise (#000 25 %) at full strength */
   opacity?: number;
   /** feTurbulence baseFrequency, as in the export */
   freq?: number;

@@ -59,10 +59,10 @@ export function FooterMobile({ t, lang }: { t: Dict; lang: Lang }) {
       // #contact: the footer's hash in SECTION_HASHES (lib/nav.ts) — the anchor a /#contact link lands on
       id="contact"
       data-footer-stacked
-      className="relative overflow-hidden lg:hidden"
+      className="relative z-[53] overflow-hidden lg:hidden" // above EdgeLines (z 52): the outer lines stop here
       style={{
         ["--m" as string]: "min(calc(100vw / 390), 1.3px)",
-        background: "#1b1a1a",
+        background: "#1e1d1d", // board: Rectangle 224
         borderTop: "1px solid rgba(255,255,255,0.06)",
         padding: `${m(48)} max(${m(20)}, calc((100% - ${m(560)}) / 2)) ${m(28)}`,
       }}
@@ -81,7 +81,7 @@ export function FooterMobile({ t, lang }: { t: Dict; lang: Lang }) {
       />
 
       {/* the design's noise, above the glow and below the content (see Footer.tsx) */}
-      <Noise />
+      <Noise freq={0.66667} />
 
       <div data-mf-reveal className="relative">
         <Link href={langPath(lang)} aria-label={t.a11y.home} className="inline-block">

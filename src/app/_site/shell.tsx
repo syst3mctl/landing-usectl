@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { Geist_Mono, Space_Grotesk } from "next/font/google";
 import localFont from "next/font/local";
 import { Header } from "@/components/layout/Header";
-import { BackgroundLines } from "@/components/layout/BackgroundLines";
+import { BackgroundLines, EdgeLines } from "@/components/layout/BackgroundLines";
 import { SessionReplay } from "@/components/SessionReplay";
 import { Analytics } from "@/components/Analytics";
 import { MetaPixel } from "@/components/MetaPixel";
@@ -83,7 +83,7 @@ const GOOGLE_SITE_VERIFICATION = process.env.GOOGLE_SITE_VERIFICATION;
 const OG_LOCALE: Record<Lang, string> = { en: "en_US", ka: "ka_GE" };
 
 export const VIEWPORT: Viewport = {
-  themeColor: "#171616",
+  themeColor: "#1e1d1d",
   colorScheme: "dark",
 };
 
@@ -233,6 +233,7 @@ export function SiteShell({ lang, children }: { lang: Lang; children: ReactNode 
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdFor(lang)).replace(/</g, "\\u003c") }}
         />
         <BackgroundLines />
+        <EdgeLines />
         <Header t={t} lang={lang} />
         {children}
         <SessionReplay />
