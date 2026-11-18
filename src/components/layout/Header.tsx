@@ -34,7 +34,8 @@ export function Header({ t, lang }: { t: Dict; lang: Lang }) {
         hideWide={HEADER_HIDE_WIDE}
         hideNarrow={HEADER_HIDE_NARROW}
         className="header-cols pointer-events-none absolute top-0 h-16 max-lg:hidden lg:h-24"
-        style={{ left: INSET_VW, right: INSET_VW }}
+        // the outer columns belong to EdgeLines (BackgroundLines.tsx) — clipped here, drawn there once
+        style={{ left: INSET_VW, right: INSET_VW, clipPath: `inset(0 0 0 ${LINE_W})` }}
       />
       {/* < 1024: the phone/tablet grid (globals.css --grid-*), masked clear of the logo and the
           burger so no line runs through either */}
@@ -46,6 +47,7 @@ export function Header({ t, lang }: { t: Dict; lang: Lang }) {
           right: "calc(var(--grid-inset) - var(--grid-edge))",
           backgroundImage: `repeating-linear-gradient(to right, ${LINE_COLOR} 0, ${LINE_COLOR} ${LINE_W}, transparent ${LINE_W}, transparent var(--grid-pitch))`,
           backgroundPositionX: `calc(-1 * ${LINE_HALF})`,
+          clipPath: `inset(0 var(--grid-edge, 0px) 0 ${LINE_W})`, // outer columns: EdgeLines'
         }}
       />
       {/* The seam under the header is drawn as ONE MORE GRID LINE (width/colour of the page grid,

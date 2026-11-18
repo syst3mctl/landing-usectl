@@ -5,13 +5,14 @@ import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKe
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
-import { SceneLight } from "@/components/layout/SceneLight";
 import { ButtonArrow } from "@/components/ui/icons";
 import { pressRipple } from "@/lib/pressRipple";
 import { openBookDemo } from "@/lib/bookDemo";
 import { CONTACT_EMAIL, CONTACT_HREF, ctaAttr, SIGNUP_URL, type CtaPlacement } from "@/lib/nav";
 import { fill, type Dict } from "@/lib/i18n";
 import { GlassRim } from "@/components/ui/GlassRim";
+import { Noise } from "@/components/ui/Noise";
+import { CtaLights } from "@/components/page/CtaCard";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
@@ -434,21 +435,27 @@ export function PricingPageClient({ t }: { t: Dict }) {
 
       {/* ---------------- closing card ---------------- */}
       <section data-pr-scroll className="relative mx-auto w-full" style={{ maxWidth: r(1394, 560), marginTop: r(192, 80), marginBottom: r(170, 80) }}>
-        {/* The scene light is the PAGE's, not the card's (user, with the board: "div-ზე გვაქვს
-            background, რეალურად გარეთ უნდა იყოს") — it sits behind the card, centred near its
-            lower right corner, and spills past the border; the card itself is clear glass. Drawn at 0.6 of the footer
-            light (user: "ძაან დიდზეა"), same centre. */}
+        {/* The card's own surface, like the closing card on /features and /agents (CtaCard): the page
+            colour + the page's noise, so the grid no longer runs through it (user, 2026-11-18). It is
+            a layer UNDER the light, not the card's background, so the light keeps showing inside the
+            card exactly as before and still spills past the border. */}
         <div
           data-pr-reveal
           aria-hidden="true"
-          className="pointer-events-none absolute"
-          style={{ left: r(769, 75), top: r(-90, 0), width: r(521, 312), height: r(443, 264) }}
+          className="pointer-events-none absolute inset-0 overflow-hidden"
+          style={{ borderRadius: r(53, 28), background: "var(--page)" }}
         >
-          <SceneLight variant="footer" style={{ inset: 0, width: "100%", height: "100%" }} />
+          <Noise />
+        </div>
+        {/* the lights: the SAME three as the closing card on /features and /agents (CtaLights —
+            the middle wedge over the eyebrow, the two soft side lights spilling past the corners;
+            user, 2026-11-18). They replaced the footer-style scene light that sat here. */}
+        <div data-pr-reveal aria-hidden="true" className="pointer-events-none absolute inset-0">
+          <CtaLights />
         </div>
         <div
           data-pr-reveal
-          className="relative flex flex-col items-center justify-center border border-white/[0.12] bg-transparent text-center"
+          className="relative flex flex-col items-center justify-center border border-white/[0.1] bg-transparent text-center"
           style={{ minHeight: r(342, 0), borderRadius: r(53, 28), padding: `${r(40)} ${r(40, 20)}` }}
         >
           <h2 className="font-heading font-medium text-brand" style={{ fontSize: r(32, 21), lineHeight: 1.1, letterSpacing: LS }}>
@@ -476,8 +483,12 @@ export function PricingPageClient({ t }: { t: Dict }) {
 function PlanHead({ name, tagline }: { name: string; tagline: string }) {
   return (
     <>
-      {/* the team's icon (public/pricing/fire.svg, 30×30 with its own tinted r8 box) */}
-      <Image src="/pricing/fire.svg" alt="" width={30} height={30} aria-hidden="true" unoptimized className="self-start" style={{ width: r(30, 28), height: r(30, 28) }} />
+      {/* the team's icon (public/pricing/fire.svg, 30×30 with its own tinted r8 box), with the same
+          glass rim as the number tiles and the /features tabs (user, 2026-11-18) */}
+      <span className="relative inline-block self-start" style={{ width: r(30, 28), height: r(30, 28), borderRadius: r(8, 7.5) }}>
+        <Image src="/pricing/fire.svg" alt="" width={30} height={30} aria-hidden="true" unoptimized className="block h-full w-full" />
+        <GlassRim w={30} h={30} r={8} />
+      </span>
       <h2 className="font-heading font-normal text-white/90" style={{ fontSize: r(20, 18), lineHeight: 1, letterSpacing: LS, marginTop: r(14, 10) }}>
         {name}
       </h2>
@@ -705,12 +716,14 @@ function CalculatorMorph({
           }
         }}
         {...(!open ? { "aria-expanded": false, "aria-roledescription": "button" } : {})}
-        className={`${fixedMode ? "fixed z-[61]" : "absolute inset-0"} overflow-hidden border border-white/[0.09] outline-none ${open ? "" : "cursor-pointer hover:!bg-[#343333]"}`}
+        className={`${fixedMode ? "fixed z-[61]" : "absolute inset-0"} overflow-hidden border border-white/[0.09] outline-none ${open ? "" : "cursor-pointer hover:!bg-[#262525]"}`}
         style={{
           ...(fixedMode && geo
             ? { left: geo.left, top: geo.top, width: geo.width, height: geo.height, borderRadius: geo.radius }
             : { borderRadius: r(36) }),
-          backgroundColor: open ? "#211f1f" : "#2b2a2a",
+          // board (user, 2026-11-18): fill #1E1D1D, Monotone noise #00000040 (the <Noise /> below) —
+          // the pill and the opened panel alike
+          backgroundColor: "#1e1d1d",
           // board: a plain 1px edge — no green border, no green halo (user, 2026-11-17)
           boxShadow: open ? "0 30px 120px rgba(0,0,0,0.55)" : "none",
           transition: fixedMode && morphOn ? `${morphing}, border-color ${MORPH_MS}ms ${MORPH_EASE}, box-shadow ${MORPH_MS}ms ${MORPH_EASE}` : undefined,
@@ -718,6 +731,8 @@ function CalculatorMorph({
           visibility: fixedMode ? "visible" : visible ? undefined : "hidden",
         }}
       >
+        {/* the board's noise, on the pill and on the opened panel alike */}
+        <Noise />
         {/* the pill's label */}
         <span
           aria-hidden={open}

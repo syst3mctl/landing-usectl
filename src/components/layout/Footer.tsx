@@ -32,18 +32,19 @@ import { Noise } from "@/components/ui/Noise";
 export function Footer({ t, lang }: { t: Dict; lang: Lang }) {
   const navLinks = footerNavLinks(t, lang);
   return (
-    // The base stays DARK (#1b1a1a, sampled as rgb(26,26,26) in the design's own footer-light.png)
+    // The base is the board's #1E1D1D (Rectangle 224, re-read 2026-11-18 — was #1b1a1a from an old PNG)
     // — the footer's brightness is not a lighter fill, it's the mint glow below.
     <footer
-      className="relative overflow-hidden"
-      style={{ height: s(800), background: "#1b1a1a", borderTop: "1px solid rgba(255,255,255,0.06)" }}
+      // z 53: above the page's EdgeLines overlay (z 52) — the outer grid lines stop at the footer
+      className="relative z-[53] overflow-hidden"
+      style={{ height: s(800), background: "#1e1d1d", borderTop: "1px solid rgba(255,255,255,0.06)" }}
     >
       {/* The scene light: the team's own export, public/footer/background-light-for.svg
           (868×739 — two blurred blobs, #B6F1C0 → #11A32A and #11A32A → #8FC6FF, stdDeviation
           100), which replaced the hand-fitted mint ellipse on 2026-09-29. Drawn inline by
           SceneLight (never clipped by the file's frame), flush with the right edge, blobs'
           centre (~605, 550 in the file) on the old light's centre (≈1660, 610). The footer's own
-          fill stays #1b1a1a — the light does the work. */}
+          fill is #1E1D1D — the light does the work. */}
       <SceneLight variant="footer" style={{ left: s(1920 - 868), top: s(60), width: s(868), height: s(739) }} />
 
       {/* giant desaturated logo watermark */}
@@ -66,7 +67,8 @@ export function Footer({ t, lang }: { t: Dict; lang: Lang }) {
 
       {/* the design's noise over the whole footer — above the light and the watermark (the glow is
           seen THROUGH the grain, as on the board), below the text */}
-      <Noise />
+      {/* board (Rectangle 224): #1E1D1D + Monotone noise size 1.5 (≈ baseFrequency 1/1.5), #000 25 % */}
+      <Noise freq={0.66667} />
 
       {/* brand column */}
       <div className="absolute" style={{ left: s(187), top: s(76) }}>

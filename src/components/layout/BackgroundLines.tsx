@@ -102,6 +102,9 @@ function CssGridLines({ color = LINE_COLOR }: { color?: string }) {
           left: `var(--grid-inset, ${INSET_VW})`,
           right: `calc(var(--grid-inset, ${INSET_VW}) - var(--grid-edge, 0px) - ${LINE_W})`,
           top: `var(--header-h, ${HEADER_HEIGHT_PX}px)`,
+          // the two OUTER columns are EdgeLines' (below), drawn once, top to bottom — clipped here
+          // so the page never paints them twice (a doubled line read as a heavier one)
+          clipPath: `inset(0 calc(var(--grid-edge, 0px) + ${LINE_W}) 0 ${LINE_W})`,
         }}
       >
         {Array.from({ length: NUM_COLUMNS }, (_, i) => (
@@ -162,6 +165,33 @@ export function BackgroundLines() {
         className="absolute inset-0"
         style={{ background: "var(--bg-tint)", opacity: "var(--bg-tint-above, 1)" }}
       />
+    </div>
+  );
+}
+
+/**
+ * The grid's two OUTER verticals — the first line from the left and the first from the right (on
+ * the content insets) — unbroken from the very top of the page to the very bottom: through the
+ * header, the opaque bands (Substrate, the /agents bands) and the footer (user, 2026-11-18). In the
+ * grid's OWN colour (LINE_COLOR: 5 %, 3 % on the scrolling pages), a shade fainter (user: "the same
+ * colour as the other lines, just lighter and fainter"). The grid layers (BackgroundLines and the
+ * header's columns) clip their own outer columns away, so these lines are the only ones there and
+ * nothing paints them twice. A fixed overlay above the header (z 52), below the cookie banner and
+ * the dialogs (z 60+); pointer-events none.
+ */
+export function EdgeLines() {
+  const line = { width: LINE_W, background: LINE_COLOR, opacity: 0.3 } as const;
+  return (
+    <div aria-hidden className="pointer-events-none fixed inset-0 z-[52]">
+      {/* positions snapped to whole device pixels (globals.css .edge-line-*): a one-device-pixel
+          line that starts mid-pixel is smeared over two at half strength — that is why the right
+          one read fainter than the left at some widths (user, 2026-11-18) */}
+      <div className="edge-line-l absolute inset-y-0" style={line} />
+      {/* the right one a shade stronger: the geometry is identical (checked: same width, same
+          colour, both on whole pixels), but the page's lights sit on the right (the hero art, the
+          /agents glows, the pricing tab, the footer light), and on a lighter ground the same line
+          reads fainter (user, 2026-11-18: "the left one still reads stronger") */}
+      <div className="edge-line-r absolute inset-y-0" style={{ ...line, opacity: 0.4 }} />
     </div>
   );
 }
