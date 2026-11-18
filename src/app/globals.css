@@ -693,3 +693,11 @@ body:has([data-grid-scroll]) {
     left: round(nearest, calc(100% - var(--grid-inset)), var(--grid-line-w));
   }
 }
+
+/* Georgian copy runs longer than the boards' English; where a layout is fitted to the English line
+   count, the type comes down a little under lang="ka" (user, 2026-11-18). Used as multipliers:
+   font-size: calc(<size> * var(--ka-h1, 1)). */
+html[lang="ka"] {
+  --ka-h1: 0.9;
+  --ka-body: 0.86;
+}

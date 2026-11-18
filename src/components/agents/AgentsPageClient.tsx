@@ -37,7 +37,12 @@ const LOGOS: { src: string; w: number; h: number; x: number }[] = [
 
 const H2 = (): CSSProperties => txt(40, 24, 500); // ≈ (box 51) — section headings
 const CARD_TITLE = (): CSSProperties => txt(28, 18, 500); // ≈ (box 36)
-const CARD_BODY = (): CSSProperties => txt(24, 15, 300); // ≈ (box 31 per line)
+// Georgian runs longer than the board's English: these scale down under html[lang="ka"]
+// (globals.css --ka-*), so the copy keeps the board's line count and sits inside its band.
+const CARD_BODY = (): CSSProperties => {
+  const t = txt(24, 15, 300); // ≈ (box 31 per line)
+  return { ...t, fontSize: `calc(${t.fontSize} * var(--ka-body, 1))` };
+};
 
 /** A "Setup guide ›" / "Deploy template ›" link: text + the 24px chevron */
 function MoreLink({ href, children, size = 16, place }: { href: string; children: ReactNode; size?: number; place: "agents-setup" | "agents-template" }) {
@@ -199,6 +204,45 @@ function CopyPrompt({ text, copy, copied }: { text: string; copy: string; copied
 export function AgentsPageClient({ t }: { t: Dict }) {
   const a = t.agentsPage;
 
+  // --- the bands follow their sections. They sit on the grid's rows (see GridBand), but WHICH rows
+  // depends on how tall the copy above them runs: the board's rows (copilots 10 → 16, templates
+  // 23 → 27) fit its English, and the Georgian copy, being longer, pushed the templates down off
+  // their band and onto the grid (user, 2026-11-18). So each band starts on the row nearest to
+  // where it begins on the board (63 above its heading) and ends on the row nearest to its
+  // section's end, measured live.
+  const copRef = useRef<HTMLElement>(null);
+  const tplRef = useRef<HTMLElement>(null);
+  const [bands, setBands] = useState({ cop: [10, 16] as [number, number], tpl: [23, 27] as [number, number] });
+  useEffect(() => {
+    const measure = () => {
+      const root = getComputedStyle(document.documentElement);
+      const header = parseFloat(root.getPropertyValue("--header-h")) || 96;
+      const unit = parseFloat(root.getPropertyValue("--s")) || 1;
+      const row = unit * 114;
+      const rows = (el: HTMLElement | null, startAbove: number, fallback: [number, number]): [number, number] => {
+        if (!el) return fallback;
+        const r = el.getBoundingClientRect();
+        const top = r.top + window.scrollY + unit * startAbove;
+        const bottom = r.bottom + window.scrollY;
+        const from = Math.round((top - header) / row);
+        const to = Math.max(from + 1, Math.round((bottom - header) / row));
+        return [from, to];
+      };
+      const next = { cop: rows(copRef.current, 214, [10, 16]), tpl: rows(tplRef.current, 215, [23, 27]) };
+      setBands((b) => (b.cop.join() === next.cop.join() && b.tpl.join() === next.tpl.join() ? b : next));
+    };
+    measure();
+    document.fonts?.ready.then(measure);
+    window.addEventListener("resize", measure);
+    const ro = new ResizeObserver(measure);
+    if (copRef.current) ro.observe(copRef.current);
+    if (tplRef.current) ro.observe(tplRef.current);
+    return () => {
+      window.removeEventListener("resize", measure);
+      ro.disconnect();
+    };
+  }, []);
+
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const items = Array.from(document.querySelectorAll<HTMLElement>("[data-fe-reveal]"));
@@ -223,8 +267,8 @@ export function AgentsPageClient({ t }: { t: Dict }) {
     <div data-grid-scroll className="relative isolate w-full overflow-x-clip">
       {/* the section bands on the grid's rows (≥1024; see GridBand): copilots rows 10 → 16
           (board 1236 → 1917 ≈ row 15.97), templates rows 23 → 27 (2718 → 3165 ≈ 26.92) */}
-      <GridBand from={10} to={16} />
-      <GridBand from={23} to={27} />
+      <GridBand from={bands.cop[0]} to={bands.cop[1]} />
+      <GridBand from={bands.tpl[0]} to={bands.tpl[1]} />
       {/* side glows, in page coordinates (board y − the 96 header). Group 1890 (right, behind the
           copilots): x1610 y1554, 599×499; Group 1889 (left, behind the templates): x−223 y2820,
           555×443. The SceneLight blobs' union (≈200→830 × 200→740 in its 950×901 box) is fitted
@@ -240,7 +284,7 @@ export function AgentsPageClient({ t }: { t: Dict }) {
           <Image src="/section-hero/hatch.svg" alt="" width={58} height={26} aria-hidden className="h-auto" style={{ width: `max(22px, ${s(31.8)})` }} />
           {a.eyebrow}
         </p>
-        <h1 data-fe-reveal style={{ ...txt(64, 30, 500), maxWidth: s(1029) }}>
+        <h1 data-fe-reveal style={{ ...txt(64, 30, 500), fontSize: `calc(${txt(64, 30, 500).fontSize} * var(--ka-h1, 1))`, maxWidth: s(1029), textWrap: "balance" }}>
           {a.heading}
         </h1>
         <p data-fe-reveal style={{ ...txt(24, 15, 300), maxWidth: `max(300px, ${s(913)})`, marginTop: s(16) }}>
@@ -306,7 +350,7 @@ export function AgentsPageClient({ t }: { t: Dict }) {
           card under the second (y1651); body 47 under the title, 368 wide (Ops: 315). */}
       {/* band (Rectangle 227) y1236 → 1917 — drawn by GridBand ≥1024; FlowBand (phones) starts 63 above
           the heading (277 − 63 = 214); 129 past the cards (1917 − 1788) is the section's padding-bottom */}
-      <section className={`${col} relative`} style={{ paddingTop: s(277), paddingBottom: s(129) }}>
+      <section ref={copRef} className={`${col} relative`} style={{ paddingTop: s(277), paddingBottom: s(129) }}>
         <FlowBand top={214} />
         <h2 data-fe-reveal className="relative lg:ml-[calc(var(--s)*18)]" style={H2()}>
           {a.copilots.heading}
@@ -345,7 +389,7 @@ export function AgentsPageClient({ t }: { t: Dict }) {
           "Deploy template ›" 47 under the title (24 Light + 24 chevron). */}
       {/* band (Rectangle 228) y2718 → 3165 — GridBand ≥1024; FlowBand: 63 above the heading
           (278 − 63 = 215), 177 past the items (3165 − 2988) */}
-      <section className={`${col} relative`} style={{ paddingTop: s(278), paddingBottom: s(177) }}>
+      <section ref={tplRef} className={`${col} relative`} style={{ paddingTop: s(278), paddingBottom: s(177) }}>
         <FlowBand top={215} />
         <h2 data-fe-reveal className="relative lg:ml-[calc(var(--s)*18)]" style={H2()}>
           {a.templates.heading}
