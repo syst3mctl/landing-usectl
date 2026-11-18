@@ -103,8 +103,11 @@ function CssGridLines({ color = LINE_COLOR }: { color?: string }) {
           right: `calc(var(--grid-inset, ${INSET_VW}) - var(--grid-edge, 0px) - ${LINE_W})`,
           top: `var(--header-h, ${HEADER_HEIGHT_PX}px)`,
           // the two OUTER columns are EdgeLines' (below), drawn once, top to bottom — clipped here
-          // so the page never paints them twice (a doubled line read as a heavier one)
-          clipPath: `inset(0 calc(var(--grid-edge, 0px) + ${LINE_W}) 0 ${LINE_W})`,
+          // so the page never paints them twice. Clipped by HALF A PITCH, not by the line's width:
+          // a 1-line-wide clip left a sliver of the first column on a retina screen (the line snaps
+          // to device pixels, the clip edge did not), which is why the left edge kept reading
+          // stronger than the right even with EdgeLines' left line at 1 % (user, 2026-11-18).
+          clipPath: `inset(0 calc(var(--grid-edge, 0px) + var(--grid-pitch, ${COLUMN_PITCH}) / 2) 0 calc(var(--grid-pitch, ${COLUMN_PITCH}) / 2))`,
         }}
       >
         {Array.from({ length: NUM_COLUMNS }, (_, i) => (
@@ -180,18 +183,14 @@ export function BackgroundLines() {
  * the dialogs (z 60+); pointer-events none.
  */
 export function EdgeLines() {
-  const line = { width: LINE_W, background: LINE_COLOR, opacity: 0.3 } as const;
+  const line = { width: LINE_W, background: LINE_COLOR, opacity: 0.35 } as const;
   return (
     <div aria-hidden className="pointer-events-none fixed inset-0 z-[52]">
       {/* positions snapped to whole device pixels (globals.css .edge-line-*): a one-device-pixel
           line that starts mid-pixel is smeared over two at half strength — that is why the right
           one read fainter than the left at some widths (user, 2026-11-18) */}
       <div className="edge-line-l absolute inset-y-0" style={line} />
-      {/* the right one a shade stronger: the geometry is identical (checked: same width, same
-          colour, both on whole pixels), but the page's lights sit on the right (the hero art, the
-          /agents glows, the pricing tab, the footer light), and on a lighter ground the same line
-          reads fainter (user, 2026-11-18: "the left one still reads stronger") */}
-      <div className="edge-line-r absolute inset-y-0" style={{ ...line, opacity: 0.4 }} />
+      <div className="edge-line-r absolute inset-y-0" style={line} />
     </div>
   );
 }
