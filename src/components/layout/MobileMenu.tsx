@@ -152,7 +152,7 @@ export function MobileMenu({
             role="dialog"
             aria-modal="true"
             aria-label={t.a11y.menu}
-            className="fixed inset-x-0 bottom-0 top-16 z-40 flex flex-col overflow-y-auto overflow-x-hidden overscroll-contain lg:hidden"
+            className="fixed inset-x-0 bottom-0 top-16 z-[55] flex flex-col overflow-y-auto overflow-x-hidden overscroll-contain lg:hidden"
             style={{ visibility: "hidden", opacity: 0, background: "rgba(27,26,26,0.94)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)" }}
           >
             {/* the light hangs off the right edge on purpose — clipped by its own layer so it

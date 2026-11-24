@@ -31,15 +31,17 @@ gsap.registerPlugin(ScrollTrigger, useGSAP);
 const r = (d: number, p: number = d) =>
   d === p ? `calc(var(--k) * ${d})` : `calc(var(--k) * (${d} * var(--pd) + ${p} * var(--pp)))`;
 
+// min = where the calculator opens. Storage starts at 0 (2026-11-24): the Machine plan's $15 is
+// 1 vCPU + 1 GB RAM, so the calculator has to open on $15.00 too — 1 GB of storage made it $15.10.
 const PRICING_ROWS = [
-  { key: "vcpu", price: 10, max: 16 },
-  { key: "memory", price: 5, max: 64 },
-  { key: "storage", price: 0.1, max: 1000 },
+  { key: "vcpu", price: 10, min: 1, max: 16 },
+  { key: "memory", price: 5, min: 1, max: 64 },
+  { key: "storage", price: 0.1, min: 0, max: 1000 },
 ] as const;
 type RowKey = (typeof PRICING_ROWS)[number]["key"];
-// $15 · $15.10 · $5,761.20 — whole numbers without cents, a thousands separator on big totals
-const fmtPrice = (n: number) =>
-  `$${n.toLocaleString("en-US", Number.isInteger(n) ? { maximumFractionDigits: 0 } : { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+// $15.00 · $15.10 · $5,761.20 — always with cents, like the plan card's "$15.00" (2026-11-24: the
+// calculator said "$15" next to it), and a thousands separator on big totals
+const fmtPrice = (n: number) => `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const MACHINE_BASE = 15; // 1 vCPU ($10) + 1 GB RAM ($5)
 
 
@@ -546,11 +548,14 @@ function CalculatorMorph({
   setAnnual: (v: boolean) => void;
   phoneTrigger: RefObject<HTMLButtonElement | null>;
 }) {
-  const [counts, setCounts] = useState<Record<RowKey, number>>({ vcpu: 1, memory: 1, storage: 1 });
+  const [counts, setCounts] = useState<Record<RowKey, number>>(
+    () => Object.fromEntries(PRICING_ROWS.map((row) => [row.key, row.min])) as Record<RowKey, number>,
+  );
+  const bounds = (key: RowKey) => PRICING_ROWS.find((row) => row.key === key)!;
   const step = (key: RowKey, d: number, max: number) =>
-    setCounts((c) => ({ ...c, [key]: Math.min(max, Math.max(1, c[key] + d)) }));
+    setCounts((c) => ({ ...c, [key]: Math.min(max, Math.max(bounds(key).min, c[key] + d)) }));
   const setCount = (key: RowKey, v: number, max: number) =>
-    setCounts((c) => ({ ...c, [key]: Math.min(max, Math.max(1, Math.round(v))) }));
+    setCounts((c) => ({ ...c, [key]: Math.min(max, Math.max(bounds(key).min, Math.round(v))) }));
   const factor = annual ? 12 : 1;
   const suffix = annual ? t.s8.perYear : t.s8.perMonth;
   const total = (10 * counts.vcpu + 5 * counts.memory + 0.1 * counts.storage) * factor;
@@ -805,7 +810,7 @@ function CalculatorMorph({
                 {PRICING_ROWS.map((row, i) => {
                   // how much of the row's range is picked (sqrt, so the first GB of a 1 TB range
                   // still visibly move the bar)
-                  const share = Math.max(0.03, Math.sqrt((counts[row.key] - 1) / (row.max - 1)));
+                  const share = Math.max(0.03, Math.sqrt((counts[row.key] - row.min) / (row.max - row.min)));
                   return (
                     <div
                       key={row.key}
@@ -831,7 +836,7 @@ function CalculatorMorph({
                                 aria-label={fill(d < 0 ? t.a11y.decrease : t.a11y.increase, { name: t.s8.rows[i]!.label })}
                                 onClick={() => step(row.key, d, row.max)}
                                 onPointerDown={pressRipple}
-                                disabled={d < 0 ? counts[row.key] <= 1 : counts[row.key] >= row.max}
+                                disabled={d < 0 ? counts[row.key] <= row.min : counts[row.key] >= row.max}
                                 className={STEP_IN_CLASS}
                                 style={{ width: r(36, 30), height: r(36, 30), fontSize: r(18, 16), order: d < 0 ? 0 : 2 }}
                               >
@@ -840,6 +845,7 @@ function CalculatorMorph({
                             ))}
                             <CountInput
                               value={counts[row.key]}
+                              min={row.min}
                               max={row.max}
                               label={t.s8.rows[i]!.label}
                               onChange={(v) => setCount(row.key, v, row.max)}
@@ -855,6 +861,7 @@ function CalculatorMorph({
                       </div>
                       <RangeBar
                         value={counts[row.key]}
+                        min={row.min}
                         max={row.max}
                         share={share}
                         label={t.s8.rows[i]!.label}
@@ -977,8 +984,8 @@ function Flame({ size }: { size: string }) {
 
 // The number between − and +: typeable too (user, 2026-11-10). Digits only; a value above the
 // row's limit is capped the moment it is typed, so the price can never show more than the max.
-// An empty field is allowed while typing and goes back to the current value (min 1) on blur.
-function CountInput({ value, max, label, onChange }: { value: number; max: number; label: string; onChange: (v: number) => void }) {
+// An empty field is allowed while typing and goes back to the current value on blur.
+function CountInput({ value, min, max, label, onChange }: { value: number; min: number; max: number; label: string; onChange: (v: number) => void }) {
   const [draft, setDraft] = useState<string | null>(null);
   return (
     <input
@@ -992,7 +999,7 @@ function CountInput({ value, max, label, onChange }: { value: number; max: numbe
           setDraft("");
           return;
         }
-        const n = Math.min(max, Math.max(1, Number(digits)));
+        const n = Math.min(max, Math.max(min, Number(digits)));
         setDraft(Number(digits) > max ? String(max) : digits);
         onChange(n);
       }}
@@ -1018,15 +1025,17 @@ function CountInput({ value, max, label, onChange }: { value: number; max: numbe
 // / Home-End once it has focus. While dragging, the fill follows the pointer CONTINUOUSLY (the
 // value itself steps — vCPU only has 16 — and tying the fill to it made the bar jump); on release
 // it settles onto the value's own position with the usual ease. The fill keeps the sqrt scale
-// (share = √((v−1)/(max−1))), so the pointer maps back through v = 1 + f² × (max − 1).
+// (share = √((v−min)/(max−min))), so the pointer maps back through v = min + f² × (max − min).
 function RangeBar({
   value,
+  min,
   max,
   share,
   label,
   onChange,
 }: {
   value: number;
+  min: number;
   max: number;
   share: number;
   label: string;
@@ -1042,7 +1051,7 @@ function RangeBar({
     const b = el.getBoundingClientRect();
     const f = Math.min(1, Math.max(0, (clientX - b.left) / b.width));
     if (follow) setDrag(f);
-    onChange(1 + f * f * (max - 1));
+    onChange(min + f * f * (max - min));
   };
   const release = () => {
     pressed.current = false;
@@ -1055,7 +1064,7 @@ function RangeBar({
       : e.key === "ArrowLeft" || e.key === "ArrowDown" ? value - 1
       : e.key === "PageUp" ? value + big
       : e.key === "PageDown" ? value - big
-      : e.key === "Home" ? 1
+      : e.key === "Home" ? min
       : e.key === "End" ? max
       : null;
     if (next === null) return;
@@ -1074,7 +1083,7 @@ function RangeBar({
       role="slider"
       tabIndex={0}
       aria-label={label}
-      aria-valuemin={1}
+      aria-valuemin={min}
       aria-valuemax={max}
       aria-valuenow={value}
       onPointerDown={down}

@@ -182,10 +182,12 @@ export function BackgroundLines() {
  * nothing paints them twice. A fixed overlay above the header (z 52), below the cookie banner and
  * the dialogs (z 60+); pointer-events none.
  */
-export function EdgeLines() {
+export function EdgeLines({ inHeader = false }: { inHeader?: boolean }) {
   const line = { width: LINE_W, background: LINE_COLOR, opacity: 0.35 } as const;
   return (
-    <div aria-hidden className="pointer-events-none fixed inset-0 z-[52]">
+    // inHeader: the same pair drawn inside the header's own box (the header is z 54, above this
+    // overlay), so the lines don't break at the header band
+    <div aria-hidden className={`pointer-events-none inset-0 ${inHeader ? "absolute" : "fixed z-[52]"}`}>
       {/* positions snapped to whole device pixels (globals.css .edge-line-*): a one-device-pixel
           line that starts mid-pixel is smeared over two at half strength — that is why the right
           one read fainter than the left at some widths (user, 2026-11-18) */}

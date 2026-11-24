@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ColumnLines } from "@/components/layout/BackgroundLines";
+import { ColumnLines, EdgeLines } from "@/components/layout/BackgroundLines";
 import { MobileMenu } from "@/components/layout/MobileMenu";
 import { NavItemLink } from "@/components/layout/NavItemLink";
 import { ButtonArrow } from "@/components/ui/icons";
@@ -20,7 +20,7 @@ export function Header({ t, lang }: { t: Dict; lang: Lang }) {
     // a page-coloured fill can't carry the grain (bg-background/60, bg-page/60 read lighter), and a
     // see-through blur smears the grain flat (bg-black/5 + backdrop-blur read as a smooth, darker
     // strip on a retina screen). Opaque now: content scrolling under it is hidden, not blurred.
-    <header className="sticky top-0 z-50 w-full overflow-x-clip border-b border-transparent bg-background">
+    <header className="sticky top-0 z-[54] w-full overflow-x-clip border-b border-transparent bg-background">
       <div aria-hidden className="pointer-events-none absolute inset-0">
         {/* the page's grain — the SAME Noise tile BackgroundLines draws, so both rasterise alike on
             any screen (the old 1920×13528 sheet did not on retina) */}
@@ -65,6 +65,11 @@ export function Header({ t, lang }: { t: Dict; lang: Lang }) {
           lines are dimmed like the page's; the row below is positioned and later, so it stays
           above the sheet */}
       <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: "var(--bg-tint)" }} />
+      {/* z 54 (2026-11-24): the header must sit ABOVE the footer (z 53) — at the bottom of a phone
+          page the footer is taller than the screen and was painting over the header (burger gone,
+          and the menu panel opened behind it). Being above EdgeLines' overlay (z 52) now too, the
+          header draws the two outer lines itself, the same way, so they still run through it. */}
+      <EdgeLines inHeader />
       {/* The row's ≥1024 geometry (width, centring, the 130/99 design paddings) lives in
           globals.css's `.header-row`, because it is written in --sh — the scale the pinned scene is
           really drawn at — so the logo keeps sitting on the content's column on any display. Below
