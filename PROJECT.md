@@ -2177,3 +2177,18 @@ showed there — a 1× monitor hid them).
 
 Not committed on purpose: `public/Group1902.svg` (reference export — belongs in design/, user to
 confirm), `.claude/`.
+
+## Three fixes: phone header under the footer, calculator $15.00, /agents band spacing (2026-11-24, `fixed-ui`)
+
+- **Phone: burger hidden at the bottom / menu not opening.** The footers are `z-[53]` (above
+  EdgeLines' z 52), the header was `z-50` and the menu panel `z-40`. When the footer is taller
+  than the screen it painted over the sticky header, and a menu opened a little higher up rendered
+  BEHIND the footer. Header is now `z-[54]`, the panel `z-[55]` (cookie banner/dialogs stay 60+).
+  Being above EdgeLines now, the header draws the two outer lines itself (`<EdgeLines inHeader />`).
+- **Calculator opens on $15.00**, like the Machine card: `PRICING_ROWS` gained `min` (storage
+  0, vCPU/RAM 1), used by the default counts, the clamps, the input, the slider and its sqrt map.
+  `fmtPrice` always shows cents now ("$15.00", not "$15").
+- **/agents "Explore templates" heading no longer sits against its band** (13" MacBook, 1470 wide:
+  26px instead of ~48). The band snaps to the nearest grid row, up to half a row off; the
+  section's top padding now takes that difference (`shift` state), so both band headings sit the
+  same distance under the band at every width (measured 1280/1470/1920, EN + KA).

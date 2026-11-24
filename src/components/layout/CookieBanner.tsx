@@ -44,7 +44,7 @@ export function CookieBanner({ t, privacyHref }: { t: Dict["cookies"]; privacyHr
   };
 
   return (
-    // z-60: above the header (50) and the burger menu's panel (40), below the "Book a demo"
+    // z-60: above the header (54) and the burger menu's panel (55), below the "Book a demo"
     // popup (70) — that one is a real modal and must stay on top.
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-[60] px-4 pb-4 sm:px-6 sm:pb-6">
       <div

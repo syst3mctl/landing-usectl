@@ -213,6 +213,12 @@ export function AgentsPageClient({ t }: { t: Dict }) {
   const copRef = useRef<HTMLElement>(null);
   const tplRef = useRef<HTMLElement>(null);
   const [bands, setBands] = useState({ cop: [10, 16] as [number, number], tpl: [23, 27] as [number, number] });
+  // The band snaps to the nearest grid row, which is up to half a row (57 design px) off the
+  // board's "63 above the heading" — at 1470 wide (a 13" MacBook) "Explore templates" ended up
+  // 34 under the band's top edge, pressed against it (user, 2026-11-24). So the heading follows
+  // the band instead: each section's top padding takes the snap's difference, and the heading
+  // always sits exactly 63 under the band. ≥1024 only (FlowBand wraps the section on phones).
+  const [shift, setShift] = useState({ cop: 0, tpl: 0 });
   useEffect(() => {
     const measure = () => {
       const root = getComputedStyle(document.documentElement);
@@ -228,8 +234,16 @@ export function AgentsPageClient({ t }: { t: Dict }) {
         const to = Math.max(from + 1, Math.round((bottom - header) / row));
         return [from, to];
       };
+      // the section's top doesn't move with its own padding, so this stays stable
+      const snap = (el: HTMLElement | null, startAbove: number, from: number) => {
+        if (!el || !window.matchMedia("(min-width: 1024px)").matches) return 0;
+        const top = el.getBoundingClientRect().top + window.scrollY + unit * startAbove;
+        return Math.round(((header + from * row - top) / unit) * 10) / 10;
+      };
       const next = { cop: rows(copRef.current, 214, [10, 16]), tpl: rows(tplRef.current, 215, [23, 27]) };
       setBands((b) => (b.cop.join() === next.cop.join() && b.tpl.join() === next.tpl.join() ? b : next));
+      const nextShift = { cop: snap(copRef.current, 214, next.cop[0]), tpl: snap(tplRef.current, 215, next.tpl[0]) };
+      setShift((v) => (v.cop === nextShift.cop && v.tpl === nextShift.tpl ? v : nextShift));
     };
     measure();
     document.fonts?.ready.then(measure);
@@ -350,7 +364,7 @@ export function AgentsPageClient({ t }: { t: Dict }) {
           card under the second (y1651); body 47 under the title, 368 wide (Ops: 315). */}
       {/* band (Rectangle 227) y1236 → 1917 — drawn by GridBand ≥1024; FlowBand (phones) starts 63 above
           the heading (277 − 63 = 214); 129 past the cards (1917 − 1788) is the section's padding-bottom */}
-      <section ref={copRef} className={`${col} relative`} style={{ paddingTop: s(277), paddingBottom: s(129) }}>
+      <section ref={copRef} className={`${col} relative`} style={{ paddingTop: s(277 + shift.cop), paddingBottom: s(129) }}>
         <FlowBand top={214} />
         <h2 data-fe-reveal className="relative lg:ml-[calc(var(--s)*18)]" style={H2()}>
           {a.copilots.heading}
@@ -389,7 +403,7 @@ export function AgentsPageClient({ t }: { t: Dict }) {
           "Deploy template ›" 47 under the title (24 Light + 24 chevron). */}
       {/* band (Rectangle 228) y2718 → 3165 — GridBand ≥1024; FlowBand: 63 above the heading
           (278 − 63 = 215), 177 past the items (3165 − 2988) */}
-      <section ref={tplRef} className={`${col} relative`} style={{ paddingTop: s(278), paddingBottom: s(177) }}>
+      <section ref={tplRef} className={`${col} relative`} style={{ paddingTop: s(278 + shift.tpl), paddingBottom: s(177) }}>
         <FlowBand top={215} />
         <h2 data-fe-reveal className="relative lg:ml-[calc(var(--s)*18)]" style={H2()}>
           {a.templates.heading}
